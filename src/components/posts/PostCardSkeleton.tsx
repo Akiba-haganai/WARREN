@@ -1,21 +1,108 @@
 export default function PostCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm animate-pulse">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700" />
-        <div className="space-y-1">
-          <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
-          <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
+    <div
+      className="
+        bg-white
+        dark:bg-slate-900
+        border
+        border-slate-200
+        dark:border-slate-800
+        rounded-3xl
+        overflow-hidden
+        animate-pulse
+        shadow-sm
+      "
+    >
+      <div className="p-5">
+        <div className="flex items-center gap-3">
+          <div
+            className="
+              h-11
+              w-11
+              rounded-full
+              bg-slate-200
+              dark:bg-slate-800
+              shrink-0
+            "
+          />
+
+          <div className="flex-1">
+            <div
+              className="
+                h-4
+                w-32
+                rounded
+                bg-slate-200
+                dark:bg-slate-800
+                mb-2
+              "
+            />
+
+            <div
+              className="
+                h-3
+                w-20
+                rounded
+                bg-slate-200
+                dark:bg-slate-800
+              "
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <div
+            className="
+              h-4
+              rounded
+              bg-slate-200
+              dark:bg-slate-800
+            "
+          />
+
+          <div
+            className="
+              h-4
+              rounded
+              bg-slate-200
+              dark:bg-slate-800
+            "
+          />
+
+          <div
+            className="
+              h-4
+              w-3/4
+              rounded
+              bg-slate-200
+              dark:bg-slate-800
+            "
+          />
         </div>
       </div>
-      <div className="space-y-2">
-        <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded" />
-        <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded" />
-      </div>
-      <div className="flex gap-4 mt-4">
-        <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded-full" />
-        <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded-full" />
-        <div className="h-8 w-10 bg-slate-200 dark:bg-slate-700 rounded-full" />
+
+      <div
+        className="
+          aspect-[4/3]
+          bg-slate-200
+          dark:bg-slate-800
+        "
+      />
+
+      <div className="p-4">
+        <div className="grid grid-cols-5 gap-3">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="
+                h-11
+                rounded-2xl
+                bg-slate-200
+                dark:bg-slate-800
+              "
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

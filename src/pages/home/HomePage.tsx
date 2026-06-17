@@ -1,4 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { toast } from "sonner";
+
 import AppShell from "../../components/layout/AppShell";
 import CreatePostSheet from "../../components/posts/CreatePostSheet";
 import PostCard from "../../components/posts/PostCard";
@@ -6,6 +8,7 @@ import PostCardSkeleton from "../../components/posts/PostCardSkeleton";
 import PullToRefresh from "../../components/ui/PullToRefresh";
 import CommentSection from "../../components/comments/CommentSection";
 import FeedToggle from "../../components/feed/FeedToggle";
+
 import { Plus } from "lucide-react";
 
 import {
@@ -20,7 +23,8 @@ import type { PostWithProfile } from "../../services/postsService";
 import { supabase } from "../../lib/supabase";
 
 export default function HomePage() {
-  const [openSheet, setOpenSheet] = useState(false);
+  const [openSheet, setOpenSheet] =
+    useState(false);
 
   const [posts, setPosts] =
     useState<PostWithProfile[]>([]);
@@ -57,10 +61,14 @@ export default function HomePage() {
   const refreshingRef =
     useRef(false);
 
+  const votedPostsRef =
+    useRef<Set<string>>(new Set());
+
   const loadPosts = useCallback(
     async (refetch = false) => {
       try {
-        if (!mountedRef.current) return;
+        if (!mountedRef.current)
+          return;
 
         if (sortMode === "hot") {
           setLoading(true);
@@ -68,7 +76,8 @@ export default function HomePage() {
           const data =
             await fetchHotPosts(20);
 
-          if (!mountedRef.current) return;
+          if (!mountedRef.current)
+            return;
 
           setPosts(data);
           setHasMore(false);
@@ -142,6 +151,10 @@ export default function HomePage() {
 
       try {
         await loadPosts(true);
+
+        toast.success(
+          "Feed refreshed"
+        );
       } finally {
         refreshingRef.current =
           false;
@@ -160,20 +173,38 @@ export default function HomePage() {
 
   useEffect(() => {
     const channel =
-      subscribeToPosts(() => {
-        if (
-          !refreshingRef.current
-        ) {
-          loadPosts(true);
+      subscribeToPosts(
+        (payload: any) => {
+          const post =
+            payload?.new;
+
+          if (!post) return;
+
+          setPosts((prev) => {
+            const exists =
+              prev.some(
+                (p) =>
+                  p.id ===
+                  post.id
+              );
+
+            if (exists)
+              return prev;
+
+            return [
+              post,
+              ...prev,
+            ];
+          });
         }
-      });
+      );
 
     return () => {
       supabase.removeChannel(
         channel
       );
     };
-  }, [loadPosts]);
+  }, []);
 
   useEffect(() => {
     if (
@@ -223,6 +254,17 @@ export default function HomePage() {
     id: string,
     type: "up" | "down"
   ) => {
+    if (
+      votedPostsRef.current.has(id)
+    ) {
+      return;
+    }
+
+    votedPostsRef.current.add(id);
+
+    const originalPosts =
+      [...posts];
+
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id !== id)
@@ -248,13 +290,20 @@ export default function HomePage() {
     try {
       await votePost(id, type);
     } catch {
-      loadPosts(true);
+      setPosts(originalPosts);
+    } finally {
+      votedPostsRef.current.delete(
+        id
+      );
     }
   };
 
   const handleDelete = async (
     postId: string
   ) => {
+    const backup =
+      [...posts];
+
     setPosts((prev) =>
       prev.filter(
         (p) => p.id !== postId
@@ -264,7 +313,7 @@ export default function HomePage() {
     try {
       await deletePost(postId);
     } catch {
-      loadPosts(true);
+      setPosts(backup);
     }
   };
 
@@ -277,49 +326,53 @@ export default function HomePage() {
           }
         >
           <div className="px-4 pb-28">
-            <h1 className="text-2xl font-bold">
-              Home Feed
-            </h1>
+            <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl py-3 mb-4">
+              <h1 className="text-2xl font-bold">
+                Home Feed
+              </h1>
 
-            <p className="text-sm opacity-70">
-              Live campus feed
-            </p>
+              <p className="text-sm opacity-70">
+                Live campus feed
+              </p>
 
-            <div className="mt-3 mb-4 rounded-2xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                    Community
-                    Guidelines
-                  </p>
+              <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                      Community
+                      Guidelines
+                    </p>
 
-                  <p className="text-xs opacity-70 mt-1">
-                    Users are limited
-                    to 10 posts per
-                    hour to reduce
-                    spam and improve
-                    feed quality.
-                  </p>
-                </div>
+                    <p className="text-xs opacity-70 mt-1">
+                      Users are limited
+                      to 10 posts per
+                      hour to reduce
+                      spam and improve
+                      feed quality.
+                    </p>
+                  </div>
 
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-blue-600">
-                    10
-                  </p>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-blue-600">
+                      10
+                    </p>
 
-                  <p className="text-xs opacity-70">
-                    posts/hr
-                  </p>
+                    <p className="text-xs opacity-70">
+                      posts/hr
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <FeedToggle
-              active={sortMode}
-              onChange={
-                setSortMode
-              }
-            />
+              <div className="mt-4">
+                <FeedToggle
+                  active={sortMode}
+                  onChange={
+                    setSortMode
+                  }
+                />
+              </div>
+            </div>
 
             {loading &&
               posts.length ===
@@ -340,6 +393,26 @@ export default function HomePage() {
                 {error}
               </div>
             )}
+
+            {!loading &&
+              posts.length ===
+                0 && (
+                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center">
+                  <div className="text-5xl mb-3">
+                    🎓
+                  </div>
+
+                  <h2 className="font-bold text-lg">
+                    No posts yet
+                  </h2>
+
+                  <p className="text-sm opacity-70 mt-2">
+                    Be the first
+                    student to start
+                    a conversation.
+                  </p>
+                </div>
+              )}
 
             <div className="space-y-4">
               {posts.map(
@@ -432,16 +505,17 @@ export default function HomePage() {
         onClose={() =>
           setOpenSheet(false)
         }
-        onCreated={() =>
-          loadPosts(true)
-        }
+        onCreated={() => {
+          setOpenSheet(false);
+          loadPosts(true);
+        }}
       />
 
       <button
         onClick={() =>
           setOpenSheet(true)
         }
-        className="fixed bottom-24 right-5 z-40 h-14 px-5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-xl flex items-center gap-2 hover:scale-105 transition-transform active:scale-95"
+        className="fixed bottom-24 right-5 z-40 h-14 px-5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-xl flex items-center gap-2 hover:scale-105 transition-all active:scale-95 animate-bounce-subtle"
       >
         <Plus size={20} />
         Post

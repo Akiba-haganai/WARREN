@@ -5,10 +5,10 @@ import {
   User,
   Bell,
   LogOut,
-  Settings,
   Shield,
+  ChevronDown,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
@@ -19,39 +19,73 @@ import NotificationBell from "../notifications/NotificationBell";
 
 export default function MobileNavbar() {
   const [open, setOpen] = useState(false);
-  const [username, setUsername] = useState("User");
 
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [username, setUsername] =
+    useState("");
 
-  const { role } = useUserRole();
+  const [avatarUrl, setAvatarUrl] =
+    useState("");
 
-  const darkMode = useThemeStore(
-    (s) => s.darkMode
-  );
+  const menuRef =
+    useRef<HTMLDivElement>(null);
 
-  const toggleTheme = useThemeStore(
-    (s) => s.toggleTheme
-  );
+  const location =
+    useLocation();
 
-  const user = useAuthStore(
-    (s) => s.user
-  );
+  const { role } =
+    useUserRole();
 
-  const logout = useAuthStore(
-    (s) => s.logout
-  );
+  const darkMode =
+    useThemeStore(
+      (s) => s.darkMode
+    );
+
+  const toggleTheme =
+    useThemeStore(
+      (s) => s.toggleTheme
+    );
+
+  const user =
+    useAuthStore(
+      (s) => s.user
+    );
+
+  const logout =
+    useAuthStore(
+      (s) => s.logout
+    );
 
   useEffect(() => {
-    if (!user) return;
+  async function loadProfile() {
+    if (!user?.id) return;
 
-    fetchProfile(user.id)
-      .then((profile) => {
-        if (profile?.username) {
-          setUsername(profile.username);
-        }
-      })
-      .catch(console.error);
-  }, [user]);
+    try {
+      const profile = await fetchProfile(
+        user.id
+      );
+
+      if (profile?.username) {
+        setUsername(
+          profile.username
+        );
+      }
+
+      if (profile?.avatar_url) {
+        setAvatarUrl(
+          profile.avatar_url
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  loadProfile();
+}, [user?.id]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleClickOutside = (
@@ -79,139 +113,329 @@ export default function MobileNavbar() {
       );
   }, []);
 
+  const displayName =
+    username || "User";
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800">
-      <div className="max-w-lg mx-auto h-16 px-4 flex items-center justify-between">
-
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-black shadow-lg">
-            W
-          </div>
-
-          <div>
-            <h1 className="font-bold text-lg leading-none">
-              WARREN
-            </h1>
-
-            <p className="text-[11px] opacity-60">
-              Global Student Network
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <NotificationBell />
-
-          <div
-            ref={menuRef}
-            className="relative"
+    <>
+      <header
+        className="
+          fixed
+          top-0
+          left-0
+          right-0
+          z-50
+          backdrop-blur-xl
+          bg-white/85
+          dark:bg-slate-950/85
+          border-b
+          border-slate-200
+          dark:border-slate-800
+          supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]
+        "
+      >
+        <div
+          className="
+            h-16
+            px-4
+            flex
+            items-center
+            justify-between
+            max-w-lg
+            mx-auto
+          "
+        >
+          <Link
+            to="/"
+            className="
+              flex
+              items-center
+              gap-3
+              min-w-0
+            "
           >
-            <button
-              aria-label="User menu"
-              onClick={() =>
-                setOpen((v) => !v)
-              }
-              className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-md"
+            <div
+              className="
+                h-10
+                w-10
+                shrink-0
+                rounded-2xl
+                bg-gradient-to-r
+                from-blue-600
+                to-cyan-500
+                flex
+                items-center
+                justify-center
+                text-white
+                font-black
+                shadow-lg
+              "
             >
-              <User size={18} />
-            </button>
+              W
+            </div>
 
-            {open && (
-              <div className="absolute right-0 top-12 w-60 overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl">
+            <div className="min-w-0">
+              <h1
+                className="
+                  text-base
+                  font-black
+                  leading-none
+                  truncate
+                "
+              >
+                WARREN
+              </h1>
 
-                <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-                  <p className="font-semibold">
-                    {username}
-                  </p>
+              <p
+                className="
+                  text-[10px]
+                  opacity-60
+                  truncate
+                "
+              >
+                Global Student Network
+              </p>
+            </div>
+          </Link>
 
-                  <p className="text-xs opacity-60 capitalize">
-                    {role ?? "student"} Account
-                  </p>
-                </div>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
 
-                <Link
-                  to="/profile"
-                  onClick={() =>
-                    setOpen(false)
-                  }
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800"
+            <div
+              ref={menuRef}
+              className="relative"
+            >
+              <button
+                onClick={() =>
+                  setOpen(
+                    (v) => !v
+                  )
+                }
+                className="
+                  flex
+                  items-center
+                  gap-2
+                  pl-2
+                  pr-3
+                  h-11
+                  rounded-full
+                  bg-slate-100
+                  dark:bg-slate-800
+                  border
+                  border-slate-200
+                  dark:border-slate-700
+                "
+              >
+                {avatarUrl ? (
+                  <img
+                    src={
+                      avatarUrl
+                    }
+                    alt={
+                      displayName
+                    }
+                    className="
+                      h-8
+                      w-8
+                      rounded-full
+                      object-cover
+                    "
+                  />
+                ) : (
+                  <div
+                    className="
+                      h-8
+                      w-8
+                      rounded-full
+                      bg-gradient-to-r
+                      from-blue-600
+                      to-cyan-500
+                      flex
+                      items-center
+                      justify-center
+                      text-white
+                      text-sm
+                      font-bold
+                    "
+                  >
+                    {displayName
+                      .charAt(0)
+                      .toUpperCase()}
+                  </div>
+                )}
+
+                <ChevronDown
+                  size={16}
+                />
+              </button>
+
+              {open && (
+                <div
+                  className="
+                    absolute
+                    right-0
+                    top-14
+                    w-[calc(100vw-24px)]
+                    max-w-[320px]
+                    overflow-hidden
+                    rounded-3xl
+                    border
+                    border-slate-200
+                    dark:border-slate-800
+                    bg-white
+                    dark:bg-slate-900
+                    shadow-2xl
+                  "
                 >
-                  <User size={16} />
-                  Profile
-                </Link>
+                  <div
+                    className="
+                      p-4
+                      border-b
+                      border-slate-200
+                      dark:border-slate-800
+                    "
+                  >
+                    <div className="flex items-center gap-3">
+                      {avatarUrl ? (
+                        <img
+                          src={
+                            avatarUrl
+                          }
+                          alt={
+                            displayName
+                          }
+                          className="
+                            h-12
+                            w-12
+                            rounded-full
+                            object-cover
+                          "
+                        />
+                      ) : (
+                        <div
+                          className="
+                            h-12
+                            w-12
+                            rounded-full
+                            bg-gradient-to-r
+                            from-blue-600
+                            to-cyan-500
+                            flex
+                            items-center
+                            justify-center
+                            text-white
+                            font-bold
+                          "
+                        >
+                          {displayName
+                            .charAt(0)
+                            .toUpperCase()}
+                        </div>
+                      )}
 
-                <Link
-                  to="/announcements"
-                  onClick={() =>
-                    setOpen(false)
-                  }
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  <Bell size={16} />
-                  Announcements
-                </Link>
+                      <div className="min-w-0">
+                        <p
+                          className="
+                            font-semibold
+                            truncate
+                          "
+                        >
+                          {
+                            displayName
+                          }
+                        </p>
 
-                {role === "admin" && (
-  <Link
-    to="/admin"
-    className="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800"
-    onClick={() => setOpen(false)}
-  >
-    <Shield size={16} />
-    Admin Dashboard
-  </Link>
-)}
+                        <p
+                          className="
+                            text-xs
+                            opacity-60
+                            capitalize
+                          "
+                        >
+                          {role ||
+                            "student"}{" "}
+                          account
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-{(role === "moderator" || role === "admin") && (
-  <Link
-    to="/moderator"
-    className="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800"
-    onClick={() => setOpen(false)}
-  >
-    <Shield size={16} />
-    Moderator Dashboard
-  </Link>
-)}
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-3 px-4 py-4 active:bg-slate-100 dark:active:bg-slate-800"
+                  >
+                    <User size={18} />
+                    Profile
+                  </Link>
 
-                <button
-                  onClick={() => {
-                    toggleTheme();
-                    setOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  {darkMode ? (
-                    <Sun size={16} />
-                  ) : (
-                    <Moon size={16} />
+                  <Link
+                    to="/announcements"
+                    className="flex items-center gap-3 px-4 py-4 active:bg-slate-100 dark:active:bg-slate-800"
+                  >
+                    <Bell size={18} />
+                    Announcements
+                  </Link>
+
+                  {role ===
+                    "admin" && (
+                    <Link
+                      to="/admin"
+                      className="flex items-center gap-3 px-4 py-4 active:bg-slate-100 dark:active:bg-slate-800"
+                    >
+                      <Shield size={18} />
+                      Admin Dashboard
+                    </Link>
                   )}
 
-                  {darkMode
-                    ? "Light Mode"
-                    : "Dark Mode"}
-                </button>
+                  {(role ===
+                    "admin" ||
+                    role ===
+                      "moderator") && (
+                    <Link
+                      to="/moderator"
+                      className="flex items-center gap-3 px-4 py-4 active:bg-slate-100 dark:active:bg-slate-800"
+                    >
+                      <Shield size={18} />
+                      Moderator Dashboard
+                    </Link>
+                  )}
 
-                <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800">
-                  <Settings size={16} />
-                  Settings
-                </button>
+                  <button
+                    onClick={() => {
+                      toggleTheme();
+                      setOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-4 text-left active:bg-slate-100 dark:active:bg-slate-800"
+                  >
+                    {darkMode ? (
+                      <Sun size={18} />
+                    ) : (
+                      <Moon size={18} />
+                    )}
 
-                <button
-                  onClick={() => {
-                    logout();
-                    setOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-                >
-                  <LogOut size={16} />
-                  Logout
-                </button>
+                    {darkMode
+                      ? "Light Mode"
+                      : "Dark Mode"}
+                  </button>
 
-              </div>
-            )}
+                  <button
+                    onClick={() => {
+                      logout();
+                      setOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-4 text-left text-red-500 active:bg-red-50 dark:active:bg-red-950/30"
+                  >
+                    <LogOut size={18} />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <div className="h-16" />
+    </>
   );
 }

@@ -15,7 +15,11 @@ import type { PostWithProfile } from "../../services/postsService";
 import { useUserRole } from "../../hooks/useUserRole";
 import { useAuthStore } from "../../store/authStore";
 import { reportPost } from "../../services/reportService";
-import { savePost, unsavePost, isPostSaved } from "../../services/savedPostsService";
+import {
+  savePost,
+  unsavePost,
+  isPostSaved,
+} from "../../services/savedPostsService";
 
 interface Props {
   post: PostWithProfile;
@@ -52,6 +56,36 @@ export default function PostCard({
     role === "moderator" ||
     role === "admin";
 
+  const [saved, setSaved] =
+    useState(false);
+
+  const displayName =
+    post.profiles
+      ?.username ??
+    "Anonymous";
+
+  const displayRole =
+    post.profiles?.role ??
+    "student";
+
+  const avatarUrl =
+    post.profiles
+      ?.avatar_url;
+
+  useEffect(() => {
+    if (!user) return;
+
+    isPostSaved(
+      user.id,
+      post.id
+    )
+      .then(setSaved)
+      .catch(() => {});
+  }, [
+    user,
+    post.id,
+  ]);
+
   const handleReport =
     async () => {
       if (!user) {
@@ -66,7 +100,9 @@ export default function PostCard({
           "Reason for reporting?"
         );
 
-      if (!reason?.trim())
+      if (
+        !reason?.trim()
+      )
         return;
 
       try {
@@ -79,7 +115,9 @@ export default function PostCard({
         alert(
           "Report submitted."
         );
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.error(
           error
         );
@@ -103,7 +141,8 @@ export default function PostCard({
               title:
                 "Warren",
               text:
-                post.content ?? undefined,
+                post.content ??
+                undefined,
               url: shareUrl,
             }
           );
@@ -125,84 +164,194 @@ export default function PostCard({
       }
     };
 
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    isPostSaved(user.id, post.id).then(setSaved).catch(() => {});
-  }, [user, post.id]);
-
-  const handleSaveToggle = async () => {
-    if (!user) {
-      alert("Please sign in to save posts.");
-      return;
-    }
-
-    try {
-      if (saved) {
-        await unsavePost(user.id, post.id);
-        setSaved(false);
-      } else {
-        await savePost(user.id, post.id);
-        setSaved(true);
+  const handleSaveToggle =
+    async () => {
+      if (!user) {
+        alert(
+          "Please sign in to save posts."
+        );
+        return;
       }
-    } catch {
-      // revert on failure
-      setSaved((prev) => !prev);
-    }
-  };
 
-  const displayName =
-    post.profiles
-      ?.username ??
-    "Anonymous";
+      try {
+        if (saved) {
+          await unsavePost(
+            user.id,
+            post.id
+          );
 
-  const displayRole =
-    post.profiles?.role ??
-    "student";
+          setSaved(
+            false
+          );
+        } else {
+          await savePost(
+            user.id,
+            post.id
+          );
+
+          setSaved(
+            true
+          );
+        }
+      } catch {
+        setSaved(
+          (prev) =>
+            !prev
+        );
+      }
+    };
 
   return (
-    <article className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
-
-      <div className="p-5">
-
+    <article
+      className="
+        overflow-hidden
+        rounded-3xl
+        border
+        border-slate-200
+        dark:border-slate-800
+        bg-white
+        dark:bg-slate-900
+        shadow-sm
+        transition-all
+        duration-300
+        hover:shadow-xl
+      "
+    >
+      <div className="p-4 sm:p-5">
         <div className="flex items-start gap-3">
-
-          <div className="h-11 w-11 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold shadow-md shrink-0">
-            {displayName
-              .charAt(0)
-              .toUpperCase()}
-          </div>
+          {avatarUrl ? (
+            <img
+              src={
+                avatarUrl
+              }
+              alt={
+                displayName
+              }
+              loading="lazy"
+              className="
+                h-11
+                w-11
+                shrink-0
+                rounded-full
+                object-cover
+                border
+                border-slate-200
+                dark:border-slate-700
+              "
+            />
+          ) : (
+            <div
+              className="
+                h-11
+                w-11
+                shrink-0
+                rounded-full
+                bg-gradient-to-br
+                from-blue-600
+                to-cyan-500
+                text-white
+                flex
+                items-center
+                justify-center
+                font-bold
+                shadow-md
+              "
+            >
+              {displayName
+                .charAt(
+                  0
+                )
+                .toUpperCase()}
+            </div>
+          )}
 
           <div className="flex-1 min-w-0">
-
-            <div className="flex items-center gap-2 flex-wrap">
-
-              <h3 className="font-semibold text-slate-900 dark:text-white truncate">
-                {displayName}
+            <div className="flex flex-wrap items-center gap-2">
+              <h3
+                className="
+                  font-semibold
+                  text-slate-900
+                  dark:text-white
+                  truncate
+                  max-w-[150px]
+                "
+              >
+                {
+                  displayName
+                }
               </h3>
 
               {displayRole ===
                 "admin" && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 text-[10px] font-bold uppercase">
-                  <ShieldCheck size={10} />
+                <span
+                  className="
+                    inline-flex
+                    items-center
+                    gap-1
+                    rounded-full
+                    bg-red-100
+                    dark:bg-red-950/40
+                    px-2
+                    py-0.5
+                    text-[10px]
+                    font-bold
+                    uppercase
+                    text-red-600
+                    dark:text-red-400
+                  "
+                >
+                  <ShieldCheck
+                    size={
+                      10
+                    }
+                  />
                   Admin
                 </span>
               )}
 
               {displayRole ===
                 "moderator" && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 text-[10px] font-bold uppercase">
-                  <ShieldCheck size={10} />
-                  Moderator
+                <span
+                  className="
+                    inline-flex
+                    items-center
+                    gap-1
+                    rounded-full
+                    bg-amber-100
+                    dark:bg-amber-950/40
+                    px-2
+                    py-0.5
+                    text-[10px]
+                    font-bold
+                    uppercase
+                    text-amber-600
+                    dark:text-amber-400
+                  "
+                >
+                  <ShieldCheck
+                    size={
+                      10
+                    }
+                  />
+                  Mod
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2 mt-1 text-xs opacity-60">
-
+            <div
+              className="
+                mt-1
+                flex
+                items-center
+                gap-2
+                text-xs
+                opacity-60
+              "
+            >
               <span>
-                {displayRole}
+                {
+                  displayRole
+                }
               </span>
 
               <span>
@@ -216,23 +365,28 @@ export default function PostCard({
                         post.created_at
                       ),
                       {
-                        addSuffix: true,
+                        addSuffix:
+                          true,
                       }
                     )
                   : "just now"}
               </span>
-
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
-
+          <div className="flex items-center">
             <button
               onClick={
                 handleReport
               }
               aria-label="Report post"
-              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="
+                p-2
+                rounded-full
+                text-slate-500
+                hover:bg-slate-100
+                dark:hover:bg-slate-800
+              "
             >
               <Flag
                 size={16}
@@ -248,7 +402,14 @@ export default function PostCard({
                     )
                   }
                   aria-label="Delete post"
-                  className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-500 hover:text-red-500 transition-colors"
+                  className="
+                    p-2
+                    rounded-full
+                    text-slate-500
+                    hover:text-red-500
+                    hover:bg-red-50
+                    dark:hover:bg-red-950/30
+                  "
                 >
                   <Trash2
                     size={
@@ -257,12 +418,21 @@ export default function PostCard({
                   />
                 </button>
               )}
-
           </div>
         </div>
 
         {post.content && (
-          <p className="mt-4 text-sm leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-slate-200">
+          <p
+            className="
+              mt-4
+              whitespace-pre-wrap
+              break-words
+              text-sm
+              leading-7
+              text-slate-700
+              dark:text-slate-200
+            "
+          >
             {
               post.content
             }
@@ -271,22 +441,38 @@ export default function PostCard({
       </div>
 
       {post.image_url && (
-        <div className="border-y border-slate-100 dark:border-slate-800">
+        <div
+          className="
+            border-y
+            border-slate-100
+            dark:border-slate-800
+          "
+        >
           <img
             src={
               post.image_url
             }
             alt="Post attachment"
             loading="lazy"
-            className="w-full max-h-[500px] object-cover"
+            className="
+              w-full
+              max-h-[500px]
+              object-cover
+              bg-slate-100
+              dark:bg-slate-800
+            "
           />
         </div>
       )}
 
-      <div className="p-4">
-
-        <div className="grid grid-cols-5 gap-2">
-
+      <div className="p-3">
+        <div
+          className="
+            grid
+            grid-cols-5
+            gap-2
+          "
+        >
           <button
             onClick={() =>
               onVote(
@@ -294,12 +480,31 @@ export default function PostCard({
                 "up"
               )
             }
-            className="flex items-center justify-center gap-1 rounded-2xl py-2 bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 transition-colors"
+            className="
+              flex
+              items-center
+              justify-center
+              gap-1
+              rounded-2xl
+              py-2.5
+              bg-slate-50
+              dark:bg-slate-800
+              hover:bg-emerald-50
+              dark:hover:bg-emerald-950/30
+              hover:text-emerald-600
+              transition-colors
+            "
           >
             <ArrowBigUp
               size={18}
             />
-            <span className="text-xs font-semibold">
+
+            <span
+              className="
+                text-xs
+                font-semibold
+              "
+            >
               {post.upvotes ??
                 0}
             </span>
@@ -312,12 +517,31 @@ export default function PostCard({
                 "down"
               )
             }
-            className="flex items-center justify-center gap-1 rounded-2xl py-2 bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 transition-colors"
+            className="
+              flex
+              items-center
+              justify-center
+              gap-1
+              rounded-2xl
+              py-2.5
+              bg-slate-50
+              dark:bg-slate-800
+              hover:bg-rose-50
+              dark:hover:bg-rose-950/30
+              hover:text-rose-600
+              transition-colors
+            "
           >
             <ArrowBigDown
               size={18}
             />
-            <span className="text-xs font-semibold">
+
+            <span
+              className="
+                text-xs
+                font-semibold
+              "
+            >
               {post.downvotes ??
                 0}
             </span>
@@ -327,23 +551,54 @@ export default function PostCard({
             onClick={
               onCommentClick
             }
-            className="flex items-center justify-center gap-1 rounded-2xl py-2 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:text-blue-600 transition-colors"
+            className="
+              flex
+              items-center
+              justify-center
+              gap-1
+              rounded-2xl
+              py-2.5
+              bg-slate-50
+              dark:bg-slate-800
+              hover:bg-blue-50
+              dark:hover:bg-blue-950/30
+              hover:text-blue-600
+              transition-colors
+            "
           >
             <MessageCircle
               size={18}
             />
-            <span className="text-xs font-semibold">
+
+            <span
+              className="
+                text-xs
+                font-semibold
+              "
+            >
               {post.comments_count ??
                 0}
             </span>
           </button>
 
           <button
-          aria-label="share"
+            aria-label="Share post"
             onClick={
               handleShare
             }
-            className="flex items-center justify-center rounded-2xl py-2 bg-slate-50 dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:text-cyan-600 transition-colors"
+            className="
+              flex
+              items-center
+              justify-center
+              rounded-2xl
+              py-2.5
+              bg-slate-50
+              dark:bg-slate-800
+              hover:bg-cyan-50
+              dark:hover:bg-cyan-950/30
+              hover:text-cyan-600
+              transition-colors
+            "
           >
             <Share2
               size={18}
@@ -351,23 +606,39 @@ export default function PostCard({
           </button>
 
           <button
-            aria-label={saved ? "Unsave post" : "Save post"}
-            onClick={handleSaveToggle}
-            className={`flex items-center justify-center rounded-2xl py-2 transition-colors ${
+            aria-label={
               saved
-                ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600"
-                : "bg-slate-50 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-600"
-            }`}
+                ? "Unsave post"
+                : "Save post"
+            }
+            onClick={
+              handleSaveToggle
+            }
+            className={`
+              flex
+              items-center
+              justify-center
+              rounded-2xl
+              py-2.5
+              transition-colors
+              ${
+                saved
+                  ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600"
+                  : "bg-slate-50 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-600"
+              }
+            `}
           >
             <Bookmark
               size={18}
-              fill={saved ? "currentColor" : "none"}
+              fill={
+                saved
+                  ? "currentColor"
+                  : "none"
+              }
             />
           </button>
-
         </div>
       </div>
-
     </article>
   );
 }

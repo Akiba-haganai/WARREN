@@ -228,7 +228,7 @@ export async function deleteComment(
 }
 
 export function subscribeToPosts(
-  callback: () => void
+  callback: (payload: any) => void
 ) {
   return supabase
     .channel("posts-live")
@@ -239,7 +239,10 @@ export function subscribeToPosts(
         schema: "public",
         table: "posts",
       },
-      callback
+      (payload) => {
+        
+        callback(payload)
+      }
     )
     .subscribe();
 }

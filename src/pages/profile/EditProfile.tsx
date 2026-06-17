@@ -49,35 +49,41 @@ export default function EditProfile() {
   }
 
   async function uploadAvatar() {
-    if (!avatarFile || !user)
-      return null;
+  if (!avatarFile || !user) return null;
 
-    const fileExt =
-      avatarFile.name.split(".").pop();
+  const fileExt =
+    avatarFile.name.split(".").pop();
 
-    const filePath =
-      `${user.id}.${fileExt}`;
+  const filePath =
+    `${user.id}.${fileExt}`;
 
-    const { error } =
-      await supabase.storage
-        .from("avatars")
-        .upload(
-          filePath,
-          avatarFile,
-          {
-            upsert: true,
-          }
-        );
+  const { data, error } =
+    await supabase.storage
+      .from("avatars")
+      .upload(
+        filePath,
+        avatarFile,
+        {
+          cacheControl: "3600",
+          upsert: true,
+        }
+      );
 
-    if (error) throw error;
+  console.log("UPLOAD DATA:", data);
+  console.log("UPLOAD ERROR:", error);
 
-    const { data } =
-      supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-    return data.publicUrl;
+  if (error) {
+    throw error;
   }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage
+    .from("avatars")
+    .getPublicUrl(filePath);
+
+  return publicUrl;
+}
 
   async function handleSave() {
     if (!user) return;
