@@ -5,8 +5,24 @@ import { registerSW } from "virtual:pwa-register";
 import "./index.css";
 import App from "./App";
 
-registerSW({
+const updateSW = registerSW({
   immediate: true,
+
+  onNeedRefresh() {
+    const shouldUpdate = window.confirm(
+      "A new version of Warren is available. Update now?"
+    );
+
+    if (shouldUpdate) {
+      updateSW(true);
+    }
+  },
+
+  onOfflineReady() {
+    console.log(
+      "Warren is ready for offline use."
+    );
+  },
 });
 
 createRoot(
