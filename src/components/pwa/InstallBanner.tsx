@@ -122,6 +122,7 @@ export default function InstallBanner() {
                 <p className="text-xs text-slate-500 dark:text-slate-400">Add Warren to your home screen in 3 steps</p>
               </div>
               <button
+              aria-label="mode"
                 onClick={() => setShowIOSModal(false)}
                 className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors duration-150"
               >

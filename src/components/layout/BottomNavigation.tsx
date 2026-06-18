@@ -1,7 +1,9 @@
 import {
   House,
   Bell,
-  User,
+  BookOpen,
+  MapPinned,
+  MessagesSquare,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -22,13 +24,17 @@ export default function BottomNavigation() {
     duration-300
     relative
     py-1
-    px-3
+    px-2
     ${
       isActive
         ? "text-blue-600 dark:text-cyan-400 font-semibold scale-105"
         : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
     }
   `;
+
+  const ActiveDot = () => (
+    <span className="absolute -bottom-1.5 w-1 h-1 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" />
+  );
 
   return (
     <nav
@@ -54,23 +60,18 @@ export default function BottomNavigation() {
         items-center
         justify-around
         py-2.5
-        px-6
+        px-2
         pb-[max(10px,env(safe-area-inset-bottom))]
         "
       >
-        <NavLink
-          to="/"
-          className={navClass}
-        >
+        <NavLink to="/" className={navClass}>
           {({ isActive }) => (
             <>
-              <House size={20} className="transition-transform duration-300" />
-              <span className="text-[10px] font-medium tracking-wide">
+              <House size={20} />
+              <span className="text-[10px] font-medium">
                 Home
               </span>
-              {isActive && (
-                <span className="absolute -bottom-1.5 w-1 h-1 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" />
-              )}
+              {isActive && <ActiveDot />}
             </>
           )}
         </NavLink>
@@ -81,30 +82,56 @@ export default function BottomNavigation() {
         >
           {({ isActive }) => (
             <>
-              <Bell size={20} className="transition-transform duration-300" />
-              <span className="text-[10px] font-medium tracking-wide">
+              <Bell size={20} />
+              <span className="text-[10px] font-medium">
                 Bulletin
               </span>
-              {isActive && (
-                <span className="absolute -bottom-1.5 w-1 h-1 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" />
-              )}
+              {isActive && <ActiveDot />}
             </>
           )}
         </NavLink>
 
         <NavLink
-          to="/profile"
+          to="/study-hub"
           className={navClass}
         >
           {({ isActive }) => (
             <>
-              <User size={20} className="transition-transform duration-300" />
-              <span className="text-[10px] font-medium tracking-wide">
-                Profile
+              <BookOpen size={20} />
+              <span className="text-[10px] font-medium">
+                Study
               </span>
-              {isActive && (
-                <span className="absolute -bottom-1.5 w-1 h-1 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" />
-              )}
+              {isActive && <ActiveDot />}
+            </>
+          )}
+        </NavLink>
+
+        <NavLink
+          to="/campus-map"
+          className={navClass}
+        >
+          {({ isActive }) => (
+            <>
+              <MapPinned size={20} />
+              <span className="text-[10px] font-medium">
+                Map
+              </span>
+              {isActive && <ActiveDot />}
+            </>
+          )}
+        </NavLink>
+
+        <NavLink
+          to="/community"
+          className={navClass}
+        >
+          {({ isActive }) => (
+            <>
+              <MessagesSquare size={20} />
+              <span className="text-[10px] font-medium">
+                Community
+              </span>
+              {isActive && <ActiveDot />}
             </>
           )}
         </NavLink>

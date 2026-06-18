@@ -1,293 +1,742 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../store/authStore";
 import { useUserRole } from "../../hooks/useUserRole";
-import { Send, Trash2 } from "lucide-react";
+
+import {
+  Send,
+  Trash2,
+  ImageIcon,
+  ArrowBigUp,
+  ArrowBigDown,
+  X,
+  Loader2,
+} from "lucide-react";
 
 interface Props {
   postId: string;
-  onClose?: () => void;
+  onClose? : ()=> void;
 }
 
-const COMMENT_LIMIT = 30;
-const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+interface Comment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string | null;
+  image_url: string | null;
+  created_at: string;
+
+  profiles?: {
+    username?: string;
+    avatar_url?: string;
+    role?: string;
+  };
+
+  upvotes: number;
+  downvotes: number;
+  userVote: "up" | "down" | null;
+}
+
 const MAX_COMMENT_LENGTH = 500;
 
-export default function CommentSection({ postId }: Props) {
-  const [comments, setComments] = useState<any[]>([]);
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+export default function CommentSection({
+  postId,
+}: Props) {
+  const user =
+    useAuthStore(
+      (s) => s.user
+    );
 
-  const user = useAuthStore((s) => s.user);
-  const { role } = useUserRole();
+  const { role } =
+    useUserRole();
 
-  const loadComments = async () => {
+  const [comments, setComments] =
+    useState<Comment[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [sending, setSending] =
+    useState(false);
+
+  const [uploadingImage, setUploadingImage] =
+    useState(false);
+
+  const [content, setContent] =
+    useState("");
+
+  const [imageFile, setImageFile] =
+    useState<File | null>(null);
+
+  const imagePreview =
+    useMemo(() => {
+      if (!imageFile)
+        return null;
+
+      return URL.createObjectURL(
+        imageFile
+      );
+    }, [imageFile]);
+
+  async function loadComments() {
     try {
-      const { data, error } = await supabase
+      const {
+        data: commentsData,
+        error,
+      } = await supabase
         .from("comments")
-        .select(
-          `
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles (
+        .select(`
+          *,
+          profiles(
             username,
+            avatar_url,
             role
           )
-        `
+        `)
+        .eq(
+          "post_id",
+          postId
         )
-        .eq("post_id", postId)
-        .order("created_at", {
-          ascending: true,
-        });
+        .order(
+          "created_at",
+          {
+            ascending: true,
+          }
+        );
 
-      if (error) throw error;
+      if (error)
+        throw error;
 
-      setComments(data ?? []);
-    } catch (error) {
-      console.error("Failed to load comments:", error);
+      const ids =
+        commentsData?.map(
+          (c) => c.id
+        ) ?? [];
+
+      let votes: any[] = [];
+
+      if (ids.length) {
+        const {
+          data,
+        } = await supabase
+          .from(
+            "comment_votes"
+          )
+          .select(
+            "comment_id,user_id,vote_type"
+          )
+          .in(
+            "comment_id",
+            ids
+          );
+
+        votes = data ?? [];
+      }
+
+      const mapped: Comment[] =
+        (commentsData??[]).map(
+          (
+            comment
+          ) => {
+            const commentVotes =
+              votes.filter(
+                (
+                  vote
+                ) =>
+                  vote.comment_id ===
+                  comment.id
+              );
+
+            return {
+  ...comment,
+
+  profiles: Array.isArray(
+    comment.profiles
+  )
+    ? comment.profiles[0] ?? undefined
+    : comment.profiles ?? undefined,
+
+  upvotes:
+    commentVotes.filter(
+      (vote) =>
+        vote.vote_type === "up"
+    ).length,
+
+  downvotes:
+    commentVotes.filter(
+      (vote) =>
+        vote.vote_type === "down"
+    ).length,
+
+  userVote:
+    commentVotes.find(
+      (vote) =>
+        vote.user_id === user?.id
+    )?.vote_type ?? null,
+} as Comment;
+          }
+        ) ?? [];
+
+      setComments(
+        mapped
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        error
+      );
     } finally {
-      setLoading(false);
+      setLoading(
+        false
+      );
     }
-  };
+  }
 
   useEffect(() => {
     loadComments();
 
-    const channel = supabase
-      .channel(`comments-${postId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "comments",
-          filter: `post_id=eq.${postId}`,
-        },
-        () => {
-          loadComments();
-        }
-      )
-      .subscribe();
+    const channel =
+      supabase
+        .channel(
+          `comments-${postId}`
+        )
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "*",
+            schema:
+              "public",
+            table:
+              "comments",
+            filter: `post_id=eq.${postId}`,
+          },
+          (
+            payload
+          ) => {
+            if (
+              payload.eventType ===
+              "INSERT"
+            ) {
+              loadComments();
+            }
+
+            if (
+              payload.eventType ===
+              "DELETE"
+            ) {
+              setComments(
+                (
+                  prev
+                ) =>
+                  prev.filter(
+                    (
+                      c
+                    ) =>
+                      c.id !==
+                      payload.old.id
+                  )
+              );
+            }
+          }
+        )
+        .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(
+        channel
+      );
     };
-  }, [postId]);
+  }, [
+    postId,
+    user?.id,
+  ]);
 
-  const handleSubmit = async () => {
-    if (sending) return;
+  async function uploadImage() {
+    if (!imageFile)
+      return null;
 
-    const trimmedContent = content.trim();
-
-    if (
-      !user ||
-      trimmedContent.length < 2 ||
-      trimmedContent.length > MAX_COMMENT_LENGTH
-    ) {
-      return;
-    }
-
-    const key = `comment_limit_${user.id}`;
-
-    const stored = JSON.parse(
-      localStorage.getItem(key) || "[]"
-    ) as number[];
-
-    const now = Date.now();
-
-    const validComments = stored.filter(
-      (time) => now - time < WINDOW_MS
+    setUploadingImage(
+      true
     );
 
-    if (
-      validComments.length >=
-      COMMENT_LIMIT
-    ) {
-      alert(
-        "You have reached the limit of 30 comments per hour. Please try again later."
+    try {
+      const fileName = `${user?.id}/${Date.now()}-${imageFile.name}`;
+
+      const {
+        error,
+      } =
+        await supabase.storage
+          .from(
+            "comment-images"
+          )
+          .upload(
+            fileName,
+            imageFile,
+            {
+              upsert: false,
+            }
+          );
+
+      if (error)
+        throw error;
+
+      const {
+        data,
+      } =
+        supabase.storage
+          .from(
+            "comment-images"
+          )
+          .getPublicUrl(
+            fileName
+          );
+
+      return data.publicUrl;
+    } finally {
+      setUploadingImage(
+        false
       );
+    }
+  }
+
+  async function handleSubmit() {
+    if (
+      sending ||
+      !user
+    )
+      return;
+
+    if (
+      !content.trim() &&
+      !imageFile
+    ) {
       return;
     }
 
     try {
-      setSending(true);
+      setSending(
+        true
+      );
 
-      const { error } = await supabase
-        .from("comments")
+      let imageUrl =
+        null;
+
+      if (
+        imageFile
+      ) {
+        imageUrl =
+          await uploadImage();
+      }
+
+      const {
+        error,
+      } = await supabase
+        .from(
+          "comments"
+        )
         .insert({
-          post_id: postId,
-          user_id: user.id,
-          content: trimmedContent,
+          post_id:
+            postId,
+          user_id:
+            user.id,
+          content:
+            content.trim(),
+          image_url:
+            imageUrl,
         });
 
-      if (error) throw error;
+      if (error)
+        throw error;
 
-      validComments.push(now);
-
-      localStorage.setItem(
-        key,
-        JSON.stringify(validComments)
+      setContent(
+        ""
       );
 
-      setContent("");
-    } catch (error: any) {
-      console.error(error);
-
-      alert(
-        error?.message ??
-          "Failed to post comment"
+      setImageFile(
+        null
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        error
       );
     } finally {
-      setSending(false);
-    }
-  };
-
-  const handleDelete = async (
-    commentId: string
-  ) => {
-    const confirmed = confirm(
-      "Delete this comment?"
-    );
-
-    if (!confirmed) return;
-
-    try {
-      const { error } = await supabase
-        .from("comments")
-        .delete()
-        .eq("id", commentId);
-
-      if (error) throw error;
-    } catch (error: any) {
-      alert(
-        error?.message ??
-          "Failed to delete comment"
+      setSending(
+        false
       );
     }
-  };
+  }
+
+  async function handleVote(
+    commentId: string,
+    type:
+      | "up"
+      | "down"
+  ) {
+    if (!user)
+      return;
+
+    const comment =
+      comments.find(
+        (
+          c
+        ) =>
+          c.id ===
+          commentId
+      );
+
+    if (!comment)
+      return;
+
+    const current =
+      comment.userVote;
+
+    setComments(
+      (prev) =>
+        prev.map(
+          (c) => {
+            if (
+              c.id !==
+              commentId
+            )
+              return c;
+
+            let up =
+              c.upvotes;
+
+            let down =
+              c.downvotes;
+
+            if (
+              current ===
+              "up"
+            )
+              up--;
+
+            if (
+              current ===
+              "down"
+            )
+              down--;
+
+            if (
+              current !==
+              type
+            ) {
+              if (
+                type ===
+                "up"
+              )
+                up++;
+
+              if (
+                type ===
+                "down"
+              )
+                down++;
+            }
+
+            return {
+              ...c,
+              upvotes:
+                up,
+              downvotes:
+                down,
+              userVote:
+                current ===
+                type
+                  ? null
+                  : type,
+            };
+          }
+        )
+    );
+
+    if (
+      current ===
+      type
+    ) {
+      await supabase
+        .from(
+          "comment_votes"
+        )
+        .delete()
+        .eq(
+          "comment_id",
+          commentId
+        )
+        .eq(
+          "user_id",
+          user.id
+        );
+    } else {
+      await supabase
+        .from(
+          "comment_votes"
+        )
+        .upsert({
+          comment_id:
+            commentId,
+          user_id:
+            user.id,
+          vote_type:
+            type,
+        });
+    }
+  }
+
+  async function handleDelete(
+    id: string
+  ) {
+    setComments(
+      (prev) =>
+        prev.filter(
+          (
+            c
+          ) =>
+            c.id !== id
+        )
+    );
+
+    await supabase
+      .from(
+        "comments"
+      )
+      .delete()
+      .eq(
+        "id",
+        id
+      );
+  }
 
   if (loading) {
     return (
-      <div className="p-4 text-center text-sm opacity-60">
+      <div className="p-6 text-center text-sm opacity-60">
         Loading comments...
       </div>
     );
   }
 
   return (
-    <div className="p-2">
-      <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
-        {comments.map((comment) => (
-          <div
-            key={comment.id}
-            className="flex items-start gap-3"
-          >
-            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">
-              {comment.profiles?.username
-                ?.charAt(0)
-                .toUpperCase() ?? "?"}
-            </div>
+    <div className="p-3">
+      <div className="space-y-4 max-h-[500px] overflow-y-auto">
+        {comments.map(
+          (
+            comment
+          ) => (
+            <div
+              key={
+                comment.id
+              }
+              className="flex gap-3"
+            >
+              {comment
+                .profiles
+                ?.avatar_url ? (
+                <img
+                  src={
+                    comment
+                      .profiles
+                      .avatar_url
+                  }
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold">
+                  {comment.profiles?.username?.[0]?.toUpperCase() ??
+                    "?"}
+                </div>
+              )}
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-                  {comment.profiles?.username ??
-                    "Anonymous"}
-                </span>
+              <div className="flex-1">
+                <div className="rounded-2xl bg-slate-100 dark:bg-slate-900 p-3">
+                  <div className="font-semibold text-sm">
+                    {comment.profiles?.username ??
+                      "Anonymous"}
+                  </div>
 
-                {comment.profiles?.role &&
-                  comment.profiles.role !==
-                    "student" && (
-                    <span
-                      className={`text-[8px] font-bold tracking-wider px-1.5 py-0.5 rounded-full uppercase border ${
-                        comment.profiles.role ===
-                        "admin"
-                          ? "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50"
-                          : "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50"
-                      }`}
-                    >
-                      {comment.profiles.role}
-                    </span>
+                  {comment.content && (
+                    <p className="mt-1 text-sm whitespace-pre-wrap">
+                      {
+                        comment.content
+                      }
+                    </p>
                   )}
+
+                  {comment.image_url && (
+                    <img
+                      src={
+                        comment.image_url
+                      }
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="mt-3 rounded-2xl max-h-72 w-full object-cover"
+                    />
+                  )}
+                </div>
+
+                <div className="mt-2 flex items-center gap-4">
+                  <button
+                    onClick={() =>
+                      handleVote(
+                        comment.id,
+                        "up"
+                      )
+                    }
+                    className={`flex items-center gap-1 text-xs ${
+                      comment.userVote ===
+                      "up"
+                        ? "text-emerald-500"
+                        : ""
+                    }`}
+                  >
+                    <ArrowBigUp size={16} />
+                    {
+                      comment.upvotes
+                    }
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      handleVote(
+                        comment.id,
+                        "down"
+                      )
+                    }
+                    className={`flex items-center gap-1 text-xs ${
+                      comment.userVote ===
+                      "down"
+                        ? "text-red-500"
+                        : ""
+                    }`}
+                  >
+                    <ArrowBigDown size={16} />
+                    {
+                      comment.downvotes
+                    }
+                  </button>
+
+                  {(user?.id ===
+                    comment.user_id ||
+                    role ===
+                      "admin" ||
+                    role ===
+                      "moderator") && (
+                    <button
+                    aria-label="delete"
+                      onClick={() =>
+                        handleDelete(
+                          comment.id
+                        )
+                      }
+                      className="text-red-500"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
-
-              <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 whitespace-pre-wrap break-words">
-                {comment.content}
-              </p>
             </div>
-
-            {(user?.id ===
-              comment.user_id ||
-              role === "moderator" ||
-              role === "admin") && (
-              <button
-                aria-label="Delete comment"
-                onClick={() =>
-                  handleDelete(comment.id)
-                }
-                className="text-slate-400 hover:text-rose-500 p-1 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-              >
-                <Trash2 size={13} />
-              </button>
-            )}
-          </div>
-        ))}
-
-        {comments.length === 0 && (
-          <p className="text-center text-sm opacity-50 py-4">
-            No comments yet. Be the first
-            to reply!
-          </p>
+          )
         )}
       </div>
 
-      <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/60">
-        <div className="flex-1">
-          <input
-            value={content}
-            maxLength={
-              MAX_COMMENT_LENGTH
-            }
-            onChange={(e) => {
-              if (
-                e.target.value.length <=
-                MAX_COMMENT_LENGTH
-              ) {
-                setContent(
-                  e.target.value
-                );
-              }
-            }}
-            placeholder="Write a comment..."
-            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 dark:focus:border-cyan-400"
-          />
-
-          <div className="mt-1 text-right text-[11px] opacity-50">
-            {content.length}/
-            {MAX_COMMENT_LENGTH}
-          </div>
-        </div>
-
-        <button
-          aria-label="Submit comment"
-          onClick={handleSubmit}
-          disabled={
-            sending ||
-            content.trim().length < 2
+      <div className="mt-4 border-t pt-4">
+        <textarea
+          rows={3}
+          value={content}
+          maxLength={
+            MAX_COMMENT_LENGTH
           }
-          className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-2xl px-4 py-2.5 flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-transform duration-200 disabled:opacity-50 disabled:hover:scale-100"
-        >
-          {sending ? (
-            <div className="text-xs">
-              Sending...
+          onChange={(e) =>
+            setContent(
+              e.target.value
+            )
+          }
+          placeholder="Write a comment..."
+          className="w-full rounded-2xl border p-3 bg-slate-50 dark:bg-slate-900"
+        />
+
+        {imagePreview && (
+          <div className="relative mt-3">
+            <img
+              src={
+                imagePreview
+              }
+              alt=""
+              className="h-28 rounded-xl object-cover"
+            />
+
+            <button
+            aria-label="image"
+              onClick={() =>
+                setImageFile(
+                  null
+                )
+              }
+              className="absolute top-2 right-2 rounded-full bg-black/70 p-1 text-white"
+            >
+              <X size={14} />
+            </button>
+
+            <div className="mt-2 text-xs text-emerald-500 font-medium">
+              ✓ Image selected successfully
             </div>
-          ) : (
-            <Send size={15} />
-          )}
-        </button>
+          </div>
+        )}
+
+        <div className="mt-3 flex items-center justify-between">
+          <label className="cursor-pointer">
+            <input
+              hidden
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                setImageFile(
+                  e.target.files?.[0] ??
+                    null
+                )
+              }
+            />
+
+            <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <ImageIcon size={18} />
+            </div>
+          </label>
+
+          <button
+            disabled={
+              sending ||
+              uploadingImage
+            }
+            onClick={
+              handleSubmit
+            }
+            className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center gap-2"
+          >
+            {sending ||
+            uploadingImage ? (
+              <Loader2
+                size={15}
+                className="animate-spin"
+              />
+            ) : (
+              <Send size={15} />
+            )}
+
+            {uploadingImage
+              ? "Uploading..."
+              : sending
+              ? "Posting..."
+              : "Post"}
+          </button>
+        </div>
       </div>
     </div>
   );

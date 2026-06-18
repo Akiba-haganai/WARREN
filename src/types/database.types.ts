@@ -58,26 +58,70 @@ export type Database = {
           },
         ]
       }
+      comment_votes: {
+        Row: {
+          comment_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_votes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string | null
           created_at: string | null
+          downvotes: number | null
+          gif_url: string | null
           id: string
+          image_url: string | null
           post_id: string | null
+          upvotes: number | null
           user_id: string | null
         }
         Insert: {
           content?: string | null
           created_at?: string | null
+          downvotes?: number | null
+          gif_url?: string | null
           id?: string
+          image_url?: string | null
           post_id?: string | null
+          upvotes?: number | null
           user_id?: string | null
         }
         Update: {
           content?: string | null
           created_at?: string | null
+          downvotes?: number | null
+          gif_url?: string | null
           id?: string
+          image_url?: string | null
           post_id?: string | null
+          upvotes?: number | null
           user_id?: string | null
         }
         Relationships: [
@@ -134,6 +178,38 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_votes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]

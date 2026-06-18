@@ -15,13 +15,14 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { darkMode, toggleTheme } = useThemeStore();
+  const { theme, toggleTheme } = useThemeStore();
   const user = useAuthStore((s) => s.user);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState({ posts: 0, comments: 0, karma: 0 });
   const [activities, setActivities] = useState<{ posts: any[]; comments: any[] }>({ posts: [], comments: [] });
   const [loading, setLoading] = useState(true);
 
+  const darkMode = theme === "dark"
   const { subscribed, requestPermission, unsubscribe } = usePushNotifications();
 
   useEffect(() => {

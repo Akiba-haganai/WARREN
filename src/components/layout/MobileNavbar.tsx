@@ -37,7 +37,7 @@ export default function MobileNavbar() {
 
   const darkMode =
     useThemeStore(
-      (s) => s.darkMode
+      (s) => s.theme === "dark"
     );
 
   const toggleTheme =

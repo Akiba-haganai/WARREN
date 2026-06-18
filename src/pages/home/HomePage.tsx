@@ -8,6 +8,7 @@ import PostCardSkeleton from "../../components/posts/PostCardSkeleton";
 import PullToRefresh from "../../components/ui/PullToRefresh";
 import CommentSection from "../../components/comments/CommentSection";
 import FeedToggle from "../../components/feed/FeedToggle";
+import FeedAd from "../../components/ads/FeedAd";
 
 import { Plus } from "lucide-react";
 
@@ -251,52 +252,61 @@ export default function HomePage() {
   ]);
 
   const handleVote = async (
-    id: string,
-    type: "up" | "down"
-  ) => {
-    if (
-      votedPostsRef.current.has(id)
-    ) {
-      return;
-    }
+  id: string,
+  type: "up" | "down"
+) => {
+  const user =
+    (await supabase.auth.getUser())
+      .data.user;
 
-    votedPostsRef.current.add(id);
+  if (!user) {
+    toast.error(
+      "Please sign in to vote"
+    );
+    return;
+  }
 
-    const originalPosts =
-      [...posts];
+  if (
+    votedPostsRef.current.has(id)
+  ) {
+    return;
+  }
 
-    setPosts((prev) =>
-      prev.map((post) => {
-        if (post.id !== id)
-          return post;
+  votedPostsRef.current.add(id);
 
-        return {
-          ...post,
-          upvotes:
-            type === "up"
-              ? (post.upvotes ??
-                  0) + 1
-              : post.upvotes,
-
-          downvotes:
-            type === "down"
-              ? (post.downvotes ??
-                  0) + 1
-              : post.downvotes,
-        };
-      })
+  try {
+    await votePost(
+      id,
+      user.id,
+      type
     );
 
-    try {
-      await votePost(id, type);
-    } catch {
-      setPosts(originalPosts);
-    } finally {
-      votedPostsRef.current.delete(
-        id
+    const updatedPosts =
+      await (
+        sortMode === "hot"
+          ? fetchHotPosts(20)
+          : fetchPosts({
+              sortBy: "new",
+            }).then(
+              (r) => r.data
+            )
       );
+
+    if (mountedRef.current) {
+      setPosts(updatedPosts);
     }
-  };
+  } catch (error) {
+    console.error(error);
+
+    toast.error(
+      "Failed to vote"
+    );
+  } finally {
+    votedPostsRef.current.delete(
+      id
+    );
+  }
+};
 
   const handleDelete = async (
     postId: string
@@ -415,26 +425,27 @@ export default function HomePage() {
               )}
 
             <div className="space-y-4">
-              {posts.map(
-                (post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    onVote={
-                      handleVote
-                    }
-                    onDelete={
-                      handleDelete
-                    }
-                    onCommentClick={() =>
-                      setActiveCommentPostId(
-                        post.id
-                      )
-                    }
-                  />
-                )
-              )}
-            </div>
+  {posts.map((post, index) => (
+    <div key={post.id}>
+      <PostCard
+        post={post}
+        onVote={handleVote}
+        onDelete={handleDelete}
+        onCommentClick={() =>
+          setActiveCommentPostId(
+            post.id
+          )
+        }
+      />
+
+      {(index + 1) % 7 === 0 && (
+        <div className="mt-4">
+          <FeedAd />
+        </div>
+      )}
+    </div>
+  ))}
+</div>
 
             {sortMode ===
               "new" && (

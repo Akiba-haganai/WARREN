@@ -23,6 +23,9 @@ import ManageAnnouncementsPage from "../pages/admin/ManageAnnouncementsPage";
 
 import ResetPasswordPage from "../passwordManagement/ResetPasswordPage";
 import UpdatePasswordPage from "../passwordManagement/UpdatePasswordPage";
+import StudyHubPage from "../pages/study/StudyPage";
+import CampusMapPage from "../pages/map/Map";
+import CommunityPage from "../pages/community/CommunityPage";
 
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
@@ -220,6 +223,20 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+  path="/study-hub"
+  element={<StudyHubPage />}
+/>
+<Route
+  path="/campus-map"
+  element={<CampusMapPage />}
+/>
+
+<Route
+  path="/community"
+  element={<CommunityPage />}
+/>
 
         {/* ---------- Fallback ---------- */}
 

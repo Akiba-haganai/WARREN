@@ -227,7 +227,7 @@ export default function PostCard({
               alt={
                 displayName
               }
-              loading="lazy"
+              loading="eager"
               className="
                 h-11
                 w-11
@@ -453,7 +453,8 @@ export default function PostCard({
               post.image_url
             }
             alt="Post attachment"
-            loading="lazy"
+            loading="eager"
+            decoding="async"
             className="
               w-full
               max-h-[500px]

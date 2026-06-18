@@ -1,56 +1,74 @@
 import { create } from "zustand";
 
-interface ThemeStore {
-  darkMode: boolean;
+type Theme = "light" | "dark";
+
+interface ThemeState {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   initTheme: () => void;
 }
 
-export const useThemeStore = create<ThemeStore>((set) => ({
-  darkMode: false,
+export const useThemeStore = create<ThemeState>(
+  (set, get) => ({
+    theme: "light",
 
-  toggleTheme: () =>
-    set((state) => {
-      const next = !state.darkMode;
+    setTheme: (theme) => {
+      const html =
+        document.documentElement;
+
+      if (theme === "dark") {
+        html.classList.add("dark");
+      } else {
+        html.classList.remove("dark");
+      }
 
       localStorage.setItem(
         "theme",
-        next ? "dark" : "light"
+        theme
       );
 
-      document.documentElement.classList.toggle(
-        "dark",
-        next
+      set({ theme });
+    },
+
+    toggleTheme: () => {
+      const current =
+        get().theme;
+
+      get().setTheme(
+        current === "dark"
+          ? "light"
+          : "dark"
       );
+    },
 
-      return {
-        darkMode: next,
-      };
-    }),
+    initTheme: () => {
+      const savedTheme =
+        localStorage.getItem(
+          "theme"
+        ) as Theme | null;
 
-  initTheme: () => {
-    const savedTheme =
-      localStorage.getItem("theme");
+      const prefersDark =
+        window.matchMedia(
+          "(prefers-color-scheme: dark)"
+        ).matches;
 
-    const prefersDark =
-      window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
+      const theme =
+        savedTheme ??
+        (prefersDark
+          ? "dark"
+          : "light");
 
-    const isDark =
-      savedTheme === "dark"
-        ? true
-        : savedTheme === "light"
-        ? false
-        : prefersDark;
+      const html =
+        document.documentElement;
 
-    document.documentElement.classList.toggle(
-      "dark",
-      isDark
-    );
+      if (theme === "dark") {
+        html.classList.add("dark");
+      } else {
+        html.classList.remove("dark");
+      }
 
-    set({
-      darkMode: isDark,
-    });
-  },
-}));
+      set({ theme });
+    },
+  })
+);

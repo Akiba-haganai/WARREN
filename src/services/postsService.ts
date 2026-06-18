@@ -181,26 +181,190 @@ export async function createPost(
   return data;
 }
 
+
 export async function votePost(
   postId: string,
+  userId: string,
   type: "up" | "down"
 ) {
-  const column =
-    type === "up"
-      ? "upvotes"
-      : "downvotes";
+  const { data: existingVote, error: voteError } =
+    await supabase
+      .from("post_votes")
+      .select("id,vote_type")
+      .eq("post_id", postId)
+      .eq("user_id", userId)
+      .maybeSingle();
 
-  const { error } =
-    await supabase.rpc(
-      "increment",
-      {
-        table_name: "posts",
-        row_id: postId,
-        column_name: column,
-      }
-    );
+  if (voteError) throw voteError;
 
-  if (error) throw error;
+  // REMOVE EXISTING VOTE
+  if (
+    existingVote &&
+    existingVote.vote_type === type
+  ) {
+    const { error: deleteVoteError } =
+      await supabase
+        .from("post_votes")
+        .delete()
+        .eq("id", existingVote.id);
+
+    if (deleteVoteError)
+      throw deleteVoteError;
+
+    const {
+      data: post,
+      error: postError,
+    } = await supabase
+      .from("posts")
+      .select("upvotes,downvotes")
+      .eq("id", postId)
+      .single();
+
+    if (postError) throw postError;
+    if (!post) return;
+
+    const upvotes =
+      post.upvotes ?? 0;
+
+    const downvotes =
+      post.downvotes ?? 0;
+
+    const { error: updateError } =
+      await supabase
+        .from("posts")
+        .update({
+          upvotes:
+            type === "up"
+              ? Math.max(
+                  0,
+                  upvotes - 1
+                )
+              : upvotes,
+
+          downvotes:
+            type === "down"
+              ? Math.max(
+                  0,
+                  downvotes - 1
+                )
+              : downvotes,
+        })
+        .eq("id", postId);
+
+    if (updateError)
+      throw updateError;
+
+    return;
+  }
+
+  // SWITCH VOTE
+  if (existingVote) {
+    const { error: switchError } =
+      await supabase
+        .from("post_votes")
+        .update({
+          vote_type: type,
+        })
+        .eq("id", existingVote.id);
+
+    if (switchError)
+      throw switchError;
+
+    const {
+      data: post,
+      error: postError,
+    } = await supabase
+      .from("posts")
+      .select("upvotes,downvotes")
+      .eq("id", postId)
+      .single();
+
+    if (postError) throw postError;
+    if (!post) return;
+
+    const upvotes =
+      post.upvotes ?? 0;
+
+    const downvotes =
+      post.downvotes ?? 0;
+
+    const { error: updateError } =
+      await supabase
+        .from("posts")
+        .update({
+          upvotes:
+            type === "up"
+              ? upvotes + 1
+              : Math.max(
+                  0,
+                  upvotes - 1
+                ),
+
+          downvotes:
+            type === "down"
+              ? downvotes + 1
+              : Math.max(
+                  0,
+                  downvotes - 1
+                ),
+        })
+        .eq("id", postId);
+
+    if (updateError)
+      throw updateError;
+
+    return;
+  }
+
+  // FIRST VOTE
+  const { error: insertVoteError } =
+    await supabase
+      .from("post_votes")
+      .insert({
+        post_id: postId,
+        user_id: userId,
+        vote_type: type,
+      });
+
+  if (insertVoteError)
+    throw insertVoteError;
+
+  const {
+    data: post,
+    error: postError,
+  } = await supabase
+    .from("posts")
+    .select("upvotes,downvotes")
+    .eq("id", postId)
+    .single();
+
+  if (postError) throw postError;
+  if (!post) return;
+
+  const upvotes =
+    post.upvotes ?? 0;
+
+  const downvotes =
+    post.downvotes ?? 0;
+
+  const { error: updateError } =
+    await supabase
+      .from("posts")
+      .update({
+        upvotes:
+          type === "up"
+            ? upvotes + 1
+            : upvotes,
+
+        downvotes:
+          type === "down"
+            ? downvotes + 1
+            : downvotes,
+      })
+      .eq("id", postId);
+
+  if (updateError)
+    throw updateError;
 }
 
 export async function deletePost(
