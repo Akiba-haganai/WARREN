@@ -1,0 +1,188 @@
+import { supabase } from "../lib/supabase";
+import type { Database } from "../types/database.types";
+
+export type PostWithProfile =
+  Database["public"]["Tables"]["posts"]["Row"] & {
+    profiles: {
+      username: string | null;
+      avatar_url: string | null;
+      role: string | null;
+    } | null;
+    comments_count: number;
+  };
+
+// ─── Comment counts ───────────────────────────────────────────────────────────
+// Fetches counts only for the given post IDs — no full-table scan.
+async function getCommentCounts(postIds: string[]): Promise<Record<string, number>> {
+  if (postIds.length === 0) return {};
+
+  const { data } = await supabase
+    .from("comments")
+    .select("post_id")
+    .in("post_id", postIds);
+
+  const counts: Record<string, number> = {};
+  data?.forEach(({ post_id }) => {
+    if (!post_id) return;
+    counts[post_id] = (counts[post_id] ?? 0) + 1;
+  });
+  return counts;
+}
+
+// ─── Normalise the profiles join (Supabase sometimes returns array) ───────────
+function normaliseProfile(raw: any) {
+  return Array.isArray(raw.profiles)
+    ? (raw.profiles[0] ?? null)
+    : (raw.profiles ?? null);
+}
+
+// ─── Fetch paginated posts ────────────────────────────────────────────────────
+export async function fetchPosts({
+  cursor,
+  limit = 10,
+  sortBy = "hot",
+}: {
+  cursor?: string;
+  limit?: number;
+  sortBy?: "hot" | "new";
+} = {}): Promise<{ data: PostWithProfile[]; nextCursor: string | null }> {
+  let query = supabase
+    .from("posts")
+    .select("*, profiles(username, avatar_url, role)")
+    .limit(limit + 1);
+
+  if (sortBy === "hot") {
+    query = query.order("score", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+    if (cursor) query = query.lt("created_at", cursor);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const rows = data ?? [];
+  const hasMore = rows.length > limit;
+  const posts = hasMore ? rows.slice(0, limit) : rows;
+  const countMap = await getCommentCounts(posts.map((p) => p.id));
+
+  const enriched = posts.map((post: any) => ({
+    ...post,
+    profiles: normaliseProfile(post),
+    comments_count: countMap[post.id] ?? 0,
+  }));
+
+  return {
+    data: enriched as PostWithProfile[],
+    nextCursor:
+      hasMore && sortBy === "new"
+        ? enriched[enriched.length - 1].created_at
+        : null,
+  };
+}
+
+export async function fetchHotPosts(limit = 20) {
+  const result = await fetchPosts({ limit, sortBy: "hot" });
+  return result.data;
+}
+
+// ─── Create post ──────────────────────────────────────────────────────────────
+export async function createPost(
+  userId: string,
+  content: string,
+  imageUrl?: string | null
+) {
+  const { data, error } = await supabase
+    .from("posts")
+    .insert({ user_id: userId, content, image_url: imageUrl ?? null, upvotes: 0, downvotes: 0 })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ─── Vote on a post ───────────────────────────────────────────────────────────
+// Uses the existing `increment` RPC to avoid read-modify-write race conditions.
+// Pattern:
+//   • Same vote again  → delete vote record, decrement that column by 1
+//   • Switch vote      → update vote record, increment new col, decrement old col
+//   • New vote         → insert vote record, increment that column by 1
+export async function votePost(
+  postId: string,
+  userId: string,
+  type: "up" | "down"
+) {
+  // 1. Check for an existing vote
+  const { data: existing, error: fetchErr } = await supabase
+    .from("post_votes")
+    .select("id, vote_type")
+    .eq("post_id", postId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+
+  // ── Toggle off (clicking the same vote again) ─────────────────────────────
+  if (existing?.vote_type === type) {
+    await supabase.from("post_votes").delete().eq("id", existing.id);
+    // Decrement the matching column, floor at 0 via MAX in SQL
+    await supabase.rpc("decrement_vote", { p_post_id: postId, p_column: type === "up" ? "upvotes" : "downvotes" });
+    return;
+  }
+
+  // ── Switch vote ───────────────────────────────────────────────────────────
+  if (existing) {
+    await supabase.from("post_votes").update({ vote_type: type }).eq("id", existing.id);
+    const addCol    = type === "up" ? "upvotes"   : "downvotes";
+    const removeCol = type === "up" ? "downvotes" : "upvotes";
+    await supabase.rpc("increment", { table_name: "posts", column_name: addCol,    row_id: postId });
+    await supabase.rpc("decrement_vote", { p_post_id: postId, p_column: removeCol });
+    return;
+  }
+
+  // ── First vote ────────────────────────────────────────────────────────────
+  await supabase.from("post_votes").insert({ post_id: postId, user_id: userId, vote_type: type });
+  const col = type === "up" ? "upvotes" : "downvotes";
+  await supabase.rpc("increment", { table_name: "posts", column_name: col, row_id: postId });
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+export async function deletePost(postId: string) {
+  const { error } = await supabase.from("posts").delete().eq("id", postId);
+  if (error) throw error;
+}
+
+export async function deleteComment(commentId: string) {
+  const { error } = await supabase.from("comments").delete().eq("id", commentId);
+  if (error) throw error;
+}
+
+// ─── Realtime ─────────────────────────────────────────────────────────────────
+export function subscribeToPosts(callback: (payload: any) => void) {
+  return supabase
+    .channel("posts-live")
+    .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, callback)
+    .subscribe();
+}
+
+// ─── Moderation queries ───────────────────────────────────────────────────────
+export async function fetchAllPostsForModeration() {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*, profiles(username, avatar_url, role)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((post: any) => ({
+    ...post,
+    profiles: normaliseProfile(post),
+    comments_count: 0,
+  })) as PostWithProfile[];
+}
+
+export async function fetchAllCommentsForModeration() {
+  const { data, error } = await supabase
+    .from("comments")
+    .select("*, profiles(username, role)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}

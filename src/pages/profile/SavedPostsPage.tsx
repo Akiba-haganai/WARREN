@@ -51,6 +51,7 @@ export default function SavedPostsPage() {
                 ...item.posts,
                 comments_count: 0,
               }}
+              userVote={null}
               onVote={() => {}}
               onDelete={() => handleUnsave(item.posts.id)}
             />

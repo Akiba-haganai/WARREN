@@ -141,6 +141,149 @@ export type Database = {
           },
         ]
       }
+      communities: {
+        Row: {
+          cover_color: string
+          created_at: string
+          created_by: string | null
+          description: string
+          icon: string
+          id: string
+          name: string
+          parent_id: string | null
+          type: string
+          updated_at: string
+          year: string | null
+        }
+        Insert: {
+          cover_color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          type?: string
+          updated_at?: string
+          year?: string | null
+        }
+        Update: {
+          cover_color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          type?: string
+          updated_at?: string
+          year?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      map_pins: {
+        Row: {
+          category: Database["public"]["Enums"]["pin_category"]
+          contact: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          floor: string | null
+          hours: string | null
+          id: string
+          photos: string[] | null
+          title: string
+          x_percent: number
+          y_percent: number
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["pin_category"]
+          contact?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          floor?: string | null
+          hours?: string | null
+          id?: string
+          photos?: string[] | null
+          title: string
+          x_percent: number
+          y_percent: number
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["pin_category"]
+          contact?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          floor?: string | null
+          hours?: string | null
+          id?: string
+          photos?: string[] | null
+          title?: string
+          x_percent?: number
+          y_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_pins_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -370,6 +513,42 @@ export type Database = {
           },
         ]
       }
+      saved_materials: {
+        Row: {
+          created_at: string
+          id: string
+          material_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          material_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          material_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_materials_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_posts: {
         Row: {
           created_at: string | null
@@ -399,12 +578,75 @@ export type Database = {
           },
         ]
       }
+      study_materials: {
+        Row: {
+          created_at: string
+          description: string | null
+          download_count: number
+          external_url: string | null
+          file_url: string | null
+          id: string
+          is_pinned: boolean
+          material_type: string
+          subject: string
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          uploaded_by: string
+          year_group: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          external_url?: string | null
+          file_url?: string | null
+          id?: string
+          is_pinned?: boolean
+          material_type?: string
+          subject: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          uploaded_by: string
+          year_group?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          external_url?: string | null
+          file_url?: string | null
+          id?: string
+          is_pinned?: boolean
+          material_type?: string
+          subject?: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string
+          uploaded_by?: string
+          year_group?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_materials_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       can_create_post: { Args: { p_user_id: string }; Returns: boolean }
+      decrement_vote: {
+        Args: { p_column: string; p_post_id: string }
+        Returns: undefined
+      }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -420,6 +662,16 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "student"
+      pin_category:
+        | "registration"
+        | "academics"
+        | "finance"
+        | "student_union"
+        | "health"
+        | "library"
+        | "dining"
+        | "transport"
+        | "general"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -548,6 +800,17 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "student"],
+      pin_category: [
+        "registration",
+        "academics",
+        "finance",
+        "student_union",
+        "health",
+        "library",
+        "dining",
+        "transport",
+        "general",
+      ],
     },
   },
 } as const

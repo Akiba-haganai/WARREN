@@ -6,8 +6,8 @@ import {
   fetchAllCommentsForModeration,
   deletePost,
   deleteComment,
-} from "../../services/postsService";
-import type { PostWithProfile } from "../../services/postsService";
+} from "../../services/oldpostsService";
+import type { PostWithProfile } from "../../services/oldpostsService";
 import { Trash2, AlertTriangle } from "lucide-react";
 
 export default function ModerationPage() {

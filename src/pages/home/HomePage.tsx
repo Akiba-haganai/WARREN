@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
+
 
 import AppShell from "../../components/layout/AppShell";
 import CreatePostSheet from "../../components/posts/CreatePostSheet";
@@ -9,454 +9,157 @@ import PullToRefresh from "../../components/ui/PullToRefresh";
 import CommentSection from "../../components/comments/CommentSection";
 import FeedToggle from "../../components/feed/FeedToggle";
 import FeedAd from "../../components/ads/FeedAd";
-
 import { Plus } from "lucide-react";
 
-import {
-  fetchPosts,
-  fetchHotPosts,
-  subscribeToPosts,
-  votePost,
-  deletePost,
-} from "../../services/postsService";
-
-import type { PostWithProfile } from "../../services/postsService";
-import { supabase } from "../../lib/supabase";
+import { usePostStore } from "../../store/postStore";
 
 export default function HomePage() {
-  const [openSheet, setOpenSheet] =
-    useState(false);
-
-  const [posts, setPosts] =
-    useState<PostWithProfile[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [loadingMore, setLoadingMore] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [cursor, setCursor] =
-    useState<string>();
-
-  const [hasMore, setHasMore] =
-    useState(true);
-
-  const [sortMode, setSortMode] =
-    useState<"hot" | "new">("hot");
-
-  const [
-    activeCommentPostId,
-    setActiveCommentPostId,
-  ] = useState<string | null>(null);
-
-  const observerRef =
-    useRef<HTMLDivElement | null>(null);
-
-  const mountedRef =
-    useRef(true);
-
-  const refreshingRef =
-    useRef(false);
-
-  const votedPostsRef =
-    useRef<Set<string>>(new Set());
-
-  const loadPosts = useCallback(
-    async (refetch = false) => {
-      try {
-        if (!mountedRef.current)
-          return;
-
-        if (sortMode === "hot") {
-          setLoading(true);
-
-          const data =
-            await fetchHotPosts(20);
-
-          if (!mountedRef.current)
-            return;
-
-          setPosts(data);
-          setHasMore(false);
-          setError("");
-
-          return;
-        }
-
-        if (refetch) {
-          setLoading(true);
-          setPosts([]);
-          setCursor(undefined);
-          setHasMore(true);
-        }
-
-        const {
-          data,
-          nextCursor,
-        } = await fetchPosts({
-          cursor: refetch
-            ? undefined
-            : cursor,
-          sortBy: "new",
-        });
-
-        if (!mountedRef.current)
-          return;
-
-        if (refetch) {
-          setPosts(data);
-        } else {
-          setPosts((prev) => [
-            ...prev,
-            ...data,
-          ]);
-        }
-
-        setCursor(
-          nextCursor ?? undefined
-        );
-
-        setHasMore(
-          Boolean(nextCursor)
-        );
-
-        setError("");
-      } catch (err: any) {
-        console.error(err);
-
-        setError(
-          err?.message ||
-            "Failed to load posts"
-        );
-      } finally {
-        if (mountedRef.current) {
-          setLoading(false);
-          setLoadingMore(false);
-        }
-      }
-    },
-    [cursor, sortMode]
-  );
-
-  const handleRefresh =
-    async () => {
-      if (refreshingRef.current)
-        return;
-
-      refreshingRef.current =
-        true;
-
-      try {
-        await loadPosts(true);
-
-        toast.success(
-          "Feed refreshed"
-        );
-      } finally {
-        refreshingRef.current =
-          false;
-      }
-    };
-
-  useEffect(() => {
-    mountedRef.current = true;
-
-    loadPosts(true);
-
-    return () => {
-      mountedRef.current = false;
-    };
-  }, [sortMode]);
-
-  useEffect(() => {
-    const channel =
-      subscribeToPosts(
-        (payload: any) => {
-          const post =
-            payload?.new;
-
-          if (!post) return;
-
-          setPosts((prev) => {
-            const exists =
-              prev.some(
-                (p) =>
-                  p.id ===
-                  post.id
-              );
-
-            if (exists)
-              return prev;
-
-            return [
-              post,
-              ...prev,
-            ];
-          });
-        }
-      );
-
-    return () => {
-      supabase.removeChannel(
-        channel
-      );
-    };
-  }, []);
-
-  useEffect(() => {
-    if (
-      sortMode !== "new" ||
-      !observerRef.current
-    ) {
-      return;
-    }
-
-    const observer =
-      new IntersectionObserver(
-        (entries) => {
-          const entry =
-            entries[0];
-
-          if (
-            entry.isIntersecting &&
-            hasMore &&
-            !loading &&
-            !loadingMore
-          ) {
-            setLoadingMore(true);
-            loadPosts(false);
-          }
-        },
-        {
-          threshold: 0.1,
-        }
-      );
-
-    observer.observe(
-      observerRef.current
-    );
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [
-    hasMore,
+  const {
+    posts,
     loading,
     loadingMore,
-    loadPosts,
+    error,
+    hasMore,
     sortMode,
-  ]);
+    setSortMode,
+    loadMore,
+    refresh,
+    vote,
+    removePost,
+    startRealtime,
+    userVotes, // reactive user votes map
+  } = usePostStore();
 
-  const handleVote = async (
-  id: string,
-  type: "up" | "down"
-) => {
-  const user =
-    (await supabase.auth.getUser())
-      .data.user;
+  const [openSheet, setOpenSheet] = useState(false);
+  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
+  const observerRef = useRef<HTMLDivElement | null>(null);
+  const realtimeCleanup = useRef<(() => void) | null>(null);
 
-  if (!user) {
-    toast.error(
-      "Please sign in to vote"
+  // Fetch initial posts and start real-time subscription
+  useEffect(() => {
+    refresh();
+    realtimeCleanup.current = startRealtime();
+    return () => {
+      realtimeCleanup.current?.();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Infinite scroll observer for "new" mode
+  useEffect(() => {
+    if (sortMode !== "new" || !observerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
     );
-    return;
-  }
+    observer.observe(observerRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, loadMore, sortMode]);
 
-  if (
-    votedPostsRef.current.has(id)
-  ) {
-    return;
-  }
+  const handleVote = async (postId: string, type: "up" | "down") => {
+    await vote(postId, type);
+  };
 
-  votedPostsRef.current.add(id);
-
-  try {
-    await votePost(
-      id,
-      user.id,
-      type
-    );
-
-    const updatedPosts =
-      await (
-        sortMode === "hot"
-          ? fetchHotPosts(20)
-          : fetchPosts({
-              sortBy: "new",
-            }).then(
-              (r) => r.data
-            )
-      );
-
-    if (mountedRef.current) {
-      setPosts(updatedPosts);
-    }
-  } catch (error) {
-    console.error(error);
-
-    toast.error(
-      "Failed to vote"
-    );
-  } finally {
-    votedPostsRef.current.delete(
-      id
-    );
-  }
-};
-
-  const handleDelete = async (
-    postId: string
-  ) => {
-    const backup =
-      [...posts];
-
-    setPosts((prev) =>
-      prev.filter(
-        (p) => p.id !== postId
-      )
-    );
-
-    try {
-      await deletePost(postId);
-    } catch {
-      setPosts(backup);
-    }
+  const handleDelete = async (postId: string) => {
+    await removePost(postId);
   };
 
   return (
     <>
       <AppShell>
-        <PullToRefresh
-          onRefresh={
-            handleRefresh
-          }
-        >
+        <PullToRefresh onRefresh={refresh}>
           <div className="px-4 pb-28">
-            <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl py-3 mb-4">
-              <h1 className="text-2xl font-bold">
+            {/* Sticky header with info and toggle */}
+            <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl pt-4 pb-3 mb-4">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Home Feed
               </h1>
-
-              <p className="text-sm opacity-70">
-                Live campus feed
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Live campus conversations
               </p>
 
-              <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+              {/* Guidelines card – prettier */}
+              <div className="mt-4 rounded-2xl border border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-slate-900 p-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                      Community
-                      Guidelines
+                      📜 Community Guidelines
                     </p>
-
-                    <p className="text-xs opacity-70 mt-1">
-                      Users are limited
-                      to 10 posts per
-                      hour to reduce
-                      spam and improve
-                      feed quality.
+                    <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-1">
+                      Users are limited to 10 posts per hour to keep the feed high‑quality.
                     </p>
                   </div>
-
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-blue-600">
-                      10
-                    </p>
-
-                    <p className="text-xs opacity-70">
-                      posts/hr
-                    </p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">10</p>
+                    <p className="text-xs text-blue-600/70 dark:text-blue-400/70">posts/hr</p>
                   </div>
                 </div>
               </div>
 
+              {/* Feed toggle */}
               <div className="mt-4">
-                <FeedToggle
-                  active={sortMode}
-                  onChange={
-                    setSortMode
-                  }
-                />
+                <FeedToggle active={sortMode} onChange={setSortMode} />
               </div>
             </div>
 
-            {loading &&
-              posts.length ===
-                0 && (
-                <div className="space-y-4">
-                  {[...Array(3)].map(
-                    (_, i) => (
-                      <PostCardSkeleton
-                        key={i}
-                      />
-                    )
-                  )}
-                </div>
-              )}
-
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 p-3 rounded-2xl mb-4">
-                {error}
+            {/* Skeleton loading */}
+            {loading && posts.length === 0 && (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <PostCardSkeleton key={i} />
+                ))}
               </div>
             )}
 
-            {!loading &&
-              posts.length ===
-                0 && (
-                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center">
-                  <div className="text-5xl mb-3">
-                    🎓
-                  </div>
+            {/* Error state */}
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 p-4 rounded-2xl mb-4 text-sm flex items-center gap-2">
+                <span>⚠️</span> {error}
+              </div>
+            )}
 
-                  <h2 className="font-bold text-lg">
-                    No posts yet
-                  </h2>
+            {/* Empty state */}
+            {!loading && posts.length === 0 && !error && (
+              <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center">
+                <div className="text-5xl mb-3">🎓</div>
+                <h2 className="font-bold text-lg text-slate-900 dark:text-white">
+                  No posts yet
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                  Be the first student to start a conversation.
+                </p>
+              </div>
+            )}
 
-                  <p className="text-sm opacity-70 mt-2">
-                    Be the first
-                    student to start
-                    a conversation.
-                  </p>
-                </div>
-              )}
-
+            {/* Posts list */}
             <div className="space-y-4">
-  {posts.map((post, index) => (
-    <div key={post.id}>
-      <PostCard
-        post={post}
-        onVote={handleVote}
-        onDelete={handleDelete}
-        onCommentClick={() =>
-          setActiveCommentPostId(
-            post.id
-          )
-        }
-      />
+              {posts.map((post, index) => (
+                <div key={post.id}>
+                  <PostCard
+                    post={post}
+                    userVote={userVotes[post.id] ?? null}
+                    onVote={handleVote}
+                    onDelete={handleDelete}
+                    onCommentClick={() => setActiveCommentPostId(post.id)}
+                  />
+                  {/* Insert ad after every 7 posts */}
+                  {(index + 1) % 7 === 0 && (
+                    <div className="mt-4">
+                      <FeedAd />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
 
-      {(index + 1) % 7 === 0 && (
-        <div className="mt-4">
-          <FeedAd />
-        </div>
-      )}
-    </div>
-  ))}
-</div>
-
-            {sortMode ===
-              "new" && (
+            {/* Infinite scroll sentinel + loading skeletons for "new" mode */}
+            {sortMode === "new" && (
               <>
-                <div
-                  ref={
-                    observerRef
-                  }
-                  className="h-4"
-                />
-
+                <div ref={observerRef} className="h-4" />
                 {loadingMore && (
                   <div className="mt-4 space-y-4">
                     <PostCardSkeleton />
@@ -466,71 +169,54 @@ export default function HomePage() {
               </>
             )}
 
-            {!hasMore &&
-              posts.length >
-                0 &&
-              sortMode ===
-                "new" && (
-                <p className="text-center text-sm opacity-60 mt-6">
-                  You're all
-                  caught up 🎉
-                </p>
-              )}
+            {/* End‑of‑feed message */}
+            {!hasMore && posts.length > 0 && sortMode === "new" && (
+              <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-8 pb-4">
+                🎉 You're all caught up
+              </p>
+            )}
           </div>
         </PullToRefresh>
       </AppShell>
 
+      {/* Floating “Post” button */}
+      <button
+        onClick={() => setOpenSheet(true)}
+        className="fixed bottom-24 right-5 z-40 h-14 px-5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-xl shadow-blue-500/30 flex items-center gap-2 hover:scale-105 transition-all active:scale-95 animate-bounce-subtle"
+      >
+        <Plus size={20} />
+        <span className="font-semibold text-sm">Post</span>
+      </button>
+
+      {/* Create post sheet */}
+      <CreatePostSheet
+        open={openSheet}
+        onClose={() => setOpenSheet(false)}
+        onCreated={() => {
+          setOpenSheet(false);
+          refresh();
+        }}
+      />
+
+      {/* Comment section drawer */}
       {activeCommentPostId && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
-          onClick={() =>
-            setActiveCommentPostId(
-              null
-            )
-          }
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setActiveCommentPostId(null)}
         >
           <div
             className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl p-4 animate-slide-up max-h-[80vh] overflow-hidden"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="overflow-y-auto max-h-[75vh]">
               <CommentSection
-                postId={
-                  activeCommentPostId
-                }
-                onClose={() =>
-                  setActiveCommentPostId(
-                    null
-                  )
-                }
+                postId={activeCommentPostId}
+                onClose={() => setActiveCommentPostId(null)}
               />
             </div>
           </div>
         </div>
       )}
-
-      <CreatePostSheet
-        open={openSheet}
-        onClose={() =>
-          setOpenSheet(false)
-        }
-        onCreated={() => {
-          setOpenSheet(false);
-          loadPosts(true);
-        }}
-      />
-
-      <button
-        onClick={() =>
-          setOpenSheet(true)
-        }
-        className="fixed bottom-24 right-5 z-40 h-14 px-5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-xl flex items-center gap-2 hover:scale-105 transition-all active:scale-95 animate-bounce-subtle"
-      >
-        <Plus size={20} />
-        Post
-      </button>
     </>
   );
 }

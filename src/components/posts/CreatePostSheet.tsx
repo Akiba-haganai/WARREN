@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Image as ImageIcon, Send, Clock } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { createPost } from "../../services/postsService";
+import { createPost } from "../../services/oldpostsService";
 import { supabase } from "../../lib/supabase";
 
 interface Props {

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-import type { PostWithProfile } from "../../services/postsService";
+import type { PostWithProfile } from "../../services/oldpostsService";
 import { useUserRole } from "../../hooks/useUserRole";
 import { useAuthStore } from "../../store/authStore";
 import { reportPost } from "../../services/reportService";
@@ -23,622 +23,237 @@ import {
 
 interface Props {
   post: PostWithProfile;
-  onVote: (
-    id: string,
-    type: "up" | "down"
-  ) => void;
-  onDelete?: (
-    id: string
-  ) => void;
+  userVote: "up" | "down" | null;
+  onVote: (id: string, type: "up" | "down") => void;
+  onDelete?: (id: string) => void;
   onCommentClick?: () => void;
 }
 
 export default function PostCard({
   post,
+  userVote,
   onVote,
   onDelete,
   onCommentClick,
 }: Props) {
-  const { role } =
-    useUserRole();
+  const { role } = useUserRole();
+  const user = useAuthStore((s) => s.user);
+  const isOwner = user?.id === post.user_id;
+  const canDelete = isOwner || role === "moderator" || role === "admin";
+  const [saved, setSaved] = useState(false);
 
-  const user =
-    useAuthStore(
-      (s) => s.user
-    );
-
-  const isOwner =
-    user?.id ===
-    post.user_id;
-
-  const canDelete =
-    isOwner ||
-    role === "moderator" ||
-    role === "admin";
-
-  const [saved, setSaved] =
-    useState(false);
-
-  const displayName =
-    post.profiles
-      ?.username ??
-    "Anonymous";
-
-  const displayRole =
-    post.profiles?.role ??
-    "student";
-
-  const avatarUrl =
-    post.profiles
-      ?.avatar_url;
+  const displayName = post.profiles?.username ?? "Anonymous";
+  const displayRole = post.profiles?.role ?? "student";
+  const avatarUrl = post.profiles?.avatar_url;
 
   useEffect(() => {
     if (!user) return;
+    isPostSaved(user.id, post.id).then(setSaved).catch(() => {});
+  }, [user, post.id]);
 
-    isPostSaved(
-      user.id,
-      post.id
-    )
-      .then(setSaved)
-      .catch(() => {});
-  }, [
-    user,
-    post.id,
-  ]);
+  const handleReport = async () => {
+    if (!user) {
+      alert("Please sign in to report posts.");
+      return;
+    }
+    const reason = prompt("Reason for reporting?");
+    if (!reason?.trim()) return;
+    try {
+      await reportPost(post.id, user.id, reason.trim());
+      alert("Report submitted.");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit report.");
+    }
+  };
 
-  const handleReport =
-    async () => {
-      if (!user) {
-        alert(
-          "Please sign in to report posts."
-        );
-        return;
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/post/${post.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Warren",
+          text: post.content ?? undefined,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        alert("Link copied to clipboard.");
       }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-      const reason =
-        prompt(
-          "Reason for reporting?"
-        );
-
-      if (
-        !reason?.trim()
-      )
-        return;
-
-      try {
-        await reportPost(
-          post.id,
-          user.id,
-          reason.trim()
-        );
-
-        alert(
-          "Report submitted."
-        );
-      } catch (
-        error
-      ) {
-        console.error(
-          error
-        );
-
-        alert(
-          "Failed to submit report."
-        );
+  const handleSaveToggle = async () => {
+    if (!user) {
+      alert("Please sign in to save posts.");
+      return;
+    }
+    try {
+      if (saved) {
+        await unsavePost(user.id, post.id);
+        setSaved(false);
+      } else {
+        await savePost(user.id, post.id);
+        setSaved(true);
       }
-    };
-
-  const handleShare =
-    async () => {
-      const shareUrl = `${window.location.origin}/post/${post.id}`;
-
-      try {
-        if (
-          navigator.share
-        ) {
-          await navigator.share(
-            {
-              title:
-                "Warren",
-              text:
-                post.content ??
-                undefined,
-              url: shareUrl,
-            }
-          );
-        } else {
-          await navigator.clipboard.writeText(
-            shareUrl
-          );
-
-          alert(
-            "Link copied to clipboard."
-          );
-        }
-      } catch (
-        error
-      ) {
-        console.error(
-          error
-        );
-      }
-    };
-
-  const handleSaveToggle =
-    async () => {
-      if (!user) {
-        alert(
-          "Please sign in to save posts."
-        );
-        return;
-      }
-
-      try {
-        if (saved) {
-          await unsavePost(
-            user.id,
-            post.id
-          );
-
-          setSaved(
-            false
-          );
-        } else {
-          await savePost(
-            user.id,
-            post.id
-          );
-
-          setSaved(
-            true
-          );
-        }
-      } catch {
-        setSaved(
-          (prev) =>
-            !prev
-        );
-      }
-    };
+    } catch {
+      setSaved((prev) => !prev);
+    }
+  };
 
   return (
-    <article
-      className="
-        overflow-hidden
-        rounded-3xl
-        border
-        border-slate-200
-        dark:border-slate-800
-        bg-white
-        dark:bg-slate-900
-        shadow-sm
-        transition-all
-        duration-300
-        hover:shadow-xl
-      "
-    >
+    <article className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-shadow duration-300 hover:shadow-lg">
+      {/* Header: Avatar, name, role, time */}
       <div className="p-4 sm:p-5">
         <div className="flex items-start gap-3">
+          {/* Avatar */}
           {avatarUrl ? (
             <img
-              src={
-                avatarUrl
-              }
-              alt={
-                displayName
-              }
-              loading="eager"
-              className="
-                h-11
-                w-11
-                shrink-0
-                rounded-full
-                object-cover
-                border
-                border-slate-200
-                dark:border-slate-700
-              "
+              src={avatarUrl}
+              alt={displayName}
+              loading="lazy"
+              className="h-11 w-11 sm:h-12 sm:w-12 shrink-0 rounded-full object-cover border border-slate-200 dark:border-slate-700"
             />
           ) : (
-            <div
-              className="
-                h-11
-                w-11
-                shrink-0
-                rounded-full
-                bg-gradient-to-br
-                from-blue-600
-                to-cyan-500
-                text-white
-                flex
-                items-center
-                justify-center
-                font-bold
-                shadow-md
-              "
-            >
-              {displayName
-                .charAt(
-                  0
-                )
-                .toUpperCase()}
+            <div className="h-11 w-11 sm:h-12 sm:w-12 shrink-0 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold text-sm sm:text-base shadow-md">
+              {displayName.charAt(0).toUpperCase()}
             </div>
           )}
 
+          {/* Name, role, time */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3
-                className="
-                  font-semibold
-                  text-slate-900
-                  dark:text-white
-                  truncate
-                  max-w-[150px]
-                "
-              >
-                {
-                  displayName
-                }
+              <h3 className="font-semibold text-slate-900 dark:text-white truncate max-w-[150px] text-sm sm:text-base">
+                {displayName}
               </h3>
-
-              {displayRole ===
-                "admin" && (
-                <span
-                  className="
-                    inline-flex
-                    items-center
-                    gap-1
-                    rounded-full
-                    bg-red-100
-                    dark:bg-red-950/40
-                    px-2
-                    py-0.5
-                    text-[10px]
-                    font-bold
-                    uppercase
-                    text-red-600
-                    dark:text-red-400
-                  "
-                >
-                  <ShieldCheck
-                    size={
-                      10
-                    }
-                  />
+              {displayRole === "admin" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/40 px-2.5 py-0.5 text-[11px] font-bold uppercase text-red-600 dark:text-red-400">
+                  <ShieldCheck size={10} />
                   Admin
                 </span>
               )}
-
-              {displayRole ===
-                "moderator" && (
-                <span
-                  className="
-                    inline-flex
-                    items-center
-                    gap-1
-                    rounded-full
-                    bg-amber-100
-                    dark:bg-amber-950/40
-                    px-2
-                    py-0.5
-                    text-[10px]
-                    font-bold
-                    uppercase
-                    text-amber-600
-                    dark:text-amber-400
-                  "
-                >
-                  <ShieldCheck
-                    size={
-                      10
-                    }
-                  />
+              {displayRole === "moderator" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/40 px-2.5 py-0.5 text-[11px] font-bold uppercase text-amber-600 dark:text-amber-400">
+                  <ShieldCheck size={10} />
                   Mod
                 </span>
               )}
             </div>
-
-            <div
-              className="
-                mt-1
-                flex
-                items-center
-                gap-2
-                text-xs
-                opacity-60
-              "
-            >
-              <span>
-                {
-                  displayRole
-                }
-              </span>
-
-              <span>
-                •
-              </span>
-
+            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <span className="capitalize">{displayRole}</span>
+              <span>•</span>
               <span>
                 {post.created_at
-                  ? formatDistanceToNow(
-                      new Date(
-                        post.created_at
-                      ),
-                      {
-                        addSuffix:
-                          true,
-                      }
-                    )
+                  ? formatDistanceToNow(new Date(post.created_at), { addSuffix: true })
                   : "just now"}
               </span>
             </div>
           </div>
 
+          {/* Action buttons: Report, Delete */}
           <div className="flex items-center">
             <button
-              onClick={
-                handleReport
-              }
+              onClick={handleReport}
               aria-label="Report post"
-              className="
-                p-2
-                rounded-full
-                text-slate-500
-                hover:bg-slate-100
-                dark:hover:bg-slate-800
-              "
+              className="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
-              <Flag
-                size={16}
-              />
+              <Flag size={18} />
             </button>
-
-            {canDelete &&
-              onDelete && (
-                <button
-                  onClick={() =>
-                    onDelete(
-                      post.id
-                    )
-                  }
-                  aria-label="Delete post"
-                  className="
-                    p-2
-                    rounded-full
-                    text-slate-500
-                    hover:text-red-500
-                    hover:bg-red-50
-                    dark:hover:bg-red-950/30
-                  "
-                >
-                  <Trash2
-                    size={
-                      16
-                    }
-                  />
-                </button>
-              )}
+            {canDelete && onDelete && (
+              <button
+                onClick={() => onDelete(post.id)}
+                aria-label="Delete post"
+                className="p-2 rounded-full text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              >
+                <Trash2 size={18} />
+              </button>
+            )}
           </div>
         </div>
 
+        {/* Content */}
         {post.content && (
-          <p
-            className="
-              mt-4
-              whitespace-pre-wrap
-              break-words
-              text-sm
-              leading-7
-              text-slate-700
-              dark:text-slate-200
-            "
-          >
-            {
-              post.content
-            }
+          <p className="mt-4 whitespace-pre-wrap break-words text-sm sm:text-base leading-relaxed text-slate-700 dark:text-slate-200">
+            {post.content}
           </p>
         )}
       </div>
 
+      {/* Image */}
       {post.image_url && (
-        <div
-          className="
-            border-y
-            border-slate-100
-            dark:border-slate-800
-          "
-        >
+        <div className="border-y border-slate-100 dark:border-slate-800">
           <img
-            src={
-              post.image_url
-            }
+            src={post.image_url}
             alt="Post attachment"
-            loading="eager"
-            decoding="async"
-            className="
-              w-full
-              max-h-[500px]
-              object-cover
-              bg-slate-100
-              dark:bg-slate-800
-            "
+            loading="lazy"
+            className="w-full max-h-[500px] object-cover bg-slate-100 dark:bg-slate-800"
           />
         </div>
       )}
 
-      <div className="p-3">
-        <div
-          className="
-            grid
-            grid-cols-5
-            gap-2
-          "
+      {/* Action bar */}
+      <div className="px-3 py-3 sm:px-4 sm:py-3 grid grid-cols-5 gap-2">
+        {/* Upvote */}
+        <button
+          onClick={() => onVote(post.id, "up")}
+          className={`flex items-center justify-center gap-1.5 rounded-2xl py-3 sm:py-2.5 min-h-[44px] transition-colors ${
+            userVote === "up"
+              ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold"
+              : "bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-slate-600 dark:text-slate-300"
+          }`}
+          aria-label="Upvote"
         >
-          <button
-            onClick={() =>
-              onVote(
-                post.id,
-                "up"
-              )
-            }
-            className="
-              flex
-              items-center
-              justify-center
-              gap-1
-              rounded-2xl
-              py-2.5
-              bg-slate-50
-              dark:bg-slate-800
-              hover:bg-emerald-50
-              dark:hover:bg-emerald-950/30
-              hover:text-emerald-600
-              transition-colors
-            "
-          >
-            <ArrowBigUp
-              size={18}
-            />
+          <ArrowBigUp size={20} />
+          <span className="text-xs font-semibold">{post.upvotes ?? 0}</span>
+        </button>
 
-            <span
-              className="
-                text-xs
-                font-semibold
-              "
-            >
-              {post.upvotes ??
-                0}
-            </span>
-          </button>
+        {/* Downvote */}
+        <button
+          onClick={() => onVote(post.id, "down")}
+          className={`flex items-center justify-center gap-1.5 rounded-2xl py-3 sm:py-2.5 min-h-[44px] transition-colors ${
+            userVote === "down"
+              ? "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 font-semibold"
+              : "bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-600 dark:text-slate-300"
+          }`}
+          aria-label="Downvote"
+        >
+          <ArrowBigDown size={20} />
+          <span className="text-xs font-semibold">{post.downvotes ?? 0}</span>
+        </button>
 
-          <button
-            onClick={() =>
-              onVote(
-                post.id,
-                "down"
-              )
-            }
-            className="
-              flex
-              items-center
-              justify-center
-              gap-1
-              rounded-2xl
-              py-2.5
-              bg-slate-50
-              dark:bg-slate-800
-              hover:bg-rose-50
-              dark:hover:bg-rose-950/30
-              hover:text-rose-600
-              transition-colors
-            "
-          >
-            <ArrowBigDown
-              size={18}
-            />
+        {/* Comments */}
+        <button
+          onClick={onCommentClick}
+          className="flex items-center justify-center gap-1.5 rounded-2xl py-3 sm:py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400 text-slate-600 dark:text-slate-300 min-h-[44px] transition-colors"
+          aria-label="Comments"
+        >
+          <MessageCircle size={20} />
+          <span className="text-xs font-semibold">{post.comments_count ?? 0}</span>
+        </button>
 
-            <span
-              className="
-                text-xs
-                font-semibold
-              "
-            >
-              {post.downvotes ??
-                0}
-            </span>
-          </button>
+        {/* Share */}
+        <button
+          onClick={handleShare}
+          aria-label="Share post"
+          className="flex items-center justify-center rounded-2xl py-3 sm:py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 hover:text-cyan-600 dark:hover:text-cyan-400 text-slate-600 dark:text-slate-300 min-h-[44px] transition-colors"
+        >
+          <Share2 size={20} />
+        </button>
 
-          <button
-            onClick={
-              onCommentClick
-            }
-            className="
-              flex
-              items-center
-              justify-center
-              gap-1
-              rounded-2xl
-              py-2.5
-              bg-slate-50
-              dark:bg-slate-800
-              hover:bg-blue-50
-              dark:hover:bg-blue-950/30
-              hover:text-blue-600
-              transition-colors
-            "
-          >
-            <MessageCircle
-              size={18}
-            />
-
-            <span
-              className="
-                text-xs
-                font-semibold
-              "
-            >
-              {post.comments_count ??
-                0}
-            </span>
-          </button>
-
-          <button
-            aria-label="Share post"
-            onClick={
-              handleShare
-            }
-            className="
-              flex
-              items-center
-              justify-center
-              rounded-2xl
-              py-2.5
-              bg-slate-50
-              dark:bg-slate-800
-              hover:bg-cyan-50
-              dark:hover:bg-cyan-950/30
-              hover:text-cyan-600
-              transition-colors
-            "
-          >
-            <Share2
-              size={18}
-            />
-          </button>
-
-          <button
-            aria-label={
-              saved
-                ? "Unsave post"
-                : "Save post"
-            }
-            onClick={
-              handleSaveToggle
-            }
-            className={`
-              flex
-              items-center
-              justify-center
-              rounded-2xl
-              py-2.5
-              transition-colors
-              ${
-                saved
-                  ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600"
-                  : "bg-slate-50 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-600"
-              }
-            `}
-          >
-            <Bookmark
-              size={18}
-              fill={
-                saved
-                  ? "currentColor"
-                  : "none"
-              }
-            />
-          </button>
-        </div>
+        {/* Save */}
+        <button
+          onClick={handleSaveToggle}
+          aria-label={saved ? "Unsave post" : "Save post"}
+          className={`flex items-center justify-center rounded-2xl py-3 sm:py-2.5 min-h-[44px] transition-colors ${
+            saved
+              ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+              : "bg-slate-50 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:text-amber-600 dark:hover:text-amber-400 text-slate-600 dark:text-slate-300"
+          }`}
+        >
+          <Bookmark size={20} fill={saved ? "currentColor" : "none"} />
+        </button>
       </div>
     </article>
   );
