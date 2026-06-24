@@ -1,22 +1,4 @@
-const SW_VERSION = "1.0.2";
-
-// On activation, immediately wipe ALL old caches so a corrupted
-// cache from a bad previous install can never block the app from loading.
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          console.log(`[Warren SW] Deleting cache: ${key}`);
-          return caches.delete(key);
-        })
-      )
-    ).then(() => {
-      console.log(`[Warren SW ${SW_VERSION}] Activated and caches cleared.`);
-      return self.clients.claim();
-    })
-  );
-});
+const SW_VERSION = "1.0.3";
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;

@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-
     <meta name="google-adsense-account" content="ca-pub-2017155922423033" />
+    <meta name="mobile-web-app-capable" content="yes" />
 
     <!-- Theme: apply dark class before paint to avoid flash -->
     <script>
@@ -14,9 +14,7 @@
       } catch (_) {}
     </script>
 
-    <!-- SW recovery: only runs once per crash, never loops.
-         Uses a localStorage timestamp instead of a flag so we can
-         detect if the last reload also crashed (within 10 seconds = loop). -->
+    <!-- SW crash recovery — loop-safe, uses timestamp to detect reload loops -->
     <script>
       try {
         if ("serviceWorker" in navigator) {
@@ -26,13 +24,10 @@
           var recovering = lastRecovery && (now - parseInt(lastRecovery)) < tenSeconds;
 
           if (!recovering) {
-            // Not in a recovery loop — check if we should recover
             var crashFlag = localStorage.getItem("warren-crash-flag");
             if (crashFlag === "1") {
-              // Previous load crashed before App mounted — run recovery
               localStorage.setItem("warren-last-recovery", String(now));
               localStorage.removeItem("warren-crash-flag");
-
               navigator.serviceWorker.getRegistrations()
                 .then(function(regs) {
                   return Promise.all(regs.map(function(r) { return r.unregister(); }));
@@ -43,11 +38,9 @@
                 })
                 .then(function() { window.location.reload(); });
             } else {
-              // Fresh load — set crash flag, cleared in App.tsx on success
               localStorage.setItem("warren-crash-flag", "1");
             }
           }
-          // If recovering = true, we're in a loop — do nothing, let app load normally
         }
       } catch (_) {}
     </script>
@@ -68,7 +61,6 @@
       rel="stylesheet"
     />
   </head>
-
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

@@ -11,7 +11,7 @@ export default defineConfig({
       registerType: "prompt",
 
       includeAssets: [
-        "favicon.ico",
+        "favicon.svg",
         "pwa-192.png",
         "pwa-512.png",
       ],
@@ -25,10 +25,10 @@ export default defineConfig({
         display: "standalone",
         orientation: "portrait",
         icons: [
-          { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
-          { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
+          { src: "pwa-192.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512.png", sizes: "512x512", type: "image/png" },
           {
-            src: "/pwa-512.png",
+            src: "pwa-512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
@@ -53,36 +53,31 @@ export default defineConfig({
           /^\/push-sw\.js/,
         ],
 
-        // ── IMPORTANT: order matters — workbox matches top to bottom ──
         runtimeCaching: [
           {
-            // 1. AdSense — must be FIRST so it wins before the script
-            //    destination rule below can catch it. NetworkOnly means
-            //    if the request fails (ad blocker, offline) the error
-            //    stays on the network layer and never reaches the SW handler.
+            // Google ads — NetworkOnly, failure must never crash SW
             urlPattern: /googlesyndication\.com/i,
             handler: "NetworkOnly",
           },
           {
-            // 2. All Google infrastructure — fonts, maps, analytics, ads
+            // All Google infrastructure
             urlPattern:
               /^https:\/\/.*(googleapis|gstatic|doubleclick|googletagmanager)\.com/i,
             handler: "NetworkOnly",
           },
           {
-            // 3. Supabase — never cache auth or API responses
+            // Supabase — never cache auth or API responses
             urlPattern: /supabase\.co/i,
             handler: "NetworkOnly",
           },
           {
-            // 4. Any other cross-origin request not matched above —
-            //    pass through to network, don't cache third-party stuff
+            // All other cross-origin — pass through, don't cache
             urlPattern: ({ url }: { url: URL }) =>
               url.origin !== "https://warren-gold.vercel.app",
             handler: "NetworkOnly",
           },
           {
-            // 5. Same-origin static assets — cache these for offline support
+            // Same-origin static assets only
             urlPattern: ({ request }: { request: Request }) =>
               ["script", "style", "image", "font"].includes(
                 request.destination
