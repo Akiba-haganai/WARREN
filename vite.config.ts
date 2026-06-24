@@ -45,39 +45,44 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
 
-        // Only fall back to index.html for navigation requests (page loads),
-        // never for JS/CSS/asset requests. Prevents the SW from returning
-        // index.html when a JS bundle is requested, which causes a MIME crash.
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [
-          /\.[a-z0-9]+$/i,   // any URL with a file extension
-          /^\/workbox-/,      // workbox internals
-          /^\/sw\.js/,        // main service worker
-          /^\/push-sw\.js/,   // push service worker
+          /\.[a-z0-9]+$/i,
+          /^\/workbox-/,
+          /^\/sw\.js/,
+          /^\/push-sw\.js/,
         ],
 
+        // ── IMPORTANT: order matters — workbox matches top to bottom ──
         runtimeCaching: [
           {
-            // AdSense — NetworkOnly so a blocked/failed ad request never
-            // throws inside the SW and crashes the whole app
-            urlPattern: /^https:\/\/.*googlesyndication\.com\/.*/i,
+            // 1. AdSense — must be FIRST so it wins before the script
+            //    destination rule below can catch it. NetworkOnly means
+            //    if the request fails (ad blocker, offline) the error
+            //    stays on the network layer and never reaches the SW handler.
+            urlPattern: /googlesyndication\.com/i,
             handler: "NetworkOnly",
           },
           {
-            // All other Google infrastructure (fonts, apis, ads, analytics)
+            // 2. All Google infrastructure — fonts, maps, analytics, ads
             urlPattern:
-              /^https:\/\/.*(googleapis|gstatic|doubleclick|googletagmanager)\.com\/.*/i,
+              /^https:\/\/.*(googleapis|gstatic|doubleclick|googletagmanager)\.com/i,
             handler: "NetworkOnly",
           },
           {
-            // Supabase — never cache auth tokens or API responses
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            // 3. Supabase — never cache auth or API responses
+            urlPattern: /supabase\.co/i,
             handler: "NetworkOnly",
           },
           {
-            // Same-origin static assets only, matched by request destination
-            // rather than URL origin to avoid referencing browser globals
-            // (self, location) which don't exist in the Node/vite config context
+            // 4. Any other cross-origin request not matched above —
+            //    pass through to network, don't cache third-party stuff
+            urlPattern: ({ url }: { url: URL }) =>
+              url.origin !== "https://warren-gold.vercel.app",
+            handler: "NetworkOnly",
+          },
+          {
+            // 5. Same-origin static assets — cache these for offline support
             urlPattern: ({ request }: { request: Request }) =>
               ["script", "style", "image", "font"].includes(
                 request.destination
