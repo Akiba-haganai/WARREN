@@ -2,16 +2,52 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2017155922423033"
-     crossorigin="anonymous"></script>
-    <meta name="google-adsense-account" content="ca-pub-2017155922423033">
 
+    <!-- Google AdSense -->
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2017155922423033"
+      crossorigin="anonymous"
+    ></script>
+    <meta name="google-adsense-account" content="ca-pub-2017155922423033" />
+
+    <!-- Theme: apply dark class before paint to avoid flash -->
     <script>
-      const theme = localStorage.getItem("theme");
+      try {
+        if (localStorage.getItem("theme") === "dark") {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (_) {}
+    </script>
 
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-      }
+    <!-- SW crash recovery: if the app failed to load last time,
+         unregister all service workers and wipe caches, then reload.
+         The flag is set here and cleared in App.tsx on successful mount.
+         Wrapped in try/catch so a storage error never blocks the page. -->
+    <script>
+      try {
+        if (
+          "serviceWorker" in navigator &&
+          sessionStorage.getItem("warren-sw-recovery") === "needed"
+        ) {
+          sessionStorage.removeItem("warren-sw-recovery");
+          navigator.serviceWorker
+            .getRegistrations()
+            .then(function (registrations) {
+              return Promise.all(registrations.map(function (r) { return r.unregister(); }));
+            })
+            .then(function () { return caches.keys(); })
+            .then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            })
+            .then(function () { window.location.reload(); });
+        } else {
+          // Mark this load attempt — cleared on success in App.tsx.
+          // If the page crashes before App mounts, the flag stays and
+          // triggers the recovery block above on the next open.
+          sessionStorage.setItem("warren-sw-recovery", "needed");
+        }
+      } catch (_) {}
     </script>
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -23,17 +59,9 @@
 
     <title>Warren | Campus Social Network</title>
 
-    <link
-      rel="preconnect"
-      href="https://fonts.googleapis.com"
-    />
-
-    <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
-      crossorigin
-    />
-
+    <!-- Font preconnects -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
@@ -42,10 +70,6 @@
 
   <body>
     <div id="root"></div>
-
-    <script
-      type="module"
-      src="/src/main.tsx"
-    ></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
