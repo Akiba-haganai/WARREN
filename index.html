@@ -5,7 +5,7 @@
     <meta name="google-adsense-account" content="ca-pub-2017155922423033" />
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- Theme: apply dark class before paint to avoid flash -->
+    <!-- Theme: apply dark class before paint -->
     <script>
       try {
         if (localStorage.getItem("theme") === "dark") {
@@ -14,32 +14,26 @@
       } catch (_) {}
     </script>
 
-    <!-- SW crash recovery — loop-safe, uses timestamp to detect reload loops -->
+    <!-- Safe SW crash recovery – runs only once, no loops -->
     <script>
       try {
         if ("serviceWorker" in navigator) {
-          var lastRecovery = localStorage.getItem("warren-last-recovery");
-          var now = Date.now();
-          var tenSeconds = 10 * 1000;
-          var recovering = lastRecovery && (now - parseInt(lastRecovery)) < tenSeconds;
-
-          if (!recovering) {
-            var crashFlag = localStorage.getItem("warren-crash-flag");
-            if (crashFlag === "1") {
-              localStorage.setItem("warren-last-recovery", String(now));
-              localStorage.removeItem("warren-crash-flag");
-              navigator.serviceWorker.getRegistrations()
-                .then(function(regs) {
-                  return Promise.all(regs.map(function(r) { return r.unregister(); }));
-                })
-                .then(function() { return caches.keys(); })
-                .then(function(keys) {
-                  return Promise.all(keys.map(function(k) { return caches.delete(k); }));
-                })
-                .then(function() { window.location.reload(); });
-            } else {
-              localStorage.setItem("warren-crash-flag", "1");
-            }
+          var recoveryFlag = localStorage.getItem("warren-needs-recovery");
+          if (recoveryFlag === "1") {
+            // App didn't mount last time → clean all SW & cache, then reload
+            localStorage.removeItem("warren-needs-recovery");
+            navigator.serviceWorker.getRegistrations()
+              .then(function(regs) {
+                return Promise.all(regs.map(function(r) { return r.unregister(); }));
+              })
+              .then(function() { return caches.keys(); })
+              .then(function(keys) {
+                return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+              })
+              .then(function() { window.location.reload(); });
+          } else {
+            // Set flag – will be cleared when App mounts successfully
+            localStorage.setItem("warren-needs-recovery", "1");
           }
         }
       } catch (_) {}

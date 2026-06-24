@@ -8,8 +8,9 @@ export default function App() {
   const initializeTheme = useThemeStore((state) => state.initTheme);
 
   useEffect(() => {
+    // Clear recovery flag – we've successfully mounted!
     try {
-      localStorage.removeItem("warren-crash-flag");
+      localStorage.removeItem("warren-needs-recovery");
     } catch (_) {}
 
     initializeAuth();

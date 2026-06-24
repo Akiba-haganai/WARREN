@@ -2,28 +2,17 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
-import { registerSW } from "virtual:pwa-register";
 
-const updateSW = registerSW({
-  onNeedRefresh() {
-    const shouldUpdate = window.confirm(
-      "A new version of Warren is available. Update now?"
-    );
-    if (shouldUpdate) {
-      updateSW(true);
-    }
-  },
-  onOfflineReady() {
-    console.log("[Warren] App is ready to work offline.");
-  },
-  onRegistered(registration) {
-    if (!registration) return;
-    registration.update();
-    setInterval(() => registration.update(), 60 * 60 * 1000);
-  },
-  onRegisterError(error) {
-    console.error("[Warren] Service worker registration failed:", error);
-  },
+// ── PWA update handling ──────────────────────────────────────────────────────
+// The VitePWA plugin (registerType: "autoUpdate") fires this event when
+// a new version is waiting. We show a friendly prompt and reload.
+window.addEventListener("pwa:update-available", () => {
+  const shouldUpdate = window.confirm(
+    "A new version of Warren is available. Update now?"
+  );
+  if (shouldUpdate) {
+    window.location.reload();
+  }
 });
 
 const container = document.getElementById("root");
