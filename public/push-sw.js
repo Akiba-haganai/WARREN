@@ -1,4 +1,5 @@
-// public/push-sw.js
+const SW_VERSION = "1.0.1"; // increment when changing this file
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
@@ -23,17 +24,17 @@ self.addEventListener("notificationclick", (event) => {
   const url = event.notification.data?.url || "/";
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      // If a window is already open, focus it
-      for (const client of clientList) {
-        if (client.url.includes(url) && "focus" in client) {
-          return client.focus();
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(url) && "focus" in client) {
+            return client.focus();
+          }
         }
-      }
-      // Otherwise open new window
-      if (clients.openWindow) {
-        return clients.openWindow(url);
-      }
-    })
+        if (clients.openWindow) {
+          return clients.openWindow(url);
+        }
+      })
   );
 });

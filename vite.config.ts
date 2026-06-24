@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
 
       includeAssets: [
         "favicon.ico",
@@ -17,45 +17,58 @@ export default defineConfig({
       ],
 
       manifest: {
-  name: "Warren",
-  short_name: "Warren",
-  description: "Connect, share, and study together",
-  theme_color: "#2563eb",
-  background_color: "#ffffff",
-  display: "standalone",
-  orientation: "portrait",
-  icons: [
-    { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
-    { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
-    { src: "/pwa-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
-  ],
-},
+        name: "Warren",
+        short_name: "Warren",
+        description: "Connect, share, and study together",
+        theme_color: "#2563eb",
+        background_color: "#ffffff",
+        display: "standalone",
+        orientation: "portrait",
+        icons: [
+          { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "/pwa-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
 
       workbox: {
         importScripts: ["/push-sw.js"],
 
-        globPatterns: [
-          "**/*.{js,css,html,svg,png,ico}"
-        ],
+        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
 
         cleanupOutdatedCaches: true,
 
+        // Safe because updateSW(true) in main.tsx controls exactly when
+        // SKIP_WAITING is posted — the SW won't activate until the user
+        // confirms the prompt, so there's no race with the page reload.
         clientsClaim: true,
-
         skipWaiting: true,
 
         navigateFallback: "/index.html",
 
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*$/,
-            handler: "NetworkFirst",
+            // Exclude Supabase and any other external origins so auth tokens
+            // and API responses are never served from cache.
+            // urlPattern runs inside the built SW bundle (not Node/vite),
+            // so we avoid referencing `self` here to keep vite.config.ts
+            // type-clean — the exclusion list achieves the same result.
+            urlPattern: ({ url }: { url: URL }) =>
+              !url.hostname.includes("supabase.co") &&
+              !url.hostname.includes("googleapis.com") &&
+              !url.hostname.includes("gstatic.com") &&
+              url.protocol !== "chrome-extension:",
+            handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "api-cache",
+              cacheName: "static-assets",
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds:
-                  60 * 60 * 24,
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24,
               },
             },
           },
