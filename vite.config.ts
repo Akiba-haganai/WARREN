@@ -42,32 +42,51 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
 
         cleanupOutdatedCaches: true,
-
-        // Safe because updateSW(true) in main.tsx controls exactly when
-        // SKIP_WAITING is posted — the SW won't activate until the user
-        // confirms the prompt, so there's no race with the page reload.
         clientsClaim: true,
         skipWaiting: true,
 
+        // Only fall back to index.html for navigation requests (page loads),
+        // never for JS/CSS/asset requests. Prevents the SW from returning
+        // index.html when a JS bundle is requested, which causes a MIME crash.
         navigateFallback: "/index.html",
+        navigateFallbackDenylist: [
+          /\.[a-z0-9]+$/i,   // any URL with a file extension
+          /^\/workbox-/,      // workbox internals
+          /^\/sw\.js/,        // main service worker
+          /^\/push-sw\.js/,   // push service worker
+        ],
 
         runtimeCaching: [
           {
-            // Exclude Supabase and any other external origins so auth tokens
-            // and API responses are never served from cache.
-            // urlPattern runs inside the built SW bundle (not Node/vite),
-            // so we avoid referencing `self` here to keep vite.config.ts
-            // type-clean — the exclusion list achieves the same result.
-            urlPattern: ({ url }: { url: URL }) =>
-              !url.hostname.includes("supabase.co") &&
-              !url.hostname.includes("googleapis.com") &&
-              !url.hostname.includes("gstatic.com") &&
-              url.protocol !== "chrome-extension:",
+            // AdSense — NetworkOnly so a blocked/failed ad request never
+            // throws inside the SW and crashes the whole app
+            urlPattern: /^https:\/\/.*googlesyndication\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // All other Google infrastructure (fonts, apis, ads, analytics)
+            urlPattern:
+              /^https:\/\/.*(googleapis|gstatic|doubleclick|googletagmanager)\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // Supabase — never cache auth tokens or API responses
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // Same-origin static assets only, matched by request destination
+            // rather than URL origin to avoid referencing browser globals
+            // (self, location) which don't exist in the Node/vite config context
+            urlPattern: ({ request }: { request: Request }) =>
+              ["script", "style", "image", "font"].includes(
+                request.destination
+              ),
             handler: "StaleWhileRevalidate",
             options: {
               cacheName: "static-assets",
               expiration: {
-                maxEntries: 50,
+                maxEntries: 60,
                 maxAgeSeconds: 60 * 60 * 24,
               },
             },
