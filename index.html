@@ -3,9 +3,7 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- AdSense verification meta tag — safe to keep, makes no network requests.
-     Add the <script> tag back once Google approves ca-pub-2017155922423033. -->
-<meta name="google-adsense-account" content="ca-pub-2017155922423033" />
+    <meta name="google-adsense-account" content="ca-pub-2017155922423033" />
 
     <!-- Theme: apply dark class before paint to avoid flash -->
     <script>
@@ -16,29 +14,40 @@
       } catch (_) {}
     </script>
 
-    <!-- SW crash recovery: if the app failed to load last time,
-         unregister all service workers and wipe caches, then reload.
-         The flag is set here and cleared in App.tsx on successful mount.
-         Wrapped in try/catch so a storage error never blocks the page. -->
+    <!-- SW recovery: only runs once per crash, never loops.
+         Uses a localStorage timestamp instead of a flag so we can
+         detect if the last reload also crashed (within 10 seconds = loop). -->
     <script>
       try {
-        if (
-          "serviceWorker" in navigator &&
-          sessionStorage.getItem("warren-sw-recovery") === "needed"
-        ) {
-          sessionStorage.removeItem("warren-sw-recovery");
-          navigator.serviceWorker
-            .getRegistrations()
-            .then(function (registrations) {
-              return Promise.all(registrations.map(function (r) { return r.unregister(); }));
-            })
-            .then(function () { return caches.keys(); })
-            .then(function (keys) {
-              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-            })
-            .then(function () { window.location.reload(); });
-        } else {
-          sessionStorage.setItem("warren-sw-recovery", "needed");
+        if ("serviceWorker" in navigator) {
+          var lastRecovery = localStorage.getItem("warren-last-recovery");
+          var now = Date.now();
+          var tenSeconds = 10 * 1000;
+          var recovering = lastRecovery && (now - parseInt(lastRecovery)) < tenSeconds;
+
+          if (!recovering) {
+            // Not in a recovery loop — check if we should recover
+            var crashFlag = localStorage.getItem("warren-crash-flag");
+            if (crashFlag === "1") {
+              // Previous load crashed before App mounted — run recovery
+              localStorage.setItem("warren-last-recovery", String(now));
+              localStorage.removeItem("warren-crash-flag");
+
+              navigator.serviceWorker.getRegistrations()
+                .then(function(regs) {
+                  return Promise.all(regs.map(function(r) { return r.unregister(); }));
+                })
+                .then(function() { return caches.keys(); })
+                .then(function(keys) {
+                  return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+                })
+                .then(function() { window.location.reload(); });
+            } else {
+              // Fresh load — set crash flag, cleared in App.tsx on success
+              localStorage.setItem("warren-crash-flag", "1");
+            }
+          }
+          // If recovering = true, we're in a loop — do nothing, let app load normally
         }
       } catch (_) {}
     </script>

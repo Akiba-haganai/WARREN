@@ -8,9 +8,11 @@ export default function App() {
   const initializeTheme = useThemeStore((state) => state.initTheme);
 
   useEffect(() => {
-    // Clear the SW crash-recovery flag — if we reached this point,
-    // the app loaded successfully and no recovery is needed.
-    sessionStorage.removeItem("warren-sw-recovery");
+    // App mounted successfully — clear the crash flag so the recovery
+    // script in index.html doesn't trigger on the next load.
+    try {
+      localStorage.removeItem("warren-crash-flag");
+    } catch (_) {}
 
     initializeAuth();
     initializeTheme();
