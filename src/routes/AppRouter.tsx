@@ -1,4 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import AboutPage from "../pages/legal/AboutPage";
+import ContactPage from "../pages/legal/ContactPage";
+import PrivacyPage from "../pages/legal/PrivacyPage";
+import TermsPage from "../pages/legal/TermsPage";
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 import LoginPage from "../pages/auth/LoginPage";
@@ -91,6 +95,11 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* ── Legal / Static ───────────────────────────────────────────────────── */}
+<Route path="/about"   element={<AboutPage />} />
+<Route path="/contact" element={<ContactPage />} />
+<Route path="/privacy" element={<PrivacyPage />} />
+<Route path="/terms"   element={<TermsPage />} />
         {/* ── Public ──────────────────────────────────────────────────────── */}
         <Route path="/login"           element={<LoginPage />} />
         <Route path="/register"        element={<RegisterPage />} />

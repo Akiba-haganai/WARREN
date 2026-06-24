@@ -138,7 +138,8 @@ export default function HomePage() {
                       setActiveCommentPostOwner(post.user_id);
                     }}
                   />
-                  {(index + 1) % 7 === 0 && (
+                  {/* Ad after every 6th post */}
+                  {(index + 1) % 6 === 0 && (
                     <div className="mt-4">
                       <FeedAd />
                     </div>

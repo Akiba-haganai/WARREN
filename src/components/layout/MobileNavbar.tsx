@@ -41,9 +41,7 @@ export default function MobileNavbar() {
         const profile = await fetchProfile(user.id);
         if (profile?.username) setUsername(profile.username);
         if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
-      } catch (error) {
-        console.error(error);
-      }
+      } catch (error) { console.error(error); }
     }
     loadProfile();
   }, [user?.id]);
@@ -61,93 +59,111 @@ export default function MobileNavbar() {
   }, []);
 
   const displayName = username || "User";
+  const showAdminBadge = role === "admin" || role === "moderator";
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/85 dark:bg-slate-950/85 border-b border-slate-200 dark:border-slate-800 supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
-        <div className="h-16 px-4 flex items-center justify-between max-w-lg mx-auto">
+        <div className="h-14 sm:h-16 px-4 flex items-center justify-between max-w-lg mx-auto">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 shrink-0 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-black shadow-lg">
+          <Link to="/" className="flex items-center gap-2.5 min-w-0">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-black shadow-lg text-sm sm:text-base">
               W
             </div>
             <div className="min-w-0">
-              <h1 className="text-base font-black leading-none truncate">WARREN</h1>
-              <p className="text-[10px] opacity-60 truncate">Global Student Network</p>
+              <h1 className="text-sm sm:text-base font-black leading-none truncate">WARREN</h1>
+              <p className="text-[9px] sm:text-[10px] opacity-60 truncate">Global Student Network</p>
             </div>
           </Link>
 
-          {/* Right side: notification bell + avatar */}
-          <div className="flex items-center gap-1.5">
+          {/* Right side */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <NotificationBell />
 
             <div ref={menuRef} className="relative">
               <button
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-1.5 pl-2 pr-2.5 h-11 min-w-[44px] rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all duration-200 motion-safe:active:scale-[0.98]"
+                className="relative flex items-center gap-1.5 pl-1.5 pr-2 h-10 sm:h-11 min-w-[44px] rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all duration-200 motion-safe:active:scale-[0.98]"
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt={displayName} className="h-7 w-7 rounded-full object-cover" />
+                  <img src={avatarUrl} alt={displayName} className="h-6 w-6 sm:h-7 sm:w-7 rounded-full object-cover" />
                 ) : (
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">
                     {displayName.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <ChevronDown size={14} />
+                <ChevronDown size={14} className="hidden sm:block" />
+                {/* Admin/Mod badge on avatar button */}
+                {showAdminBadge && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-950">
+                    <Shield size={8} className="text-white" />
+                  </span>
+                )}
               </button>
 
               {open && (
-                <div className="absolute right-0 top-14 w-64 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                  {/* Profile summary – compact */}
-                  <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-3">
+                <div className="absolute right-0 top-12 w-52 sm:w-60 max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                  {/* Profile summary – extra compact */}
+                  <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
                       {avatarUrl ? (
-                        <img src={avatarUrl} alt={displayName} className="h-10 w-10 rounded-full object-cover" />
+                        <img src={avatarUrl} alt={displayName} className="h-8 w-8 rounded-full object-cover" />
                       ) : (
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-sm">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-xs">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">{displayName}</p>
-                        <p className="text-[11px] opacity-60 capitalize">{role || "student"}</p>
+                        <p className="text-xs font-semibold truncate">{displayName}</p>
+                        <p className="text-[10px] opacity-60 capitalize">{role || "student"}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Links – compact, single list */}
-                  <div className="py-1">
-                    <DropdownLink to="/profile" icon={<User size={16} />} label="Profile" />
-                    <DropdownLink to="/messages" icon={<MessageSquare size={16} />} label="Messages" />
-                    <DropdownLink to="/campus-map" icon={<MapPinned size={16} />} label="Campus Map" />
-                    <DropdownLink to="/events" icon={<Calendar size={16} />} label="Events" />
-                    <DropdownLink to="/search" icon={<Search size={16} />} label="Search" />
-                    <DropdownLink to="/ask-senior" icon={<MessageCircleQuestion size={16} />} label="Ask a Senior" />
-                    <DropdownLink to="/live" icon={<Radio size={16} />} label="Live Rooms" />
+                  {/* Links – ultra compact */}
+                  <div className="py-0.5">
+                    <DropdownLink to="/profile" icon={<User size={14} />} label="Profile" />
+                    <DropdownLink to="/messages" icon={<MessageSquare size={14} />} label="Messages" />
+                    <DropdownLink to="/campus-map" icon={<MapPinned size={14} />} label="Campus Map" />
+                    <DropdownLink to="/events" icon={<Calendar size={14} />} label="Events" />
+                    <DropdownLink to="/search" icon={<Search size={14} />} label="Search" />
+                    <DropdownLink to="/ask-senior" icon={<MessageCircleQuestion size={14} />} label="Ask a Senior" />
+                    <DropdownLink to="/live" icon={<Radio size={14} />} label="Live Rooms" />
 
                     {(role === "admin" || role === "moderator") && (
-                      <DropdownLink to="/moderator" icon={<Shield size={16} />} label="Mod Dashboard" />
+                      <DropdownLink to="/moderator" icon={<Shield size={14} />} label="Mod Dashboard" />
                     )}
                     {role === "admin" && (
-                      <DropdownLink to="/admin" icon={<Shield size={16} />} label="Admin Dashboard" />
+                      <DropdownLink to="/admin" icon={<Shield size={14} />} label="Admin Dashboard" />
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="border-t border-slate-100 dark:border-slate-800 py-1">
+                  {/* Actions – ultra compact */}
+                  <div className="border-t border-slate-100 dark:border-slate-800 py-0.5">
                     <button
                       onClick={() => { toggleTheme(); setOpen(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 min-h-[44px] text-sm text-left active:bg-slate-100 dark:active:bg-slate-800 transition-colors duration-200"
+                      className="w-full flex items-center gap-2 px-3 py-2 min-h-[44px] text-xs text-left active:bg-slate-100 dark:active:bg-slate-800 transition-colors duration-200"
                     >
-                      {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                      {darkMode ? <Sun size={16} /> : <Moon size={16} />}
                       {darkMode ? "Light Mode" : "Dark Mode"}
                     </button>
                     <button
                       onClick={() => { logout(); setOpen(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 min-h-[44px] text-sm text-left text-red-500 active:bg-red-50 dark:active:bg-red-950/30 transition-colors duration-200"
+                      className="w-full flex items-center gap-2 px-3 py-2 min-h-[44px] text-xs text-left text-red-500 active:bg-red-50 dark:active:bg-red-950/30 transition-colors duration-200"
                     >
-                      <LogOut size={20} /> Logout
+                      <LogOut size={16} /> Logout
                     </button>
+                  </div>
+
+                  {/* Legal links – super subtle */}
+                  <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-2 text-center">
+                    <Link to="/about" className="text-[10px] text-slate-400 dark:text-slate-500 hover:underline">About</Link>
+                    <span className="mx-1.5 text-slate-300 dark:text-slate-600">·</span>
+                    <Link to="/privacy" className="text-[10px] text-slate-400 dark:text-slate-500 hover:underline">Privacy</Link>
+                    <span className="mx-1.5 text-slate-300 dark:text-slate-600">·</span>
+                    <Link to="/terms" className="text-[10px] text-slate-400 dark:text-slate-500 hover:underline">Terms</Link>
+                    <span className="mx-1.5 text-slate-300 dark:text-slate-600">·</span>
+                    <Link to="/contact" className="text-[10px] text-slate-400 dark:text-slate-500 hover:underline">Contact</Link>
                   </div>
                 </div>
               )}
@@ -155,7 +171,7 @@ export default function MobileNavbar() {
           </div>
         </div>
       </header>
-      <div className="h-16" />
+      <div className="h-14 sm:h-16" />
     </>
   );
 }
@@ -165,7 +181,7 @@ function DropdownLink({ to, icon, label }: { to: string; icon: React.ReactNode; 
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 px-4 py-3 min-h-[44px] text-sm active:bg-slate-100 dark:active:bg-slate-800 transition-colors duration-200"
+      className="flex items-center gap-2 px-3 py-2 min-h-[44px] text-xs active:bg-slate-100 dark:active:bg-slate-800 transition-colors duration-200"
     >
       {icon}
       {label}

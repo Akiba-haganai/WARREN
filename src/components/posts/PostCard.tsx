@@ -66,6 +66,7 @@ export default function PostCard({
   const isOwner = user?.id === post.user_id;
   const canDelete = isOwner || role === "moderator" || role === "admin";
   const [saved, setSaved] = useState(false);
+  const [sharing, setSharing] = useState(false); // New: share guard
 
   const isAnonymous = post.is_anonymous ?? false;
   const canSeeAuthor = role === "admin" || role === "moderator";
@@ -80,7 +81,6 @@ export default function PostCard({
     ? null
     : post.profiles?.avatar_url;
 
-  // ─── Reactions state ────────────────────────────────────────────────────────
   const [reactions, setReactions] = useState<Reaction[]>([]);
 
   const fetchReactions = async () => {
@@ -88,7 +88,6 @@ export default function PostCard({
       .from("post_reactions")
       .select("emoji, user_id")
       .eq("post_id", post.id);
-
     if (error) return;
     const counts: Record<string, { count: number; userReacted: boolean }> = {};
     (data ?? []).forEach((r: any) => {
@@ -112,10 +111,7 @@ export default function PostCard({
   }, [user, post.id]);
 
   const handleReaction = async (emoji: string) => {
-    if (!user) {
-      alert("Sign in to react");
-      return;
-    }
+    if (!user) { alert("Sign in to react"); return; }
     const existing = reactions.find((r) => r.emoji === emoji && r.userReacted);
     if (existing) {
       await supabase
@@ -132,12 +128,8 @@ export default function PostCard({
     fetchReactions();
   };
 
-  // ─── Existing handlers ──────────────────────────────────────────────────────
   const handleReport = async () => {
-    if (!user) {
-      alert("Please sign in to report posts.");
-      return;
-    }
+    if (!user) { alert("Please sign in to report posts."); return; }
     const reason = prompt("Reason for reporting?");
     if (!reason?.trim()) return;
     try {
@@ -150,9 +142,11 @@ export default function PostCard({
   };
 
   const handleShare = async () => {
+    if (sharing) return; // Guard against concurrent share calls
     const shareUrl = `${window.location.origin}/post/${post.id}`;
     try {
       if (navigator.share) {
+        setSharing(true);
         await navigator.share({
           title: "Warren",
           text: post.content ?? undefined,
@@ -163,15 +157,19 @@ export default function PostCard({
         alert("Link copied to clipboard.");
       }
     } catch (error) {
-      console.error(error);
+      // user cancelled or error
+      if (error instanceof DOMException && error.name === "AbortError") {
+        // User cancelled share, ignore
+      } else {
+        console.error(error);
+      }
+    } finally {
+      setSharing(false);
     }
   };
 
   const handleSaveToggle = async () => {
-    if (!user) {
-      alert("Please sign in to save posts.");
-      return;
-    }
+    if (!user) { alert("Please sign in to save posts."); return; }
     try {
       if (saved) {
         await unsavePost(user.id, post.id);
@@ -186,21 +184,25 @@ export default function PostCard({
   };
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-all duration-200 ease-in-out hover:shadow-md motion-safe:active:scale-[0.98]">
-      <div className="p-4 sm:p-5">
-        <div className="flex items-start gap-3">
-          {/* Avatar linked to profile */}
-          <Link to={isAnonymous && !canSeeAuthor ? "#" : `/profile/${post.user_id}`} className="shrink-0">
+    <article className="overflow-hidden rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-sm transition-all duration-200 ease-in-out hover:shadow-md motion-safe:active:scale-[0.99]">
+      {/* ─── Header ────────────────────────────────────────────────────────── */}
+      <div className="p-2.5 sm:p-3">
+        <div className="flex items-start gap-2">
+          {/* Avatar */}
+          <Link
+            to={isAnonymous && !canSeeAuthor ? "#" : `/profile/${post.user_id}`}
+            className="shrink-0 mt-0.5"
+          >
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={displayName}
                 loading="lazy"
-                className="h-11 w-11 sm:h-12 sm:w-12 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
               />
             ) : (
               <div
-                className={`h-11 w-11 sm:h-12 sm:w-12 rounded-full flex items-center justify-center font-bold text-sm sm:text-base shadow-md ${
+                className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-sm ${
                   isAnonymous && !canSeeAuthor
                     ? "bg-purple-500 text-white"
                     : "bg-gradient-to-br from-blue-600 to-cyan-500 text-white"
@@ -212,36 +214,34 @@ export default function PostCard({
           </Link>
 
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-semibold text-slate-900 dark:text-white truncate max-w-[150px] text-sm sm:text-base">
+            <div className="flex flex-wrap items-center gap-1">
+              <h3 className="font-semibold text-slate-900 dark:text-white truncate max-w-[100px] text-[11px] sm:text-xs">
                 {displayName}
               </h3>
               {isAnonymous && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 dark:bg-purple-950/40 px-2.5 py-0.5 text-[11px] font-bold uppercase text-purple-600 dark:text-purple-400">
-                  🎭 Anonymous
+                <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 dark:bg-purple-950/40 px-1.5 py-0.5 text-[9px] font-bold uppercase text-purple-600 dark:text-purple-400">
+                  🎭 Anon
                 </span>
               )}
               {isAnonymous && canSeeAuthor && (
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-[9px] text-slate-500 dark:text-slate-400">
                   (by {post.profiles?.username ?? "Unknown"})
                 </span>
               )}
               {!isAnonymous && displayRole === "admin" && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/40 px-2.5 py-0.5 text-[11px] font-bold uppercase text-red-600 dark:text-red-400">
-                  <ShieldCheck size={10} />
-                  Admin
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 text-[9px] font-bold uppercase text-red-600 dark:text-red-400">
+                  <ShieldCheck size={9} /> Admin
                 </span>
               )}
               {!isAnonymous && displayRole === "moderator" && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/40 px-2.5 py-0.5 text-[11px] font-bold uppercase text-amber-600 dark:text-amber-400">
-                  <ShieldCheck size={10} />
-                  Mod
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/40 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600 dark:text-amber-400">
+                  <ShieldCheck size={9} /> Mod
                 </span>
               )}
             </div>
-            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <span className="capitalize">{displayRole}</span>
-              <span>•</span>
+            <div className="mt-0.5 flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
+              <span>{displayRole}</span>
+              <span>·</span>
               <span>
                 {post.created_at
                   ? formatDistanceToNow(new Date(post.created_at), { addSuffix: true })
@@ -250,110 +250,115 @@ export default function PostCard({
             </div>
           </div>
 
-          <div className="flex items-center">
+          {/* Action buttons */}
+          <div className="flex items-center gap-0.5 ml-1">
             <button
               onClick={handleReport}
               aria-label="Report post"
-              className="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[44px] min-h-[44px] flex items-center justify-center transition-all duration-200 active:scale-[0.98]"
+              className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center transition"
             >
-              <Flag size={20} />
+              <Flag size={16} />
             </button>
             {canDelete && onDelete && (
               <button
                 onClick={() => onDelete(post.id)}
                 aria-label="Delete post"
-                className="p-2 rounded-full text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 min-w-[44px] min-h-[44px] flex items-center justify-center transition-all duration-200 active:scale-[0.98]"
+                className="p-1.5 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center transition"
               >
-                <Trash2 size={20} />
+                <Trash2 size={16} />
               </button>
             )}
           </div>
         </div>
 
+        {/* Content */}
         {post.content && (
-          <p className="mt-4 whitespace-pre-wrap break-words text-sm sm:text-base leading-relaxed text-slate-700 dark:text-slate-200">
+          <p className="mt-1.5 whitespace-pre-wrap break-words text-[11px] sm:text-xs leading-snug text-slate-700 dark:text-slate-200">
             {post.content}
           </p>
         )}
       </div>
 
+      {/* Image */}
       {post.image_url && (
         <div className="border-y border-slate-100 dark:border-slate-800">
           <img
             src={post.image_url}
             alt="Post attachment"
             loading="lazy"
-            className="w-full max-h-[500px] object-cover bg-slate-100 dark:bg-slate-800"
+            className="w-full max-h-[320px] object-cover bg-slate-100 dark:bg-slate-800"
           />
         </div>
       )}
 
+      {/* Voice note */}
       {post.voice_url && (
-        <div className="px-4 pt-3">
-          <audio controls src={post.voice_url} className="w-full h-10" />
+        <div className="px-2.5 pt-1.5 pb-0.5">
+          <audio controls src={post.voice_url} className="w-full h-7" />
         </div>
       )}
 
-      {/* ── Main action bar ──────────────────────────────────────────────────── */}
-      <div className="px-3 py-3 sm:px-4 sm:py-3 grid grid-cols-5 gap-2">
+      {/* ─── Action bar ────────────────────────────────────────────────────── */}
+      <div className="px-1.5 py-1.5 sm:px-2 sm:py-1.5 grid grid-cols-5 gap-1">
         <button
           onClick={() => onVote(post.id, "up")}
-          className={`flex items-center justify-center gap-1.5 rounded-2xl py-3 sm:py-2.5 min-h-[44px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
+          className={`flex items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[11px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
             userVote === "up"
               ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold shadow-sm"
-              : "bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-slate-600 dark:text-slate-300"
+              : "bg-slate-50/80 dark:bg-slate-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-slate-600 dark:text-slate-300"
           }`}
           aria-label="Upvote"
         >
-          <ArrowBigUp size={20} />
-          <span className="text-xs font-semibold">{post.upvotes ?? 0}</span>
+          <ArrowBigUp size={16} />
+          <span className="font-semibold">{post.upvotes ?? 0}</span>
         </button>
 
         <button
           onClick={() => onVote(post.id, "down")}
-          className={`flex items-center justify-center gap-1.5 rounded-2xl py-3 sm:py-2.5 min-h-[44px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
+          className={`flex items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[11px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
             userVote === "down"
               ? "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 font-semibold shadow-sm"
-              : "bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-600 dark:text-slate-300"
+              : "bg-slate-50/80 dark:bg-slate-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-600 dark:text-slate-300"
           }`}
           aria-label="Downvote"
         >
-          <ArrowBigDown size={20} />
-          <span className="text-xs font-semibold">{post.downvotes ?? 0}</span>
+          <ArrowBigDown size={16} />
+          <span className="font-semibold">{post.downvotes ?? 0}</span>
         </button>
 
         <button
           onClick={onCommentClick}
-          className="flex items-center justify-center gap-1.5 rounded-2xl py-3 sm:py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400 text-slate-600 dark:text-slate-300 min-h-[44px] transition-all duration-200 motion-safe:active:scale-[0.98]"
+          className="flex items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[11px] bg-slate-50/80 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400 text-slate-600 dark:text-slate-300 transition-all duration-200 motion-safe:active:scale-[0.98]"
           aria-label="Comments"
         >
-          <MessageCircle size={20} />
-          <span className="text-xs font-semibold">{post.comments_count ?? 0}</span>
+          <MessageCircle size={16} />
+          <span className="font-semibold">{post.comments_count ?? 0}</span>
         </button>
 
         <button
           onClick={handleShare}
           aria-label="Share post"
-          className="flex items-center justify-center rounded-2xl py-3 sm:py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 hover:text-cyan-600 dark:hover:text-cyan-400 text-slate-600 dark:text-slate-300 min-h-[44px] transition-all duration-200 motion-safe:active:scale-[0.98]"
+          disabled={sharing}
+          className="flex items-center justify-center rounded-xl py-2 min-h-[44px] text-[11px] bg-slate-50/80 dark:bg-slate-800/80 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 hover:text-cyan-600 dark:hover:text-cyan-400 text-slate-600 dark:text-slate-300 transition-all duration-200 motion-safe:active:scale-[0.98] disabled:opacity-50"
         >
-          <Share2 size={20} />
+          <Share2 size={16} />
         </button>
 
         <button
           onClick={handleSaveToggle}
           aria-label={saved ? "Unsave post" : "Save post"}
-          className={`flex items-center justify-center rounded-2xl py-3 sm:py-2.5 min-h-[44px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
+          className={`flex items-center justify-center rounded-xl py-2 min-h-[44px] text-[11px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
             saved
               ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shadow-sm"
-              : "bg-slate-50 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:text-amber-600 dark:hover:text-amber-400 text-slate-600 dark:text-slate-300"
+              : "bg-slate-50/80 dark:bg-slate-800/80 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:text-amber-600 dark:hover:text-amber-400 text-slate-600 dark:text-slate-300"
           }`}
         >
-          <Bookmark size={20} fill={saved ? "currentColor" : "none"} />
+          <Bookmark size={16} fill={saved ? "currentColor" : "none"} />
         </button>
       </div>
 
-      {/* ── Quick emoji reactions ────────────────────────────────────────────── */}
-      <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
+      {/* ─── Quick emoji reactions ──────────────────────────────────────────── */}
+      <div className="px-2.5 pb-2 flex items-center gap-1 flex-wrap">
         {["❤️", "😂", "😮", "😢", "😡"].map((emoji) => {
           const reaction = reactions.find((r) => r.emoji === emoji);
           const count = reaction?.count ?? 0;
@@ -362,14 +367,14 @@ export default function PostCard({
             <button
               key={emoji}
               onClick={() => handleReaction(emoji)}
-              className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 min-h-[44px] min-w-[44px] rounded-full transition-all duration-200 motion-safe:active:scale-[0.98] ${
+              className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 min-h-[36px] min-w-[44px] rounded-full transition-all duration-200 motion-safe:active:scale-[0.98] ${
                 active
                   ? "bg-slate-200 dark:bg-slate-700 shadow-sm"
-                  : "bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  : "bg-slate-50/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700"
               }`}
               aria-label={`React with ${emoji}`}
             >
-              <span>{emoji}</span>
+              <span className="text-xs">{emoji}</span>
               {count > 0 && <span className="text-slate-500">{count}</span>}
             </button>
           );
