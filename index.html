@@ -3,13 +3,9 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Google AdSense -->
-    <script
-      async
-      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2017155922423033"
-      crossorigin="anonymous"
-    ></script>
-    <meta name="google-adsense-account" content="ca-pub-2017155922423033" />
+    <!-- AdSense verification meta tag — safe to keep, makes no network requests.
+     Add the <script> tag back once Google approves ca-pub-2017155922423033. -->
+<meta name="google-adsense-account" content="ca-pub-2017155922423033" />
 
     <!-- Theme: apply dark class before paint to avoid flash -->
     <script>
@@ -42,9 +38,6 @@
             })
             .then(function () { window.location.reload(); });
         } else {
-          // Mark this load attempt — cleared on success in App.tsx.
-          // If the page crashes before App mounts, the flag stays and
-          // triggers the recovery block above on the next open.
           sessionStorage.setItem("warren-sw-recovery", "needed");
         }
       } catch (_) {}
@@ -59,7 +52,6 @@
 
     <title>Warren | Campus Social Network</title>
 
-    <!-- Font preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
