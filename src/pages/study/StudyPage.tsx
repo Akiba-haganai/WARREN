@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { BookOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { BookOpen, Calendar } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
 import {
   fetchStudyMaterials,
@@ -316,6 +317,7 @@ function EmptyState({ search, hasFilters }: { search: string; hasFilters: boolea
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function StudyPage() {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
 
   const [materials,        setMaterials]        = useState<StudyMaterial[]>([]);
@@ -394,11 +396,20 @@ export default function StudyPage() {
           </div>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 ml-10">Lecturer materials & resources</p>
         </div>
-        {!loading && materials.length > 0 && (
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-cyan-400 border border-blue-200 dark:border-blue-800/40">
-            {materials.length}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate("/events")}
+            className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+          >
+            <Calendar size={12} />
+            Events
+          </button>
+          {!loading && materials.length > 0 && (
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-cyan-400 border border-blue-200 dark:border-blue-800/40">
+              {materials.length}
+            </span>
+          )}
+        </div>
       </div>
 
       <SearchBar value={search} onChange={setSearch} onClear={() => { setSearch(""); setDebouncedSearch(""); }} />

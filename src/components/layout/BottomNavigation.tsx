@@ -1,9 +1,9 @@
-import { House, Bell, BookOpen, MapPinned, MessagesSquare } from "lucide-react";
+import { House, BookOpen, MessagesSquare, Megaphone } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 export default function BottomNavigation() {
   const navClass = ({ isActive }: { isActive: boolean }) =>
-    `flex flex-col items-center justify-center gap-1 transition-all duration-300 relative py-1 px-2
+    `flex flex-col items-center justify-center gap-1 transition-all duration-300 relative py-1 px-2 min-h-[44px] min-w-[44px] motion-safe:active:scale-[0.98]
     ${isActive
       ? "text-blue-600 dark:text-cyan-400 font-semibold scale-105"
       : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -14,11 +14,10 @@ export default function BottomNavigation() {
   );
 
   const links = [
-    { to: "/",             icon: <House size={20} />,          label: "Home"      },
-    { to: "/announcements",icon: <Bell size={20} />,           label: "Bulletin"  },
-    { to: "/study",        icon: <BookOpen size={20} />,       label: "Study"     },
-    { to: "/campus-map",   icon: <MapPinned size={20} />,      label: "Map"       },
-    { to: "/community",    icon: <MessagesSquare size={20} />, label: "Community" },
+    { to: "/",             icon: <House size={22} />,          label: "Home"      },
+    { to: "/announcements",icon: <Megaphone size={22} />,      label: "Bulletin"  },
+    { to: "/study",        icon: <BookOpen size={22} />,       label: "Study"     },
+    { to: "/community",    icon: <MessagesSquare size={22} />, label: "Community" },
   ];
 
   return (

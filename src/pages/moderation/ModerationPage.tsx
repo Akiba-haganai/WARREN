@@ -6,8 +6,8 @@ import {
   fetchAllCommentsForModeration,
   deletePost,
   deleteComment,
-} from "../../services/oldpostsService";
-import type { PostWithProfile } from "../../services/oldpostsService";
+} from "../../services/postsService";   // correct import
+import type { PostWithProfile } from "../../services/postsService";
 import { Trash2, AlertTriangle } from "lucide-react";
 
 export default function ModerationPage() {
@@ -91,7 +91,7 @@ export default function ModerationPage() {
                   <p className="text-xs opacity-70 line-clamp-2">{post.content}</p>
                 </div>
                 <button
-                aria-label="delete post"
+                  aria-label="Delete post"
                   onClick={() => handleDeletePost(post.id)}
                   className="text-red-400 hover:text-red-600 ml-3 shrink-0"
                 >
@@ -112,7 +112,7 @@ export default function ModerationPage() {
                   <p className="text-xs opacity-70">{comment.content}</p>
                 </div>
                 <button
-                aria-label="delete comment"
+                  aria-label="Delete comment"
                   onClick={() => handleDeleteComment(comment.id)}
                   className="text-red-400 hover:text-red-600 ml-3 shrink-0"
                 >

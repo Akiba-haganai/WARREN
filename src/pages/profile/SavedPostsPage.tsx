@@ -12,7 +12,6 @@ export default function SavedPostsPage() {
 
   useEffect(() => {
     if (!user) return;
-
     getSavedPosts(user.id)
       .then(setPosts)
       .catch(console.error)
@@ -30,16 +29,18 @@ export default function SavedPostsPage() {
         <p className="text-sm opacity-70 mb-6">Your bookmarked posts</p>
 
         {loading && (
-          <div className="text-center py-8 opacity-60">Loading saved posts...</div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-32 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
+            ))}
+          </div>
         )}
 
         {!loading && posts.length === 0 && (
           <div className="text-center py-12">
             <Bookmark size={48} className="mx-auto opacity-30 mb-3" />
             <p className="opacity-60">No saved posts yet</p>
-            <p className="text-sm opacity-50 mt-1">
-              Bookmark posts to save them for later
-            </p>
+            <p className="text-sm opacity-50 mt-1">Bookmark posts to save them for later</p>
           </div>
         )}
 

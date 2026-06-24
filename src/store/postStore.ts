@@ -2,12 +2,15 @@ import { create } from "zustand";
 import {
   fetchPosts,
   fetchHotPosts,
+  fetchAnonymousPosts,
   votePost,
   deletePost,
   subscribeToPosts,
-} from "../services/oldpostsService";
-import type { PostWithProfile } from "../services/oldpostsService";
+} from "../services/postsService";
+import type { PostWithProfile } from "../services/postsService";
 import { supabase } from "../lib/supabase";
+
+type SortMode = "hot" | "new" | "takes";
 
 interface PostStore {
   posts: PostWithProfile[];
@@ -17,9 +20,9 @@ interface PostStore {
   error: string;
   cursor: string | null;
   hasMore: boolean;
-  sortMode: "hot" | "new";
+  sortMode: SortMode;
 
-  setSortMode: (mode: "hot" | "new") => void;
+  setSortMode: (mode: SortMode) => void;
   loadPosts: (refetch?: boolean) => Promise<void>;
   loadMore: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -48,6 +51,17 @@ export const usePostStore = create<PostStore>((set, get) => ({
     const { sortMode } = get();
     try {
       set({ loading: true, error: "" });
+
+      // ── Anonymous Takes ──────────────────────────────────────────────
+      if (sortMode === "takes") {
+        const data = await fetchAnonymousPosts(20);
+        set({ posts: data, hasMore: false, loading: false });
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (userId) get().loadUserVotes(data.map(p => p.id), userId);
+        return;
+      }
+
+      // ── Hot ──────────────────────────────────────────────────────────
       if (sortMode === "hot") {
         const data = await fetchHotPosts(20);
         set({ posts: data, hasMore: false, loading: false });
@@ -56,7 +70,7 @@ export const usePostStore = create<PostStore>((set, get) => ({
         return;
       }
 
-      // Convert null cursor to undefined for type safety
+      // ── New (paginated) ──────────────────────────────────────────────
       const currentCursor = get().cursor;
       const result = await fetchPosts({
         cursor: refetch ? undefined : (currentCursor ?? undefined),
@@ -77,7 +91,7 @@ export const usePostStore = create<PostStore>((set, get) => ({
   },
 
   loadMore: async () => {
-    if (get().loadingMore || !get().hasMore || get().sortMode === "hot") return;
+    if (get().loadingMore || !get().hasMore || get().sortMode !== "new") return;
     set({ loadingMore: true });
     try {
       const currentCursor = get().cursor;
@@ -109,7 +123,6 @@ export const usePostStore = create<PostStore>((set, get) => ({
     const currentVote = get().userVotes[postId] ?? null;
     const newVote = currentVote === type ? null : type;
 
-    // Optimistic local update
     set(state => ({
       userVotes: { ...state.userVotes, [postId]: newVote },
       posts: state.posts.map(p => {
@@ -127,7 +140,6 @@ export const usePostStore = create<PostStore>((set, get) => ({
     try {
       await votePost(postId, user.id, type);
     } catch {
-      // Rollback on failure
       set(state => ({
         userVotes: { ...state.userVotes, [postId]: currentVote },
       }));

@@ -40,7 +40,7 @@ export default function CreateCommunityPage() {
           setDescription(comm.description);
           setIcon(comm.icon);
           setCoverColor(comm.cover_color);
-          setType(comm.type);
+          setType(comm.type as CommunityType);
           setParentId(comm.parent_id);
           setYear(comm.year);
         } else navigate("/admin/communities");

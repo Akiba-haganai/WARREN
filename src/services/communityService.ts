@@ -1,39 +1,32 @@
 import { supabase } from "../lib/supabase";
-import type { Community, CommunityType } from "../types/community";
+import type { Database } from "../types/database.types";
+
+type Community = Database["public"]["Tables"]["communities"]["Row"];
 
 // Fetch communities with optional filters
 export async function fetchCommunities(
-  type?: CommunityType | "all",
+  type?: string,
   parentId?: string | null,
   year?: string | null
 ): Promise<Community[]> {
   let query = supabase.from("communities").select("*").order("created_at", { ascending: false });
 
-  if (type && type !== "all") {
-    query = query.eq("type", type);
-  }
+  if (type && type !== "all") query = query.eq("type", type);
   if (parentId !== undefined) {
-    if (parentId === null) {
-      query = query.is("parent_id", null); // top-level only
-    } else {
-      query = query.eq("parent_id", parentId);
-    }
+    if (parentId === null) query = query.is("parent_id", null);
+    else query = query.eq("parent_id", parentId);
   }
-  if (year) {
-    query = query.eq("year", year);
-  }
+  if (year) query = query.eq("year", year);
 
   const { data, error } = await query;
   if (error) throw error;
   return data as Community[];
 }
 
-// Fetch all parent schools (for filters)
 export async function fetchParentSchools(): Promise<Community[]> {
   return fetchCommunities("educational", null);
 }
 
-// Create a community
 export async function createCommunity(
   data: Omit<Community, "id" | "created_by" | "created_at" | "updated_at">
 ): Promise<Community> {
@@ -42,10 +35,7 @@ export async function createCommunity(
 
   const { data: result, error } = await supabase
     .from("communities")
-    .insert({
-      ...data,
-      created_by: user.id,
-    })
+    .insert({ ...data, created_by: user.id })
     .select()
     .single();
   if (error) throw error;
@@ -111,7 +101,6 @@ export async function leaveCommunity(communityId: string): Promise<void> {
   if (error) throw error;
 }
 
-// Kick a user (used by admin/mod/creator)
 export async function kickMember(communityId: string, userId: string): Promise<void> {
   const { error } = await supabase
     .from("community_members")
@@ -121,8 +110,9 @@ export async function kickMember(communityId: string, userId: string): Promise<v
   if (error) throw error;
 }
 
-// Fetch members of a community (for manage members)
-export async function fetchMembers(communityId: string): Promise<{ user_id: string; username: string | null; avatar_url: string | null }[]> {
+export async function fetchMembers(communityId: string): Promise<
+  { user_id: string; username: string | null; avatar_url: string | null }[]
+> {
   const { data, error } = await supabase
     .from("community_members")
     .select("user_id, profiles(username, avatar_url)")

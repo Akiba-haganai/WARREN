@@ -1,72 +1,75 @@
 import { create } from "zustand";
-import {
-  fetchNotifications,
-  markAllAsRead,
-  getUnreadCount,
-  subscribeToNotifications,
-  type Notification,
-} from "../services/notificationService";
 import { supabase } from "../lib/supabase";
+import type { Database } from "../types/database.types";
 
-interface NotificationState {
+type Notification = Database["public"]["Tables"]["notifications"]["Row"];
+
+interface NotificationStore {
   notifications: Notification[];
   unreadCount: number;
   loading: boolean;
-  open: boolean;
-
   loadNotifications: (userId: string) => Promise<void>;
-  subscribe: (userId: string) => void;
-  unsubscribe: () => void;
+  subscribe: (userId: string) => () => void;    // returns cleanup
+  markAsRead: (ids: string[]) => Promise<void>;
   markAllRead: (userId: string) => Promise<void>;
-  setOpen: (open: boolean) => void;
 }
 
-let channel: ReturnType<typeof supabase.channel> | null = null;
-
-export const useNotificationStore = create<NotificationState>((set, get) => ({
+export const useNotificationStore = create<NotificationStore>((set, get) => ({
   notifications: [],
   unreadCount: 0,
   loading: false,
-  open: false,
 
   loadNotifications: async (userId: string) => {
     set({ loading: true });
-    try {
-      const [notifs, count] = await Promise.all([
-        fetchNotifications(userId),
-        getUnreadCount(userId),
-      ]);
-      set({ notifications: notifs, unreadCount: count });
-    } catch (err) {
-      console.error("Failed to load notifications:", err);
-    } finally {
-      set({ loading: false });
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (!error && data) {
+      set({ notifications: data, unreadCount: data.filter((n) => !n.read).length });
     }
+    set({ loading: false });
   },
 
   subscribe: (userId: string) => {
-    if (channel) {
+    const channel = supabase
+      .channel(`notifications-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        () => {
+          if (userId) get().loadNotifications(userId);
+        }
+      )
+      .subscribe();
+
+    // return cleanup function
+    return () => {
       supabase.removeChannel(channel);
-    }
-    channel = subscribeToNotifications(userId, () => {
-      get().loadNotifications(userId);
-    });
+    };
   },
 
-  unsubscribe: () => {
-    if (channel) {
-      supabase.removeChannel(channel);
-      channel = null;
-    }
+  markAsRead: async (ids: string[]) => {
+    await supabase.from("notifications").update({ read: true }).in("id", ids);
+    set((state) => ({
+      notifications: state.notifications.map((n) =>
+        ids.includes(n.id) ? { ...n, read: true } : n
+      ),
+      unreadCount: state.unreadCount - ids.length,
+    }));
   },
 
   markAllRead: async (userId: string) => {
-    await markAllAsRead(userId);
+    await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", userId)
+      .eq("read", false);
     set((state) => ({
       notifications: state.notifications.map((n) => ({ ...n, read: true })),
       unreadCount: 0,
     }));
   },
-
-  setOpen: (open: boolean) => set({ open }),
 }));

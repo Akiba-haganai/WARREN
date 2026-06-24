@@ -1,25 +1,4 @@
-export type PinCategory =
-  | "registration"
-  | "academics"
-  | "finance"
-  | "student_union"
-  | "health"
-  | "library"
-  | "dining"
-  | "transport"
-  | "general";
+import type { Database } from "./database.types";
 
-export interface MapPin {
-  id: string;
-  title: string;
-  description: string;
-  category: PinCategory;
-  x_percent: number;
-  y_percent: number;
-  photos: string[];
-  floor?: string;
-  hours?: string;
-  contact?: string;
-  created_by: string;
-  created_at: string;
-}
+export type MapPin = Database["public"]["Tables"]["map_pins"]["Row"];
+export type PinCategory = Database["public"]["Enums"]["pin_category"];

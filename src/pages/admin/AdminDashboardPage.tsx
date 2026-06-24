@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { Flag, Megaphone, PlusCircle, Shield, Upload, Users } from "lucide-react";
+import { Flag, Megaphone, PlusCircle, Shield, Upload, Users, Calendar } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
 
 const tiles = [
   { to: "/admin/announcements/new", icon: PlusCircle, label: "Create Announcement", desc: "Post a new bulletin to all students", color: "text-blue-600 dark:text-cyan-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
   { to: "/admin/announcements",     icon: Megaphone,  label: "Manage Announcements", desc: "Edit or remove existing bulletins",  color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-900/20" },
   { to: "/admin/upload-material",   icon: Upload,     label: "Upload Study Material", desc: "Add notes, slides or past papers",   color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+  { to: "/admin/events",            icon: Calendar,   label: "Manage Events",         desc: "Create and manage campus events",   color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/20" },
   { to: "/moderation",              icon: Shield,     label: "Moderation Tools",      desc: "Review flagged posts and comments",  color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20" },
   { to: "/admin/reports",           icon: Flag,       label: "Reports",               desc: "View community reports",             color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-900/20" },
   { to: "/admin/communities",       icon: Users,      label: "Communities",           desc: "Manage student communities",         color: "text-pink-600 dark:text-pink-400", bg: "bg-pink-50 dark:bg-pink-900/20" },

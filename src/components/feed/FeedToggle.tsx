@@ -3,8 +3,8 @@ export default function FeedToggle({
   active,
   onChange,
 }: {
-  active: "hot" | "new";
-  onChange: (mode: "hot" | "new") => void;
+  active: "hot" | "new" | "takes";
+  onChange: (mode: "hot" | "new" | "takes") => void;
 }) {
   return (
     <div className="flex bg-slate-200 dark:bg-slate-800 rounded-full p-1 mb-4">
@@ -27,6 +27,16 @@ export default function FeedToggle({
         }`}
       >
         🕒 New
+      </button>
+      <button
+        onClick={() => onChange("takes")}
+        className={`flex-1 text-sm font-medium py-2 rounded-full transition ${
+          active === "takes"
+            ? "bg-white dark:bg-slate-700 shadow-sm text-purple-600"
+            : "text-slate-500"
+        }`}
+      >
+        🎭 Takes
       </button>
     </div>
   );

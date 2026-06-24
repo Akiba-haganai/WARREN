@@ -1,109 +1,133 @@
+// supabase/functions/send-push/index.ts
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import webpush from "npm:web-push";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY")!;
+const vapidSubject = "mailto:admin@warren.app";
+const vapidPublicKey = Deno.env.get("VITE_VAPID_PUBLIC_KEY")!;
 const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:admin@campussocial.app";
 
-webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
-
-function buildNotification(type: string, payload: any) {
-  switch (type) {
-    case "new_post":
-      return {
-        title: `📢 New post from ${payload.username}`,
-        body: (payload.content || "").slice(0, 150) || "Tap to view",
-        icon: "/pwa-192.png",
-        data: { url: "/" },
-      };
-    case "new_comment":
-      return {
-        title: `💬 ${payload.username} commented`,
-        body: (payload.content || "").slice(0, 150),
-        icon: "/pwa-192.png",
-        data: { url: `/post/${payload.post_id}` },
-      };
-    case "new_announcement":
-      return {
-        title: `📣 ${payload.title || "New Announcement"}`,
-        body: (payload.content || "").slice(0, 150),
-        icon: "/pwa-192.png",
-        data: { url: "/announcements" },
-      };
-    default:
-      return {
-        title: "Campus Social",
-        body: "Something new!",
-        icon: "/pwa-192.png",
-        data: { url: "/" },
-      };
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
   }
+  return outputArray;
 }
 
-serve(async (req) => {
-  try {
-    const body = await req.json();
-    const { type, payload } = body;
+serve(async (req: Request) => {
+  const { notification_id } = await req.json();
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
 
-    // If new post, fetch username
-    if (type === "new_post" && payload.user_id) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", payload.user_id)
-        .single();
-      payload.username = profile?.username || "Someone";
-    }
+  // Fetch the notification
+  const { data: notification, error: notifError } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("id", notification_id)
+    .single();
 
-    // Get all subscriptions
-    const { data: subscriptions, error } = await supabase
-      .from("push_subscriptions")
-      .select("*");
-
-    if (error) throw error;
-
-    if (!subscriptions?.length) {
-      return new Response(JSON.stringify({ message: "No subscriptions" }), {
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const notification = buildNotification(type, payload);
-
-    const results = await Promise.allSettled(
-      subscriptions.map((sub) =>
-        webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: {
-              auth: sub.auth,
-              p256dh: sub.p256dh,
-            },
-          },
-          JSON.stringify(notification)
-        )
-      )
-    );
-
-    const succeeded = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.filter((r) => r.status === "rejected").length;
-
-    // Clean up failed subscriptions (optional)
-    // ...
-
-    return new Response(
-      JSON.stringify({ sent: succeeded, failed }),
-      { headers: { "Content-Type": "application/json" } }
-    );
-  } catch (err: any) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+  if (notifError || !notification) {
+    return new Response(JSON.stringify({ error: "Notification not found" }), { status: 404 });
   }
+
+  // Fetch push subscriptions for this user
+  const { data: subscriptions, error: subError } = await supabase
+    .from("push_subscriptions")
+    .select("*")
+    .eq("user_id", notification.user_id);
+
+  if (subError || !subscriptions?.length) {
+    return new Response(JSON.stringify({ skipped: "No subscriptions" }), { status: 200 });
+  }
+
+  const payload = JSON.stringify({
+    title: notification.title,
+    body: notification.body ?? "",
+    icon: "/pwa-192.png",
+    badge: "/pwa-192.png",
+    data: notification.data ?? {},
+    requireInteraction: true,
+  });
+
+  const results = await Promise.allSettled(
+    subscriptions.map(async (sub) => {
+      const subscription = {
+        endpoint: sub.endpoint,
+        keys: {
+          p256dh: sub.p256dh,
+          auth: sub.auth,
+        },
+      };
+
+      const encodedVapidPublicKey = urlBase64ToUint8Array(vapidPublicKey);
+      const encodedVapidPrivateKey = urlBase64ToUint8Array(vapidPrivateKey);
+
+      const vapidHeader = await crypto.subtle.importKey(
+        "raw",
+        encodedVapidPrivateKey,
+        { name: "ECDSA", namedCurve: "P-256" },
+        true,
+        ["sign"]
+      );
+
+      const aud = new URL(sub.endpoint).origin;
+      const jwtHeader = { alg: "ES256", typ: "JWT" };
+      const jwtPayload = {
+        sub: vapidSubject,
+        aud,
+        exp: Math.floor(Date.now() / 1000) + 86400,
+      };
+
+      const encoder = new TextEncoder();
+      const jwtToken =
+        btoa(JSON.stringify(jwtHeader)) +
+        "." +
+        btoa(JSON.stringify(jwtPayload));
+
+      const signature = await crypto.subtle.sign(
+        { name: "ECDSA", hash: "SHA-256" },
+        vapidHeader,
+        encoder.encode(jwtToken)
+      );
+
+      const signatureBase64 = btoa(
+        String.fromCharCode(...new Uint8Array(signature))
+      )
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_");
+
+      const authorizationHeader = `vapid t=${jwtToken}.${signatureBase64}, k=${vapidPublicKey}`;
+
+      const res = await fetch(sub.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "Authorization": authorizationHeader,
+          "Content-Encoding": "aes128gcm",
+        },
+        body: payload,
+      });
+
+      if (!res.ok) {
+        // If subscription is gone, remove it
+        if (res.status === 410 || res.status === 404) {
+          await supabase
+            .from("push_subscriptions")
+            .delete()
+            .eq("endpoint", sub.endpoint);
+        }
+        throw new Error(`Push failed: ${res.status}`);
+      }
+
+      return res.status;
+    })
+  );
+
+  return new Response(JSON.stringify({ success: true, results }), { status: 200 });
 });

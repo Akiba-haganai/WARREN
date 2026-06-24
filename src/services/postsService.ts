@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase";
 import type { Database } from "../types/database.types";
 
+// ─── Type ─────────────────────────────────────────────────────────────────────
 export type PostWithProfile =
   Database["public"]["Tables"]["posts"]["Row"] & {
     profiles: {
@@ -9,18 +10,19 @@ export type PostWithProfile =
       role: string | null;
     } | null;
     comments_count: number;
+  } & {
+    // Manually added until you regenerate types after the ALTER TABLE
+    is_anonymous?: boolean;
+    voice_url?: string | null;
   };
 
-// ─── Comment counts ───────────────────────────────────────────────────────────
-// Fetches counts only for the given post IDs — no full-table scan.
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 async function getCommentCounts(postIds: string[]): Promise<Record<string, number>> {
   if (postIds.length === 0) return {};
-
   const { data } = await supabase
     .from("comments")
     .select("post_id")
     .in("post_id", postIds);
-
   const counts: Record<string, number> = {};
   data?.forEach(({ post_id }) => {
     if (!post_id) return;
@@ -29,7 +31,6 @@ async function getCommentCounts(postIds: string[]): Promise<Record<string, numbe
   return counts;
 }
 
-// ─── Normalise the profiles join (Supabase sometimes returns array) ───────────
 function normaliseProfile(raw: any) {
   return Array.isArray(raw.profiles)
     ? (raw.profiles[0] ?? null)
@@ -81,20 +82,55 @@ export async function fetchPosts({
   };
 }
 
+// ─── Fetch hot posts ──────────────────────────────────────────────────────────
 export async function fetchHotPosts(limit = 20) {
   const result = await fetchPosts({ limit, sortBy: "hot" });
   return result.data;
+}
+
+// ─── Fetch anonymous posts (last 24h, by upvotes) ─────────────────────────────
+export async function fetchAnonymousPosts(limit = 20): Promise<PostWithProfile[]> {
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*, profiles(username, avatar_url, role)")
+    .eq("is_anonymous", true)
+    .gte("created_at", twentyFourHoursAgo)
+    .order("upvotes", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  const posts = data ?? [];
+  const countMap = await getCommentCounts(posts.map(p => p.id));
+
+  return posts.map((post: any) => ({
+    ...post,
+    profiles: normaliseProfile(post),
+    comments_count: countMap[post.id] ?? 0,
+  })) as PostWithProfile[];
 }
 
 // ─── Create post ──────────────────────────────────────────────────────────────
 export async function createPost(
   userId: string,
   content: string,
-  imageUrl?: string | null
+  imageUrl?: string | null,
+  voiceUrl?: string | null,
+  isAnonymous?: boolean
 ) {
   const { data, error } = await supabase
     .from("posts")
-    .insert({ user_id: userId, content, image_url: imageUrl ?? null, upvotes: 0, downvotes: 0 })
+    .insert({
+      user_id: userId,
+      content,
+      image_url: imageUrl ?? null,
+      voice_url: voiceUrl ?? null,
+      is_anonymous: isAnonymous ?? false,
+      upvotes: 0,
+      downvotes: 0,
+    })
     .select()
     .single();
   if (error) throw error;
@@ -102,17 +138,11 @@ export async function createPost(
 }
 
 // ─── Vote on a post ───────────────────────────────────────────────────────────
-// Uses the existing `increment` RPC to avoid read-modify-write race conditions.
-// Pattern:
-//   • Same vote again  → delete vote record, decrement that column by 1
-//   • Switch vote      → update vote record, increment new col, decrement old col
-//   • New vote         → insert vote record, increment that column by 1
 export async function votePost(
   postId: string,
   userId: string,
   type: "up" | "down"
 ) {
-  // 1. Check for an existing vote
   const { data: existing, error: fetchErr } = await supabase
     .from("post_votes")
     .select("id, vote_type")
@@ -121,15 +151,12 @@ export async function votePost(
     .maybeSingle();
   if (fetchErr) throw fetchErr;
 
-  // ── Toggle off (clicking the same vote again) ─────────────────────────────
   if (existing?.vote_type === type) {
     await supabase.from("post_votes").delete().eq("id", existing.id);
-    // Decrement the matching column, floor at 0 via MAX in SQL
     await supabase.rpc("decrement_vote", { p_post_id: postId, p_column: type === "up" ? "upvotes" : "downvotes" });
     return;
   }
 
-  // ── Switch vote ───────────────────────────────────────────────────────────
   if (existing) {
     await supabase.from("post_votes").update({ vote_type: type }).eq("id", existing.id);
     const addCol    = type === "up" ? "upvotes"   : "downvotes";
@@ -139,7 +166,6 @@ export async function votePost(
     return;
   }
 
-  // ── First vote ────────────────────────────────────────────────────────────
   await supabase.from("post_votes").insert({ post_id: postId, user_id: userId, vote_type: type });
   const col = type === "up" ? "upvotes" : "downvotes";
   await supabase.rpc("increment", { table_name: "posts", column_name: col, row_id: postId });

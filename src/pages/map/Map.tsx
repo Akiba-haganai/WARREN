@@ -239,7 +239,7 @@ function PinDrawer({
         {pin.title}
       </h2>
 
-      {pin.photos.length > 0 ? (
+      {pin.photos && pin.photos.length > 0 ? (
         <div className="relative rounded-xl overflow-hidden mb-3 bg-slate-100 dark:bg-slate-800" style={{ height: 160 }}>
           <img
             src={pin.photos[photoIdx]}
@@ -304,9 +304,9 @@ interface PinFormData {
   title: string;
   description: string;
   category: PinCategory;
-  floor: string;
-  hours: string;
-  contact: string;
+  floor: string | undefined;
+  hours: string | undefined;
+  contact: string | undefined;
   x_percent: number;
   y_percent: number;
   photos: string[];
@@ -974,7 +974,7 @@ export default function CampusMapPage() {
 
           <div
             ref={containerRef}
-            className="relative w-full h-full"
+            className="absolute inset-0"
             onWheel={handleWheel}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -995,7 +995,7 @@ export default function CampusMapPage() {
               onClick={handleMapClick}
             >
               <img
-                src="/campus-map.png"
+                src={`${import.meta.env.BASE_URL}campus-map.png`}
                 alt="Campus map"
                 className="w-full h-full object-contain select-none pointer-events-none"
                 draggable={false}
@@ -1070,7 +1070,7 @@ export default function CampusMapPage() {
           <div className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-4" />
           {showForm && (
             <PinForm
-              initial={editingPin ?? undefined}
+              initial={editingPin ? { ...editingPin, floor: editingPin.floor ?? undefined, hours: editingPin.hours ?? undefined, contact: editingPin.contact ?? undefined, photos: editingPin.photos ?? undefined } : undefined}
               onSave={handleSavePin}
               onCancel={() => {
                 setShowForm(false);

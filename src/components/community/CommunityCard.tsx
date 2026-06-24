@@ -1,0 +1,114 @@
+import { memo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Users, Plus, UserX, MessageCircle } from "lucide-react";
+import type { Community } from "../../types/community";
+
+interface Props {
+  community: Community;
+  memberCount: number;
+  isJoined: boolean;
+  isJoining: boolean;
+  canManage: boolean;
+  onToggleMembership: (id: string) => void;
+  onManageMembers: (id: string) => void;
+}
+
+function CommunityCard({
+  community,
+  memberCount,
+  isJoined,
+  isJoining,
+  canManage,
+  onToggleMembership,
+  onManageMembers,
+}: Props) {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    if (isJoined) {
+      navigate(`/community/${community.id}/chat`);
+    } else {
+      alert("Join this community to enter the chat!");
+    }
+  };
+
+  return (
+    <div
+      onClick={handleCardClick}
+      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${community.cover_color} p-5 shadow-md hover:shadow-lg transition-all duration-300 group cursor-pointer`}
+      title={isJoined ? "Open chat" : "Join to chat"}
+    >
+      {/* Background icon */}
+      <div className="absolute -bottom-4 -right-4 text-6xl opacity-20 select-none pointer-events-none">
+        {community.icon}
+      </div>
+
+      <div className="relative z-10">
+        {/* Header row */}
+        <div className="flex items-start justify-between mb-2">
+          <div className="text-3xl">
+            {community.icon.startsWith("http") ? (
+              <img src={community.icon} alt="" className="w-8 h-8 rounded-lg object-cover" />
+            ) : (
+              community.icon
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {canManage && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onManageMembers(community.id);
+                }}
+                className="p-1.5 rounded-full bg-white/20 text-white hover:bg-white/30"
+                title="Manage members"
+              >
+                <UserX size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Name & Description */}
+        <h3 className="font-bold text-white text-lg leading-tight mb-1">
+          {community.name}
+        </h3>
+        <p className="text-white/80 text-sm line-clamp-2 mb-3">
+          {community.description}
+        </p>
+
+        {/* Bottom row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-white/90 text-xs font-medium">
+            <Users size={14} />
+            <span>
+              {memberCount} {memberCount === 1 ? "member" : "members"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isJoined ? (
+              <span className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+                <MessageCircle size={14} />
+                Open Chat
+              </span>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleMembership(community.id);
+                }}
+                disabled={isJoining}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-900 hover:bg-white/90 disabled:opacity-60"
+              >
+                <Plus size={14} /> Join
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default memo(CommunityCard);

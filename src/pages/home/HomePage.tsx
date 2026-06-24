@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-
-
 import AppShell from "../../components/layout/AppShell";
 import CreatePostSheet from "../../components/posts/CreatePostSheet";
 import PostCard from "../../components/posts/PostCard";
@@ -27,27 +25,25 @@ export default function HomePage() {
     vote,
     removePost,
     startRealtime,
-    userVotes, // reactive user votes map
+    userVotes,
   } = usePostStore();
 
   const [openSheet, setOpenSheet] = useState(false);
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
+  const [activeCommentPostOwner, setActiveCommentPostOwner] = useState<string | null>(null);
   const observerRef = useRef<HTMLDivElement | null>(null);
   const realtimeCleanup = useRef<(() => void) | null>(null);
 
-  // Fetch initial posts and start real-time subscription
   useEffect(() => {
     refresh();
     realtimeCleanup.current = startRealtime();
     return () => {
       realtimeCleanup.current?.();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Infinite scroll observer for "new" mode
   useEffect(() => {
     if (sortMode !== "new" || !observerRef.current) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
@@ -73,7 +69,6 @@ export default function HomePage() {
       <AppShell>
         <PullToRefresh onRefresh={refresh}>
           <div className="px-4 pb-28">
-            {/* Sticky header with info and toggle */}
             <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl pt-4 pb-3 mb-4">
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Home Feed
@@ -82,7 +77,6 @@ export default function HomePage() {
                 Live campus conversations
               </p>
 
-              {/* Guidelines card – prettier */}
               <div className="mt-4 rounded-2xl border border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-slate-900 p-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
@@ -100,13 +94,11 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Feed toggle */}
               <div className="mt-4">
                 <FeedToggle active={sortMode} onChange={setSortMode} />
               </div>
             </div>
 
-            {/* Skeleton loading */}
             {loading && posts.length === 0 && (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
@@ -115,28 +107,25 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Error state */}
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 text-red-600 p-4 rounded-2xl mb-4 text-sm flex items-center gap-2">
                 <span>⚠️</span> {error}
               </div>
             )}
 
-            {/* Empty state */}
             {!loading && posts.length === 0 && !error && (
-              <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center">
-                <div className="text-5xl mb-3">🎓</div>
-                <h2 className="font-bold text-lg text-slate-900 dark:text-white">
+              <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center space-y-3">
+                <div className="text-6xl mb-3 animate-in fade-in zoom-in-95 duration-500">🎓</div>
+                <h2 className="font-bold text-xl tracking-tight text-slate-900 dark:text-white">
                   No posts yet
                 </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
                   Be the first student to start a conversation.
                 </p>
               </div>
             )}
 
-            {/* Posts list */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               {posts.map((post, index) => (
                 <div key={post.id}>
                   <PostCard
@@ -144,9 +133,11 @@ export default function HomePage() {
                     userVote={userVotes[post.id] ?? null}
                     onVote={handleVote}
                     onDelete={handleDelete}
-                    onCommentClick={() => setActiveCommentPostId(post.id)}
+                    onCommentClick={() => {
+                      setActiveCommentPostId(post.id);
+                      setActiveCommentPostOwner(post.user_id);
+                    }}
                   />
-                  {/* Insert ad after every 7 posts */}
                   {(index + 1) % 7 === 0 && (
                     <div className="mt-4">
                       <FeedAd />
@@ -156,7 +147,6 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Infinite scroll sentinel + loading skeletons for "new" mode */}
             {sortMode === "new" && (
               <>
                 <div ref={observerRef} className="h-4" />
@@ -169,7 +159,6 @@ export default function HomePage() {
               </>
             )}
 
-            {/* End‑of‑feed message */}
             {!hasMore && posts.length > 0 && sortMode === "new" && (
               <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-8 pb-4">
                 🎉 You're all caught up
@@ -179,16 +168,14 @@ export default function HomePage() {
         </PullToRefresh>
       </AppShell>
 
-      {/* Floating “Post” button */}
       <button
         onClick={() => setOpenSheet(true)}
-        className="fixed bottom-24 right-5 z-40 h-14 px-5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-xl shadow-blue-500/30 flex items-center gap-2 hover:scale-105 transition-all active:scale-95 animate-bounce-subtle"
+        className="fixed bottom-24 right-5 z-40 min-h-[56px] min-w-[56px] px-5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all duration-200 motion-safe:active:scale-95 hover:shadow-xl"
       >
-        <Plus size={20} />
-        <span className="font-semibold text-sm">Post</span>
+        <Plus size={24} />
+        <span className="font-semibold text-base hidden sm:inline">Post</span>
       </button>
 
-      {/* Create post sheet */}
       <CreatePostSheet
         open={openSheet}
         onClose={() => setOpenSheet(false)}
@@ -198,11 +185,13 @@ export default function HomePage() {
         }}
       />
 
-      {/* Comment section drawer */}
       {activeCommentPostId && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setActiveCommentPostId(null)}
+          onClick={() => {
+            setActiveCommentPostId(null);
+            setActiveCommentPostOwner(null);
+          }}
         >
           <div
             className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl p-4 animate-slide-up max-h-[80vh] overflow-hidden"
@@ -211,7 +200,11 @@ export default function HomePage() {
             <div className="overflow-y-auto max-h-[75vh]">
               <CommentSection
                 postId={activeCommentPostId}
-                onClose={() => setActiveCommentPostId(null)}
+                postOwnerId={activeCommentPostOwner}
+                onClose={() => {
+                  setActiveCommentPostId(null);
+                  setActiveCommentPostOwner(null);
+                }}
               />
             </div>
           </div>

@@ -58,6 +58,132 @@ export type Database = {
           },
         ]
       }
+      answer_votes: {
+        Row: {
+          answer_id: string
+          created_at: string
+          id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          answer_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          answer_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_votes_answer_id_fkey"
+            columns: ["answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "answer_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      answers: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          downvotes: number
+          id: string
+          is_accepted: boolean
+          question_id: string
+          updated_at: string
+          upvotes: number
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          downvotes?: number
+          id?: string
+          is_accepted?: boolean
+          question_id: string
+          updated_at?: string
+          upvotes?: number
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          downvotes?: number
+          id?: string
+          is_accepted?: boolean
+          question_id?: string
+          updated_at?: string
+          upvotes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answers_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_users_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_users_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_votes: {
         Row: {
           comment_id: string
@@ -231,6 +357,326 @@ export type Database = {
           },
         ]
       }
+      community_messages: {
+        Row: {
+          community_id: string
+          content: string | null
+          created_at: string
+          expires_at: string | null
+          file_url: string | null
+          id: string
+          image_url: string | null
+          sticker_url: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          voice_url: string | null
+        }
+        Insert: {
+          community_id: string
+          content?: string | null
+          created_at?: string
+          expires_at?: string | null
+          file_url?: string | null
+          id?: string
+          image_url?: string | null
+          sticker_url?: string | null
+          type?: string
+          updated_at?: string
+          user_id: string
+          voice_url?: string | null
+        }
+        Update: {
+          community_id?: string
+          content?: string | null
+          created_at?: string
+          expires_at?: string | null
+          file_url?: string | null
+          id?: string
+          image_url?: string | null
+          sticker_url?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+          voice_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_messages_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      direct_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "direct_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_reminders: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reminders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          community_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          event_date: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          community_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          event_date: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          community_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          event_date?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          data: Json | null
+          id: string
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      karma_events: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "karma_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_room_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_room_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "live_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_room_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_rooms: {
+        Row: {
+          community_id: string | null
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          topic: string
+        }
+        Insert: {
+          community_id?: string | null
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          topic: string
+        }
+        Update: {
+          community_id?: string | null
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_rooms_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_rooms_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       map_pins: {
         Row: {
           category: Database["public"]["Enums"]["pin_category"]
@@ -325,6 +771,45 @@ export type Database = {
           },
         ]
       }
+      post_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_votes: {
         Row: {
           created_at: string | null
@@ -364,9 +849,11 @@ export type Database = {
           downvotes: number | null
           id: string
           image_url: string | null
+          is_anonymous: boolean | null
           score: number | null
           upvotes: number | null
           user_id: string | null
+          voice_url: string | null
         }
         Insert: {
           content?: string | null
@@ -374,9 +861,11 @@ export type Database = {
           downvotes?: number | null
           id?: string
           image_url?: string | null
+          is_anonymous?: boolean | null
           score?: number | null
           upvotes?: number | null
           user_id?: string | null
+          voice_url?: string | null
         }
         Update: {
           content?: string | null
@@ -384,9 +873,11 @@ export type Database = {
           downvotes?: number | null
           id?: string
           image_url?: string | null
+          is_anonymous?: boolean | null
           score?: number | null
           upvotes?: number | null
           user_id?: string | null
+          voice_url?: string | null
         }
         Relationships: [
           {
@@ -404,6 +895,8 @@ export type Database = {
           bio: string | null
           created_at: string | null
           id: string
+          is_senior: boolean
+          karma: number
           role: Database["public"]["Enums"]["app_role"]
           username: string | null
         }
@@ -412,6 +905,8 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id: string
+          is_senior?: boolean
+          karma?: number
           role?: Database["public"]["Enums"]["app_role"]
           username?: string | null
         }
@@ -420,6 +915,8 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id?: string
+          is_senior?: boolean
+          karma?: number
           role?: Database["public"]["Enums"]["app_role"]
           username?: string | null
         }
@@ -456,6 +953,51 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          author_id: string
+          body: string | null
+          community_id: string | null
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body?: string | null
+          community_id?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string | null
+          community_id?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
             referencedColumns: ["id"]
           },
         ]
