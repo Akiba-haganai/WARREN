@@ -6,7 +6,6 @@ import PostCardSkeleton from "../../components/posts/PostCardSkeleton";
 import PullToRefresh from "../../components/ui/PullToRefresh";
 import CommentSection from "../../components/comments/CommentSection";
 import FeedToggle from "../../components/feed/FeedToggle";
-import FeedAd from "../../components/ads/FeedAd";
 import { Plus } from "lucide-react";
 
 import { usePostStore } from "../../store/postStore";
@@ -126,25 +125,18 @@ export default function HomePage() {
             )}
 
             <div className="space-y-6">
-              {posts.map((post, index) => (
-                <div key={post.id}>
-                  <PostCard
-                    post={post}
-                    userVote={userVotes[post.id] ?? null}
-                    onVote={handleVote}
-                    onDelete={handleDelete}
-                    onCommentClick={() => {
-                      setActiveCommentPostId(post.id);
-                      setActiveCommentPostOwner(post.user_id);
-                    }}
-                  />
-                  {/* Ad after every 6th post */}
-                  {(index + 1) % 6 === 0 && (
-                    <div className="mt-4">
-                      <FeedAd />
-                    </div>
-                  )}
-                </div>
+              {posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  userVote={userVotes[post.id] ?? null}
+                  onVote={handleVote}
+                  onDelete={handleDelete}
+                  onCommentClick={() => {
+                    setActiveCommentPostId(post.id);
+                    setActiveCommentPostOwner(post.user_id);
+                  }}
+                />
               ))}
             </div>
 
