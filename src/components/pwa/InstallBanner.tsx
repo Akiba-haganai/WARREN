@@ -8,15 +8,13 @@ export default function InstallBanner() {
   const [showIOSModal, setShowIOSModal] = useState(false);
 
   useEffect(() => {
-    // 1. Check if already running in standalone mode (already installed)
+    // 1. Already installed (standalone mode)
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as any).standalone === true;
-
     if (isStandalone) return;
 
-    // 2. Check if user previously dismissed — but only honour dismissal
-    //    for 30 days so the banner can reappear after a long gap.
+    // 2. 30‑day dismissal
     const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
     if (dismissedAt && Date.now() - parseInt(dismissedAt) < thirtyDays) return;
@@ -31,21 +29,24 @@ export default function InstallBanner() {
 
     if (isIOS) {
       setIsIOSDevice(true);
+      // Show iOS banner after 2 seconds
       timer = setTimeout(() => setShowBanner(true), 2000);
     } else {
-      // 4. Android / Desktop Chrome / Edge
-      const handleBeforeInstallPrompt = (e: Event) => {
+      // Android / desktop Chrome / Edge – listen for the install prompt
+      const handler = (e: Event) => {
         e.preventDefault();
         setDeferredPrompt(e);
         setShowBanner(true);
       };
-      window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.addEventListener("beforeinstallprompt", handler);
+
+      // Fallback: if the event never fires, still show after 5 seconds
+      timer = setTimeout(() => {
+        if (!deferredPrompt) setShowBanner(true);
+      }, 5000);
 
       return () => {
-        window.removeEventListener(
-          "beforeinstallprompt",
-          handleBeforeInstallPrompt
-        );
+        window.removeEventListener("beforeinstallprompt", handler);
         if (timer) clearTimeout(timer);
       };
     }
@@ -57,19 +58,20 @@ export default function InstallBanner() {
 
   const handleInstall = async () => {
     if (isIOSDevice) {
-      setShowIOSModal(true);
+      setShowIOSModal(true);            // Show iOS walkthrough
     } else if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        setShowBanner(false);
-      }
+      if (outcome === "accepted") setShowBanner(false);
       setDeferredPrompt(null);
+    } else {
+      // Fallback: open a generic install guide or simply dismiss
+      alert("You can install this app from your browser menu.");
+      setShowBanner(false);
     }
   };
 
   const handleDismiss = () => {
-    // Store timestamp instead of boolean so it expires after 30 days
     localStorage.setItem("pwa-install-dismissed-at", String(Date.now()));
     setShowBanner(false);
   };
@@ -81,7 +83,6 @@ export default function InstallBanner() {
       {/* Floating Banner */}
       <div className="fixed bottom-24 left-4 right-4 z-50">
         <div className="relative overflow-hidden rounded-3xl border border-blue-100 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 p-4 pr-10 shadow-2xl backdrop-blur-md">
-          {/* Gradient accent line */}
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500" />
 
           <div className="flex items-center justify-between gap-4">
@@ -111,7 +112,6 @@ export default function InstallBanner() {
             </button>
           </div>
 
-          {/* Dismiss Button */}
           <button
             onClick={handleDismiss}
             className="absolute top-3.5 right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors duration-150"
@@ -126,10 +126,8 @@ export default function InstallBanner() {
       {showIOSModal && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/40 backdrop-blur-sm transition-opacity duration-300">
           <div className="absolute inset-0" onClick={() => setShowIOSModal(false)} />
-
           <div className="relative w-full max-w-lg rounded-t-[32px] border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 pb-8 shadow-2xl animate-slide-up text-left">
             <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
-
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50">
@@ -191,8 +189,7 @@ export default function InstallBanner() {
                     Confirm by tapping "Add"
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Tap <strong>"Add"</strong> in the top-right corner to
-                    complete installation.
+                    Tap <strong>"Add"</strong> in the top‑right corner to complete.
                   </p>
                 </div>
               </div>
