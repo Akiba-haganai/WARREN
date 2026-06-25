@@ -2,10 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="google-adsense-account" content="ca-pub-2017155922423033" />
-    <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- Theme: apply dark class before paint -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <!-- PWA -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="default"
+    />
+
+    <meta name="theme-color" content="#2563eb" />
+
+    <!-- Prevent flash of wrong theme -->
     <script>
       try {
         if (localStorage.getItem("theme") === "dark") {
@@ -13,51 +26,49 @@
         }
       } catch (_) {}
     </script>
-    start_url: "/?v=3",   // bump this number whenever you deploy a fix
 
-    <!-- Safe SW crash recovery – runs only once, no loops -->
+    <!-- Crash logging -->
     <script>
-      try {
-        if ("serviceWorker" in navigator) {
-          var recoveryFlag = localStorage.getItem("warren-needs-recovery");
-          if (recoveryFlag === "1") {
-            // App didn't mount last time → clean all SW & cache, then reload
-            localStorage.removeItem("warren-needs-recovery");
-            navigator.serviceWorker.getRegistrations()
-              .then(function(regs) {
-                return Promise.all(regs.map(function(r) { return r.unregister(); }));
-              })
-              .then(function() { return caches.keys(); })
-              .then(function(keys) {
-                return Promise.all(keys.map(function(k) { return caches.delete(k); }));
-              })
-              .then(function() { window.location.reload(); });
-          } else {
-            // Set flag – will be cleared when App mounts successfully
-            localStorage.setItem("warren-needs-recovery", "1");
-          }
-        }
-      } catch (_) {}
+      window.addEventListener("error", function (event) {
+        console.error("[Warren Global Error]", event.error);
+      });
+
+      window.addEventListener("unhandledrejection", function (event) {
+        console.error(
+          "[Warren Unhandled Promise]",
+          event.reason
+        );
+      });
     </script>
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Icons -->
+    <link rel="icon" href="/favicon.svg" />
 
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
     />
 
-    <title>Warren | Campus Social Network</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Adsense -->
+    <meta
+      name="google-adsense-account"
+      content="ca-pub-2017155922423033"
+    />
+
+    <title>Warren | Campus Social Network</title>
   </head>
+
   <body>
     <div id="root"></div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
