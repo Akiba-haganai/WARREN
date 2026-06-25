@@ -52,7 +52,7 @@ interface Props {
   onVote: (id: string, type: "up" | "down") => void;
   onDelete?: (id: string) => void;
   onCommentClick?: () => void;
-  onPostClick?: () => void;   // NEW
+  onPostClick?: () => void;   // Tapping the content or image opens the post detail
 }
 
 export default function PostCard({
@@ -182,12 +182,16 @@ export default function PostCard({
     }
   };
 
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (post.image_url) {
+      window.open(post.image_url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
-    <article
-      onClick={() => onPostClick?.()}
-      className="overflow-hidden rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-sm transition-all duration-200 ease-in-out hover:shadow-md motion-safe:active:scale-[0.99] cursor-pointer"
-    >
-      {/* ─── Header ────────────────────────────────────────────────────────── */}
+    <article className="overflow-hidden rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-sm transition-all duration-200 ease-in-out hover:shadow-md motion-safe:active:scale-[0.99]">
+      {/* ─── Header (not tappable for post detail) ────────────────────────── */}
       <div className="p-2.5 sm:p-3">
         <div className="flex items-start gap-2">
           <Link
@@ -254,7 +258,7 @@ export default function PostCard({
 
           <div className="flex items-center gap-0.5 ml-1">
             <button
-              onClick={(e) => { e.stopPropagation(); handleReport(); }}
+              onClick={handleReport}
               aria-label="Report post"
               className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center transition"
             >
@@ -262,7 +266,7 @@ export default function PostCard({
             </button>
             {canDelete && onDelete && (
               <button
-                onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
+                onClick={() => onDelete(post.id)}
                 aria-label="Delete post"
                 className="p-1.5 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center transition"
               >
@@ -272,17 +276,19 @@ export default function PostCard({
           </div>
         </div>
 
-        {/* Content */}
-        {post.content && (
-          <p className="mt-1.5 whitespace-pre-wrap break-words text-[11px] sm:text-xs leading-snug text-slate-700 dark:text-slate-200">
-            {post.content}
-          </p>
-        )}
+        {/* Tappable content – opens post detail */}
+        <div onClick={onPostClick} className="cursor-pointer">
+          {post.content && (
+            <p className="mt-1.5 whitespace-pre-wrap break-words text-[11px] sm:text-xs leading-snug text-slate-700 dark:text-slate-200">
+              {post.content}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Image */}
+      {/* Tappable image – opens full screen */}
       {post.image_url && (
-        <div className="border-y border-slate-100 dark:border-slate-800">
+        <div className="border-y border-slate-100 dark:border-slate-800 cursor-pointer" onClick={handleImageClick}>
           <img
             src={post.image_url}
             alt="Post attachment"
@@ -302,7 +308,7 @@ export default function PostCard({
       {/* ─── Action bar ────────────────────────────────────────────────────── */}
       <div className="px-1.5 py-1.5 sm:px-2 sm:py-1.5 grid grid-cols-5 gap-1">
         <button
-          onClick={(e) => { e.stopPropagation(); onVote(post.id, "up"); }}
+          onClick={() => onVote(post.id, "up")}
           className={`flex items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[11px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
             userVote === "up"
               ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold shadow-sm"
@@ -315,7 +321,7 @@ export default function PostCard({
         </button>
 
         <button
-          onClick={(e) => { e.stopPropagation(); onVote(post.id, "down"); }}
+          onClick={() => onVote(post.id, "down")}
           className={`flex items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[11px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
             userVote === "down"
               ? "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 font-semibold shadow-sm"
@@ -328,7 +334,7 @@ export default function PostCard({
         </button>
 
         <button
-          onClick={(e) => { e.stopPropagation(); onCommentClick?.(); }}
+          onClick={onCommentClick}
           className="flex items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[11px] bg-slate-50/80 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400 text-slate-600 dark:text-slate-300 transition-all duration-200 motion-safe:active:scale-[0.98]"
           aria-label="Comments"
         >
@@ -337,7 +343,7 @@ export default function PostCard({
         </button>
 
         <button
-          onClick={(e) => { e.stopPropagation(); handleShare(); }}
+          onClick={handleShare}
           aria-label="Share post"
           disabled={sharing}
           className="flex items-center justify-center rounded-xl py-2 min-h-[44px] text-[11px] bg-slate-50/80 dark:bg-slate-800/80 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 hover:text-cyan-600 dark:hover:text-cyan-400 text-slate-600 dark:text-slate-300 transition-all duration-200 motion-safe:active:scale-[0.98] disabled:opacity-50"
@@ -346,7 +352,7 @@ export default function PostCard({
         </button>
 
         <button
-          onClick={(e) => { e.stopPropagation(); handleSaveToggle(); }}
+          onClick={handleSaveToggle}
           aria-label={saved ? "Unsave post" : "Save post"}
           className={`flex items-center justify-center rounded-xl py-2 min-h-[44px] text-[11px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
             saved
@@ -367,7 +373,7 @@ export default function PostCard({
           return (
             <button
               key={emoji}
-              onClick={(e) => { e.stopPropagation(); handleReaction(emoji); }}
+              onClick={() => handleReaction(emoji)}
               className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 min-h-[36px] min-w-[44px] rounded-full transition-all duration-200 motion-safe:active:scale-[0.98] ${
                 active
                   ? "bg-slate-200 dark:bg-slate-700 shadow-sm"
