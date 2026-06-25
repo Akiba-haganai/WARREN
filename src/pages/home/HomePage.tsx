@@ -63,6 +63,11 @@ export default function HomePage() {
     await removePost(postId);
   };
 
+  // Get the currently active post object (for showing inside the drawer)
+  const activePost = activeCommentPostId
+    ? posts.find((p) => p.id === activeCommentPostId) ?? null
+    : null;
+
   return (
     <>
       <AppShell>
@@ -195,6 +200,24 @@ export default function HomePage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="overflow-y-auto max-h-[75vh]">
+              {/* Show the full post content here */}
+              {activePost && (
+                <div className="mb-4">
+                  <p className="text-sm sm:text-base whitespace-pre-wrap text-slate-700 dark:text-slate-200">
+                    {activePost.content}
+                  </p>
+                  {activePost.image_url && (
+                    <img
+                      src={activePost.image_url}
+                      alt="Post attachment"
+                      className="w-full max-h-60 object-cover rounded-xl mt-3"
+                    />
+                  )}
+                  {activePost.voice_url && (
+                    <audio controls src={activePost.voice_url} className="w-full mt-2 h-8" />
+                  )}
+                </div>
+              )}
               <CommentSection
                 postId={activeCommentPostId}
                 postOwnerId={activeCommentPostOwner}
