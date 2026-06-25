@@ -24,7 +24,7 @@ export default defineConfig({
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
-        start_url: "/?v=6",
+        start_url: "/?v=7",
         scope: "/",
         icons: [
           { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
@@ -42,12 +42,16 @@ export default defineConfig({
 
         runtimeCaching: [
           {
+            // Only cache your own static assets – nothing external
             // @ts-ignore – `self` is available inside the service worker
             urlPattern: ({ url }) => url.origin === self.location.origin,
             handler: "StaleWhileRevalidate",
             options: {
               cacheName: "static-assets",
-              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 },
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
             },
           },
         ],

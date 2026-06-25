@@ -10,7 +10,6 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const booted = useRef(false);
 
-  // ── Boot sequence ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (booted.current) return;
     booted.current = true;
