@@ -7,13 +7,8 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-
     VitePWA({
       registerType: "autoUpdate",
-      strategies: "injectManifest",
-
-      srcDir: "src",
-      filename: "sw.ts",
 
       includeAssets: [
         "favicon.svg",
@@ -29,31 +24,33 @@ export default defineConfig({
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
-        start_url: "/",
+        start_url: "/?v=6",
         scope: "/",
-
         icons: [
-          {
-            src: "pwa-192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "pwa-512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "pwa-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
+          { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
+          { src: "/pwa-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
 
-      injectManifest: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        navigateFallback: "/index.html",
+
+        runtimeCaching: [
+          {
+            // @ts-ignore – `self` is available inside the service worker
+            urlPattern: ({ url }) => url.origin === self.location.origin,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "static-assets",
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 },
+            },
+          },
+        ],
       },
     }),
   ],

@@ -2,52 +2,53 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    />
-
-    <!-- PWA MODE -->
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="google-adsense-account" content="ca-pub-2017155922423033" />
 
-    <meta name="theme-color" content="#2563eb" />
-
-    <!-- PREVENT WHITE FLASH -->
+    <!-- Theme: apply dark class before paint -->
     <script>
       try {
         if (localStorage.getItem("theme") === "dark") {
           document.documentElement.classList.add("dark");
         }
-      } catch (e) {}
+      } catch (_) {}
     </script>
 
-    <!-- GLOBAL ERROR SAFETY -->
+    <!-- Safe SW crash recovery – runs only once, no loops -->
     <script>
-      window.addEventListener("error", (e) => {
-        console.error("[GLOBAL ERROR]", e.error);
-      });
-
-      window.addEventListener("unhandledrejection", (e) => {
-        console.error("[PROMISE ERROR]", e.reason);
-      });
+      try {
+        if ("serviceWorker" in navigator) {
+          var recoveryFlag = localStorage.getItem("warren-needs-recovery");
+          if (recoveryFlag === "1") {
+            localStorage.removeItem("warren-needs-recovery");
+            navigator.serviceWorker.getRegistrations()
+              .then(function(regs) {
+                return Promise.all(regs.map(function(r) { return r.unregister(); }));
+              })
+              .then(function() { return caches.keys(); })
+              .then(function(keys) {
+                return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+              })
+              .then(function() { window.location.reload(); });
+          } else {
+            localStorage.setItem("warren-needs-recovery", "1");
+          }
+        }
+      } catch (_) {}
     </script>
 
-    <link rel="icon" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>Warren | Campus Social Network</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
-
-    <title>Warren</title>
   </head>
-
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

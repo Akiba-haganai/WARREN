@@ -1,25 +1,22 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { registerSW } from "virtual:pwa-register";
-
 import App from "./App";
 import "./index.css";
 
-registerSW({
-  immediate: false,
-
-  onNeedRefresh() {
+// ── PWA update handling ──────────────────────────────────────────────────────
+// The VitePWA plugin (registerType: "autoUpdate") fires this event when
+// a new version is waiting. We show a friendly prompt and reload.
+window.addEventListener("pwa:update-available", () => {
+  const shouldUpdate = window.confirm(
+    "A new version of Warren is available. Update now?"
+  );
+  if (shouldUpdate) {
     window.location.reload();
-  },
-
-  onOfflineReady() {
-    console.log("[Warren] offline ready");
-  },
+  }
 });
 
 const container = document.getElementById("root");
-
-if (!container) throw new Error("Root missing");
+if (!container) throw new Error("[Warren] Root element not found.");
 
 createRoot(container).render(
   <StrictMode>

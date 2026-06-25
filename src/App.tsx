@@ -2,41 +2,37 @@ import { useEffect, useRef, useState } from "react";
 import AppRouter from "./routes/AppRouter";
 import { useAuthStore } from "./store/authStore";
 import { useThemeStore } from "./store/themeStore";
-import InstallPromptController from "./components/pwa/InstallPromptController";
-import { initSyncEngine } from "./components/pwa/syncEngine";
+import InstallBanner from "./components/pwa/InstallBanner";
 
 export default function App() {
   const initAuth = useAuthStore((s) => s.initialize);
   const initTheme = useThemeStore((s) => s.initTheme);
-
   const [ready, setReady] = useState(false);
   const booted = useRef(false);
 
+  // ── Force update check once per 24h ────────────────────────────────────────
+  useEffect(() => {
+    const key = "warren-last-version-check";
+    const lastCheck = localStorage.getItem(key);
+    const now = Date.now();
+    if (!lastCheck || now - parseInt(lastCheck) > 24 * 60 * 60 * 1000) {
+      localStorage.setItem(key, String(now));
+      window.location.reload();
+    }
+  }, []);
+
+  // ── Boot sequence ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (booted.current) return;
     booted.current = true;
 
-    let alive = true;
+    // Clear recovery flag – we've successfully mounted!
+    try {
+      localStorage.removeItem("warren-needs-recovery");
+    } catch (_) {}
 
-    (async () => {
-      try {
-        await Promise.allSettled([initAuth(), initTheme()]);
-
-        // IMPORTANT: delay prevents iOS blank flash crash
-        requestAnimationFrame(() => {
-          initSyncEngine();
-          if (alive) setReady(true);
-        });
-      } catch (e) {
-        console.error("[BOOT ERROR]", e);
-        setReady(true);
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, []);
+    Promise.allSettled([initAuth(), initTheme()]).finally(() => setReady(true));
+  }, [initAuth, initTheme]);
 
   if (!ready) {
     return (
@@ -47,8 +43,9 @@ export default function App() {
   }
 
   return (
-    <InstallPromptController>
+    <>
       <AppRouter />
-    </InstallPromptController>
+      <InstallBanner />
+    </>
   );
 }
