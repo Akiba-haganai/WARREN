@@ -8,85 +8,89 @@ export default function InstallBanner() {
   const [showIOSModal, setShowIOSModal] = useState(false);
 
   useEffect(() => {
-    // 1. Already installed
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as any).standalone === true;
-    if (isStandalone) {
-      console.log("[InstallBanner] Already in standalone mode – hiding");
-      return;
-    }
 
-    // 2. 30‑day dismissal
     const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-    if (dismissedAt && Date.now() - parseInt(dismissedAt) < thirtyDays) {
-      console.log("[InstallBanner] Dismissed recently – hiding");
+
+    const recentlyDismissed =
+      dismissedAt &&
+      Date.now() - parseInt(dismissedAt) < thirtyDays;
+
+    // ❌ If installed or dismissed recently → do nothing
+    if (isStandalone || recentlyDismissed) {
       return;
     }
 
-    // 3. Detect iOS
     const ua = navigator.userAgent;
     const isIPadOS =
-      navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || isIPadOS;
+      navigator.platform === "MacIntel" &&
+      navigator.maxTouchPoints > 1;
 
-    console.log("[InstallBanner] isIOS:", isIOS);
+    const isIOS =
+      /iPad|iPhone|iPod/.test(ua) || isIPadOS;
 
     if (isIOS) {
       setIsIOSDevice(true);
-      // Show iOS banner after 2 seconds
+
       const timer = setTimeout(() => {
-        console.log("[InstallBanner] Showing iOS banner");
         setShowBanner(true);
-      }, 2000);
+      }, 1500);
+
       return () => clearTimeout(timer);
-    } else {
-      // Android / Desktop Chrome / Edge
-      const handler = (e: Event) => {
-        e.preventDefault();
-        console.log("[InstallBanner] beforeinstallprompt fired");
-        setDeferredPrompt(e);
-        setShowBanner(true);
-      };
-
-      // Listen for the prompt
-      window.addEventListener("beforeinstallprompt", handler);
-
-      // Fallback: if the event never fires, still show after 3 seconds
-      const timer = setTimeout(() => {
-        if (!deferredPrompt) {
-          console.log("[InstallBanner] No deferredPrompt – showing fallback");
-          setShowBanner(true);
-        }
-      }, 3000);
-
-      return () => {
-        window.removeEventListener("beforeinstallprompt", handler);
-        clearTimeout(timer);
-      };
     }
+
+    // ANDROID / DESKTOP
+    const handler = (e: Event) => {
+      e.preventDefault();
+
+      setDeferredPrompt(e);
+      setShowBanner(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handler);
+
+    // fallback: ALWAYS show banner after delay
+    const timer = setTimeout(() => {
+      setShowBanner(true);
+    }, 3500);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      clearTimeout(timer);
+    };
   }, []);
 
   const handleInstall = async () => {
     if (isIOSDevice) {
       setShowIOSModal(true);
-    } else if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log("[InstallBanner] Install outcome:", outcome);
-      if (outcome === "accepted") setShowBanner(false);
-      setDeferredPrompt(null);
-    } else {
-      // Fallback for browsers that don't support install prompt
-      alert("You can install this app from your browser menu.");
-      setShowBanner(false);
+      return;
     }
+
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+
+      const { outcome } = await deferredPrompt.userChoice;
+
+      if (outcome === "accepted") {
+        setShowBanner(false);
+      }
+
+      setDeferredPrompt(null);
+      return;
+    }
+
+    alert("Open browser menu → Install App / Add to Home Screen");
   };
 
   const handleDismiss = () => {
-    console.log("[InstallBanner] Dismissed");
-    localStorage.setItem("pwa-install-dismissed-at", String(Date.now()));
+    localStorage.setItem(
+      "pwa-install-dismissed-at",
+      String(Date.now())
+    );
+
     setShowBanner(false);
   };
 
@@ -101,25 +105,23 @@ export default function InstallBanner() {
 
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 shrink-0 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white font-black shadow-md shadow-blue-500/20">
+              <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white font-black">
                 W
               </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 tracking-wider uppercase">
+
+              <div>
+                <p className="text-xs font-semibold text-blue-600 uppercase">
                   App Available
                 </p>
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                <p className="text-sm font-bold">
                   Install Warren App
-                </p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Add to home screen for native experience
                 </p>
               </div>
             </div>
 
             <button
               onClick={handleInstall}
-              className="flex items-center gap-1.5 rounded-2xl bg-blue-600 dark:bg-blue-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:scale-[1.02] active:scale-95 transition-all duration-200 shrink-0"
+              className="flex items-center gap-1.5 rounded-2xl bg-blue-600 px-4 py-2 text-xs font-bold text-white"
             >
               <Download size={13} />
               Install
@@ -127,91 +129,36 @@ export default function InstallBanner() {
           </div>
 
           <button
+          aria-label="submit"
             onClick={handleDismiss}
-            className="absolute top-3.5 right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors duration-150"
-            aria-label="Dismiss banner"
+            className="absolute top-3.5 right-3 p-1 text-slate-400"
           >
             <X size={16} />
           </button>
         </div>
       </div>
 
-      {/* iOS Modal Sheet */}
+      {/* iOS Modal */}
       {showIOSModal && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/40 backdrop-blur-sm transition-opacity duration-300">
-          <div className="absolute inset-0" onClick={() => setShowIOSModal(false)} />
-          <div className="relative w-full max-w-lg rounded-t-[32px] border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 pb-8 shadow-2xl animate-slide-up text-left">
-            <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50">
-                  Install on iPhone / iPad
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Add Warren to your home screen in 3 steps
-                </p>
-              </div>
-              <button
-                aria-label="Close"
-                onClick={() => setShowIOSModal(false)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors duration-150"
-              >
-                <X size={20} />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40">
+          <div className="bg-white dark:bg-slate-900 p-6 w-full rounded-t-3xl">
+            <h3 className="font-bold mb-3">
+              Install on iPhone / iPad
+            </h3>
 
-            <div className="space-y-4 py-2">
-              <div className="flex items-start gap-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 text-sm font-bold border border-blue-100 dark:border-blue-900/30">
-                  1
-                </div>
-                <div className="text-sm">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">
-                    Tap the Share button
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
-                    Click the share button{" "}
-                    <span className="inline-flex p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                      <Share size={12} />
-                    </span>{" "}
-                    at the bottom of Safari.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 text-sm font-bold border border-blue-100 dark:border-blue-900/30">
-                  2
-                </div>
-                <div className="text-sm">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">
-                    Select "Add to Home Screen"
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Scroll down the share sheet and tap{" "}
-                    <strong>"Add to Home Screen"</strong>.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 text-sm font-bold border border-blue-100 dark:border-blue-900/30">
-                  3
-                </div>
-                <div className="text-sm">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">
-                    Confirm by tapping "Add"
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Tap <strong>"Add"</strong> in the top‑right corner to complete.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <p className="text-sm mb-2">
+              1. Tap Share <Share size={14} />
+            </p>
+            <p className="text-sm mb-2">
+              2. Add to Home Screen
+            </p>
+            <p className="text-sm mb-4">
+              3. Tap Add
+            </p>
 
             <button
               onClick={() => setShowIOSModal(false)}
-              className="mt-6 w-full rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700/80 py-3 text-sm font-bold text-slate-800 dark:text-slate-200 transition-colors duration-200"
+              className="w-full bg-blue-600 text-white py-2 rounded-xl"
             >
               Got it
             </button>
