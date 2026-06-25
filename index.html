@@ -8,67 +8,48 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
 
-    <!-- PWA -->
+    <!-- PWA MODE -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="default"
-    />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     <meta name="theme-color" content="#2563eb" />
 
-    <!-- Prevent flash of wrong theme -->
+    <!-- PREVENT WHITE FLASH -->
     <script>
       try {
         if (localStorage.getItem("theme") === "dark") {
           document.documentElement.classList.add("dark");
         }
-      } catch (_) {}
+      } catch (e) {}
     </script>
 
-    <!-- Crash logging -->
+    <!-- GLOBAL ERROR SAFETY -->
     <script>
-      window.addEventListener("error", function (event) {
-        console.error("[Warren Global Error]", event.error);
+      window.addEventListener("error", (e) => {
+        console.error("[GLOBAL ERROR]", e.error);
       });
 
-      window.addEventListener("unhandledrejection", function (event) {
-        console.error(
-          "[Warren Unhandled Promise]",
-          event.reason
-        );
+      window.addEventListener("unhandledrejection", (e) => {
+        console.error("[PROMISE ERROR]", e.reason);
       });
     </script>
 
-    <!-- Icons -->
     <link rel="icon" href="/favicon.svg" />
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
-      crossorigin
-    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Adsense -->
-    <meta
-      name="google-adsense-account"
-      content="ca-pub-2017155922423033"
-    />
-
-    <title>Warren | Campus Social Network</title>
+    <title>Warren</title>
   </head>
 
   <body>
     <div id="root"></div>
-
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

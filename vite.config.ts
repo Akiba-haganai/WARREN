@@ -10,11 +10,9 @@ export default defineConfig({
 
     VitePWA({
       registerType: "autoUpdate",
-
       strategies: "injectManifest",
 
       srcDir: "src",
-
       filename: "sw.ts",
 
       includeAssets: [
@@ -27,16 +25,11 @@ export default defineConfig({
         name: "Warren",
         short_name: "Warren",
         description: "Connect, share, and study together",
-
         theme_color: "#2563eb",
         background_color: "#ffffff",
-
         display: "standalone",
-
         orientation: "portrait",
-
         start_url: "/",
-
         scope: "/",
 
         icons: [
@@ -57,6 +50,10 @@ export default defineConfig({
             purpose: "maskable",
           },
         ],
+      },
+
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
       },
     }),
   ],

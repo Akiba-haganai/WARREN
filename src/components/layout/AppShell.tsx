@@ -2,7 +2,6 @@ import { Suspense, memo } from "react";
 import type { ReactNode } from "react";
 import MobileNavbar from "./MobileNavbar";
 import BottomNavigation from "./BottomNavigation";
-import InstallBanner from "../pwa/InstallBanner";
 
 interface AppShellProps {
   children: ReactNode;
@@ -20,6 +19,7 @@ const AppShell = memo(function AppShell({
         text-slate-900
         dark:text-white
         overflow-x-hidden
+        flex flex-col
       "
     >
       {/* Fixed top navigation */}
@@ -39,6 +39,7 @@ const AppShell = memo(function AppShell({
           animate-in
           fade-in
           duration-200
+          flex-1
         "
       >
         <Suspense
@@ -60,9 +61,6 @@ const AppShell = memo(function AppShell({
         >
           {children}
         </Suspense>
-
-        {/* PWA Install Prompt */}
-        <InstallBanner />
       </main>
 
       {/* Fixed bottom navigation */}

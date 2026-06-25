@@ -1,101 +1,79 @@
 /// <reference lib="webworker" />
 
-import {
-  cleanupOutdatedCaches,
-  precacheAndRoute,
-} from "workbox-precaching";
 import { clientsClaim } from "workbox-core";
+import { precacheAndRoute } from "workbox-precaching";
+import { BackgroundSyncPlugin } from "workbox-background-sync";
+import { registerRoute } from "workbox-routing";
+import { NetworkOnly } from "workbox-strategies";
 
 declare let self: ServiceWorkerGlobalScope & {
-  __WB_MANIFEST: Array<{
-    url: string;
-    revision: string | null;
-  }>;
+  __WB_MANIFEST: any;
 };
-
-const SW_VERSION = "1.0.3";
 
 self.skipWaiting();
 clientsClaim();
 
-cleanupOutdatedCaches();
+/* ---------------- SAFE PRECACHE (FIX MOBILE WHITE SCREEN) ---------------- */
+precacheAndRoute(self.__WB_MANIFEST, {
+  cleanURLs: false,
+});
 
-precacheAndRoute(self.__WB_MANIFEST);
+/* ---------------- BACKGROUND SYNC (LEVEL 3) ---------------- */
 
-// ─────────────────────────────────────────────
-// PUSH NOTIFICATIONS
-// ─────────────────────────────────────────────
+const bgSyncPlugin = new BackgroundSyncPlugin("warren-sync-queue", {
+  maxRetentionTime: 24 * 60, // 24 hours
+});
 
-self.addEventListener("push", (event: PushEvent) => {
+registerRoute(
+  ({ request }) => request.method === "POST",
+  new NetworkOnly({
+    plugins: [bgSyncPlugin],
+  })
+);
+
+/* ---------------- PUSH ---------------- */
+
+self.addEventListener("push", (event) => {
   if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || "Warren", {
+        body: data.body || "",
+        icon: data.icon || "/pwa-192.png",
+        data: { url: data.url || "/" },
+        tag: "warren",
+      })
+    );
+  } catch (e) {
+    console.error("[SW PUSH ERROR]", e);
+  }
+});
+
+/* ---------------- NOTIFICATION CLICK ---------------- */
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const url = event.notification.data?.url || "/";
 
   event.waitUntil(
     (async () => {
-      try {
-        const payload = event.data!.json();
+      const clientsList = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
 
-        const title = payload.title || "Warren";
-
-        await self.registration.showNotification(title, {
-          body: payload.body || "",
-          icon: payload.icon || "/pwa-192.png",
-          badge: "/pwa-192.png",
-
-          data: {
-            url: payload.url || "/",
-          },
-
-          tag: "campus-social",
-        });
-      } catch (error) {
-        console.error("[SW] Push error:", error);
+      for (const client of clientsList) {
+        if ("focus" in client) {
+          client.focus();
+          return;
+        }
       }
+
+      return self.clients.openWindow(url);
     })()
   );
-});
-
-// ─────────────────────────────────────────────
-// NOTIFICATION CLICK
-// ─────────────────────────────────────────────
-
-self.addEventListener(
-  "notificationclick",
-  (event: NotificationEvent) => {
-    event.notification.close();
-
-    const targetUrl =
-      event.notification.data?.url || "/";
-
-    event.waitUntil(
-      self.clients
-        .matchAll({
-          type: "window",
-          includeUncontrolled: true,
-        })
-        .then((clientList) => {
-          for (const client of clientList) {
-            if (
-              "focus" in client &&
-              client.url.includes(targetUrl)
-            ) {
-              return client.focus();
-            }
-          }
-
-          return self.clients.openWindow(
-            targetUrl
-          );
-        })
-    );
-  }
-);
-
-// ─────────────────────────────────────────────
-// ACTIVATION
-// ─────────────────────────────────────────────
-
-self.addEventListener("activate", (event) => {
-  console.log(`[SW] Activated version ${SW_VERSION}`);
-
-  event.waitUntil(self.clients.claim());
 });

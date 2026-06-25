@@ -1,30 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 
-const STORAGE_KEY = "warren-install-ux";
+const STORAGE_KEY = "warren-install-state-v3";
 
 type State = {
   dismissed: boolean;
   shownCount: number;
   lastShown: number;
-  visits: number;
 };
 
-function getState(): State {
+function load(): State {
   try {
-    return (
-      JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}
-    );
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
   } catch {
     return {
       dismissed: false,
       shownCount: 0,
       lastShown: 0,
-      visits: 0,
     };
   }
 }
 
-function setState(state: State) {
+function save(state: State) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
@@ -40,36 +36,28 @@ export default function InstallPromptController({
 }: {
   children: React.ReactNode;
 }) {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [show, setShow] = useState(false);
+  const [prompt, setPrompt] = useState<any>(null);
+  const [visible, setVisible] = useState(false);
 
   const engagement = useRef({
-    startTime: Date.now(),
-    scrolled: false,
-    pageVisits: 1,
+    start: Date.now(),
+    scroll: false,
   });
 
-  // ─────────────────────────────────────────────
-  // INIT
-  // ─────────────────────────────────────────────
+  const triggered = useRef(false);
+
+  // ─────────────────────────────
+  // CAPTURE INSTALL EVENT (ONLY ONCE)
+  // ─────────────────────────────
   useEffect(() => {
     if (isStandalone()) return;
 
-    const state = getState();
-
+    const state = load();
     if (state.dismissed) return;
 
-    // update visits
-    const updated: State = {
-      ...state,
-      visits: (state.visits || 0) + 1,
-    };
-    setState(updated);
-
-    // install event
-    const handler = (e: Event) => {
+    const handler = (e: any) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setPrompt(e);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
@@ -79,127 +67,114 @@ export default function InstallPromptController({
     };
   }, []);
 
-  // ─────────────────────────────────────────────
-  // ENGAGEMENT TRACKING (scroll + time)
-  // ─────────────────────────────────────────────
+  // ─────────────────────────────
+  // ENGAGEMENT TRACKING
+  // ─────────────────────────────
   useEffect(() => {
     const onScroll = () => {
-      const scrollPercent =
-        window.scrollY /
-        (document.body.scrollHeight - window.innerHeight);
-
-      if (scrollPercent > 0.4) {
-        engagement.current.scrolled = true;
+      if (window.scrollY > 250) {
+        engagement.current.scroll = true;
       }
     };
 
     window.addEventListener("scroll", onScroll);
-
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // ─────────────────────────────────────────────
-  // DECISION ENGINE
-  // ─────────────────────────────────────────────
+  // ─────────────────────────────
+  // SINGLE DECISION ENGINE (NO INTERVALS)
+  // ─────────────────────────────
   useEffect(() => {
-    const timer = setInterval(() => {
-      const state = getState();
+    if (!prompt) return;
+    if (triggered.current) return;
 
-      if (state.dismissed) return;
-      if (!deferredPrompt) return;
+    const state = load();
 
-      const timeSpent = Date.now() - engagement.current.startTime;
-      const scrolled = engagement.current.scrolled;
-      const visits = state.visits;
+    if (state.dismissed) return;
+    if (state.shownCount >= 2) return;
 
-      const recentlyShown =
-        Date.now() - state.lastShown < 1000 * 60 * 60 * 24; // 24h cooldown
+    const timeSpent = Date.now() - engagement.current.start;
+    const engaged = timeSpent > 10000 || engagement.current.scroll;
 
-      const alreadyMax = state.shownCount >= 3;
+    const cooldown =
+      Date.now() - state.lastShown > 1000 * 60 * 60 * 24;
 
-      const engaged =
-        timeSpent > 12000 || scrolled || visits >= 2;
+    if (!engaged || !cooldown) return;
 
-      if (recentlyShown || alreadyMax) return;
+    triggered.current = true;
 
-      if (engaged) {
-        setShow(true);
+    setVisible(true);
 
-        setState({
-          ...state,
-          shownCount: state.shownCount + 1,
-          lastShown: Date.now(),
-        });
+    save({
+      dismissed: state.dismissed,
+      shownCount: state.shownCount + 1,
+      lastShown: Date.now(),
+    });
+  }, [prompt]);
 
-        clearInterval(timer);
-      }
-    }, 2000);
-
-    return () => clearInterval(timer);
-  }, [deferredPrompt]);
-
-  // ─────────────────────────────────────────────
+  // ─────────────────────────────
   // INSTALL ACTION
-  // ─────────────────────────────────────────────
+  // ─────────────────────────────
   const install = async () => {
-    if (!deferredPrompt) return;
+    if (!prompt) return;
 
-    deferredPrompt.prompt();
+    prompt.prompt();
 
-    const { outcome } = await deferredPrompt.userChoice;
+    const { outcome } = await prompt.userChoice;
 
     if (outcome === "accepted") {
-      setShow(false);
+      setVisible(false);
     }
 
-    setDeferredPrompt(null);
+    setPrompt(null);
   };
 
   const dismiss = () => {
-    const state = getState();
+    const state = load();
 
-    setState({
+    save({
       ...state,
-      dismissed: true, // permanent suppression
+      dismissed: true,
     });
 
-    setShow(false);
+    setVisible(false);
   };
 
-  if (!show) return <>{children}</>;
-
+  // ─────────────────────────────
+  // RENDER
+  // ─────────────────────────────
   return (
     <>
       {children}
 
-      <div className="fixed bottom-6 left-4 right-4 z-50">
-        <div className="rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-2xl p-4 flex items-center justify-between animate-pulse">
-          <div>
-            <p className="font-bold text-sm">
-              Install Warren App
-            </p>
-            <p className="text-xs opacity-90">
-              Faster • Offline • Native experience
-            </p>
-          </div>
+      {visible && (
+        <div className="fixed bottom-6 left-4 right-4 z-50">
+          <div className="rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-2xl p-4 flex items-center justify-between animate-fade-in">
+            <div>
+              <p className="font-bold text-sm">Install Warren</p>
+              <p className="text-xs opacity-90">
+                Offline • Fast • Native experience
+              </p>
+            </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={dismiss}
-              className="text-xs px-3 py-2 rounded-xl bg-white/20"
-            >
-              Not now
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={dismiss}
+                className="px-3 py-2 text-xs bg-white/20 rounded-xl"
+              >
+                Not now
+              </button>
 
-            <button
-              onClick={install}
-              className="text-xs px-3 py-2 rounded-xl bg-white text-blue-600 font-bold"
-            >
-              Install
-            </button>
+              <button
+                onClick={install}
+                className="px-3 py-2 text-xs bg-white text-blue-600 rounded-xl font-bold"
+              >
+                Install
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

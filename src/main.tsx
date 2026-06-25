@@ -5,33 +5,21 @@ import { registerSW } from "virtual:pwa-register";
 import App from "./App";
 import "./index.css";
 
-// ─────────────────────────────────────────────
-// PWA SERVICE WORKER REGISTRATION (SAFE MODE)
-// ─────────────────────────────────────────────
-
 registerSW({
-  immediate: false, // IMPORTANT: prevents cold-start crash/reload race
+  immediate: false,
 
   onNeedRefresh() {
-    const shouldUpdate = window.confirm(
-      "A new version of Warren is available. Update now?"
-    );
-
-    if (shouldUpdate) {
-      window.location.reload();
-    }
+    window.location.reload();
   },
 
   onOfflineReady() {
-    console.log("[Warren] Offline ready");
+    console.log("[Warren] offline ready");
   },
 });
 
 const container = document.getElementById("root");
 
-if (!container) {
-  throw new Error("[Warren] Root element not found.");
-}
+if (!container) throw new Error("Root missing");
 
 createRoot(container).render(
   <StrictMode>
