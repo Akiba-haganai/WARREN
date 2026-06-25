@@ -136,6 +136,10 @@ export default function HomePage() {
                     setActiveCommentPostId(post.id);
                     setActiveCommentPostOwner(post.user_id);
                   }}
+                  onPostClick={() => {
+                    setActiveCommentPostId(post.id);
+                    setActiveCommentPostOwner(post.user_id);
+                  }}
                 />
               ))}
             </div>
