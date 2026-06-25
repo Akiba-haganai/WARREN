@@ -8,16 +8,22 @@ export default function InstallBanner() {
   const [showIOSModal, setShowIOSModal] = useState(false);
 
   useEffect(() => {
-    // 1. Already installed (standalone mode)
+    // 1. Already installed
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as any).standalone === true;
-    if (isStandalone) return;
+    if (isStandalone) {
+      console.log("[InstallBanner] Already in standalone mode – hiding");
+      return;
+    }
 
     // 2. 30‑day dismissal
     const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-    if (dismissedAt && Date.now() - parseInt(dismissedAt) < thirtyDays) return;
+    if (dismissedAt && Date.now() - parseInt(dismissedAt) < thirtyDays) {
+      console.log("[InstallBanner] Dismissed recently – hiding");
+      return;
+    }
 
     // 3. Detect iOS
     const ua = navigator.userAgent;
@@ -25,53 +31,61 @@ export default function InstallBanner() {
       navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
     const isIOS = /iPad|iPhone|iPod/.test(ua) || isIPadOS;
 
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    console.log("[InstallBanner] isIOS:", isIOS);
 
     if (isIOS) {
       setIsIOSDevice(true);
       // Show iOS banner after 2 seconds
-      timer = setTimeout(() => setShowBanner(true), 2000);
+      const timer = setTimeout(() => {
+        console.log("[InstallBanner] Showing iOS banner");
+        setShowBanner(true);
+      }, 2000);
+      return () => clearTimeout(timer);
     } else {
-      // Android / desktop Chrome / Edge – listen for the install prompt
+      // Android / Desktop Chrome / Edge
       const handler = (e: Event) => {
         e.preventDefault();
+        console.log("[InstallBanner] beforeinstallprompt fired");
         setDeferredPrompt(e);
         setShowBanner(true);
       };
+
+      // Listen for the prompt
       window.addEventListener("beforeinstallprompt", handler);
 
-      // Fallback: if the event never fires, still show after 5 seconds
-      timer = setTimeout(() => {
-        if (!deferredPrompt) setShowBanner(true);
-      }, 5000);
+      // Fallback: if the event never fires, still show after 3 seconds
+      const timer = setTimeout(() => {
+        if (!deferredPrompt) {
+          console.log("[InstallBanner] No deferredPrompt – showing fallback");
+          setShowBanner(true);
+        }
+      }, 3000);
 
       return () => {
         window.removeEventListener("beforeinstallprompt", handler);
-        if (timer) clearTimeout(timer);
+        clearTimeout(timer);
       };
     }
-
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
   }, []);
 
   const handleInstall = async () => {
     if (isIOSDevice) {
-      setShowIOSModal(true);            // Show iOS walkthrough
+      setShowIOSModal(true);
     } else if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
+      console.log("[InstallBanner] Install outcome:", outcome);
       if (outcome === "accepted") setShowBanner(false);
       setDeferredPrompt(null);
     } else {
-      // Fallback: open a generic install guide or simply dismiss
+      // Fallback for browsers that don't support install prompt
       alert("You can install this app from your browser menu.");
       setShowBanner(false);
     }
   };
 
   const handleDismiss = () => {
+    console.log("[InstallBanner] Dismissed");
     localStorage.setItem("pwa-install-dismissed-at", String(Date.now()));
     setShowBanner(false);
   };
