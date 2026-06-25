@@ -10,17 +10,6 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const booted = useRef(false);
 
-  // ── Force update check once per 24h ────────────────────────────────────────
-  useEffect(() => {
-    const key = "warren-last-version-check";
-    const lastCheck = localStorage.getItem(key);
-    const now = Date.now();
-    if (!lastCheck || now - parseInt(lastCheck) > 24 * 60 * 60 * 1000) {
-      localStorage.setItem(key, String(now));
-      window.location.reload();
-    }
-  }, []);
-
   // ── Boot sequence ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (booted.current) return;
