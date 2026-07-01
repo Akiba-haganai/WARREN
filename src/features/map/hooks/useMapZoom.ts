@@ -9,7 +9,7 @@ export function useMapZoom() {
   const isDragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
   const dragStartOffset = useRef({ x: 0, y: 0 });
-  const movedDistance = useRef(0); // to distinguish click from drag
+  const movedDistance = useRef(0); // distinguish click from drag
 
   // ----- Pinch state -----
   const lastTouchDistance = useRef<number | null>(null);
@@ -17,13 +17,13 @@ export function useMapZoom() {
   const pinchStartOffset = useRef({ x: 0, y: 0 });
   const pinchCenter = useRef({ x: 0, y: 0 });
 
-  // ----- Common helpers -----
+  // ----- Reset -----
   const resetTransform = useCallback(() => {
     setScale(1);
     setOffset({ x: 0, y: 0 });
   }, []);
 
-  // ----- Mouse / Wheel -----
+  // ----- Wheel -----
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -43,6 +43,7 @@ export function useMapZoom() {
     [scale, offset]
   );
 
+  // ----- Mouse drag -----
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button, a")) return;
     isDragging.current = true;
@@ -58,7 +59,6 @@ export function useMapZoom() {
     const dy = e.clientY - lastPos.current.y;
     lastPos.current = { x: e.clientX, y: e.clientY };
     movedDistance.current += Math.abs(dx) + Math.abs(dy);
-    // Update offset – drag movement is in screen pixels, so offset grows directly
     setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
   }, []);
 
@@ -66,13 +66,32 @@ export function useMapZoom() {
     isDragging.current = false;
   }, []);
 
-  // ----- Touch handlers (pan + pinch) -----
-  // Removed handleTouchStart and handleTouchMove from direct React events
+  // ----- Touch helpers (pan + pinch) -----
+  const touchStartHandler = useCallback((e: TouchEvent) => {
+    e.preventDefault(); // now allowed because we attached as non‑passive
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      isDragging.current = true;
+      lastPos.current = { x: touch.clientX, y: touch.clientY };
+      dragStartOffset.current = { x: offset.x, y: offset.y };
+      movedDistance.current = 0;
+    } else if (e.touches.length === 2) {
+      isDragging.current = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDistance.current = Math.sqrt(dx * dx + dy * dy);
+      pinchStartScale.current = scale;
+      pinchStartOffset.current = { x: offset.x, y: offset.y };
+      pinchCenter.current = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      };
+    }
+  }, [scale, offset]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    e.preventDefault(); // prevent page scroll
+  const touchMoveHandler = useCallback((e: TouchEvent) => {
+    e.preventDefault();
     if (e.touches.length === 1 && isDragging.current) {
-      // Pan
       const touch = e.touches[0];
       const dx = touch.clientX - lastPos.current.x;
       const dy = touch.clientY - lastPos.current.y;
@@ -80,7 +99,6 @@ export function useMapZoom() {
       movedDistance.current += Math.abs(dx) + Math.abs(dy);
       setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
     } else if (e.touches.length === 2 && lastTouchDistance.current !== null) {
-      // Pinch
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const newDist = Math.sqrt(dx * dx + dy * dy);
@@ -91,7 +109,6 @@ export function useMapZoom() {
       if (!rect) return;
       const centerX = pinchCenter.current.x - rect.left;
       const centerY = pinchCenter.current.y - rect.top;
-      // Image point under pinch center in old coordinates
       const imgX = (centerX - pinchStartOffset.current.x) / pinchStartScale.current;
       const imgY = (centerY - pinchStartOffset.current.y) / pinchStartScale.current;
       const newOffsetX = centerX - imgX * newScale;
@@ -103,12 +120,11 @@ export function useMapZoom() {
     }
   }, [isDragging, scale, offset]);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+  const touchEndHandler = useCallback((e: TouchEvent) => {
     if (e.touches.length === 0) {
       isDragging.current = false;
       lastTouchDistance.current = null;
     } else if (e.touches.length === 1) {
-      // Switch from pinch to single drag
       const touch = e.touches[0];
       isDragging.current = true;
       lastPos.current = { x: touch.clientX, y: touch.clientY };
@@ -118,45 +134,30 @@ export function useMapZoom() {
     }
   }, [offset]);
 
+  // Attach native non‑passive touch listeners
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
-    const nativeTouchStart = (e: TouchEvent) => {
-      e.preventDefault();
-      if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        isDragging.current = true;
-        lastPos.current = { x: touch.clientX, y: touch.clientY };
-        dragStartOffset.current = { x: offset.x, y: offset.y };
-        movedDistance.current = 0;
-      } else if (e.touches.length === 2) {
-        isDragging.current = false;
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        lastTouchDistance.current = Math.sqrt(dx * dx + dy * dy);
-        pinchStartScale.current = scale;
-        pinchStartOffset.current = { x: offset.x, y: offset.y };
-        pinchCenter.current = {
-          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-          y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-        };
-      }
+    container.addEventListener("touchstart", touchStartHandler, { passive: false });
+    container.addEventListener("touchmove", touchMoveHandler, { passive: false });
+    container.addEventListener("touchend", touchEndHandler);
+    container.addEventListener("touchcancel", touchEndHandler);
+    return () => {
+      container.removeEventListener("touchstart", touchStartHandler);
+      container.removeEventListener("touchmove", touchMoveHandler);
+      container.removeEventListener("touchend", touchEndHandler);
+      container.removeEventListener("touchcancel", touchEndHandler);
     };
+  }, [touchStartHandler, touchMoveHandler, touchEndHandler]);
 
-    container.addEventListener('touchstart', nativeTouchStart, { passive: false });
-    return () => container.removeEventListener('touchstart', nativeTouchStart);
-  }, [scale, offset]);
-
-  // Combined handlers object to spread on the container div
+  // Synthetic handlers for mouse and wheel (still via React)
   const handlers = {
     onWheel: handleWheel,
     onMouseDown: handleMouseDown,
     onMouseMove: handleMouseMove,
     onMouseUp: handleMouseUp,
     onMouseLeave: handleMouseUp,
-    onTouchMove: handleTouchMove,
-    onTouchEnd: handleTouchEnd,
+    // No onTouchStart/onTouchMove – handled natively above
   };
 
   return {
@@ -167,6 +168,6 @@ export function useMapZoom() {
     containerRef,
     handlers,
     resetTransform,
-    movedDistance, // can be used to decide if a click was a drag or a tap
+    movedDistance,
   };
 }
