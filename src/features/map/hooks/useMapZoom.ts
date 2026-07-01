@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 export function useMapZoom() {
   const [scale, setScale] = useState(1);
@@ -67,29 +67,7 @@ export function useMapZoom() {
   }, []);
 
   // ----- Touch handlers (pan + pinch) -----
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault(); // <-- add this line
-    if (e.touches.length === 1) {
-      // Single finger → drag
-      const touch = e.touches[0];
-      isDragging.current = true;
-      lastPos.current = { x: touch.clientX, y: touch.clientY };
-      dragStartOffset.current = { x: offset.x, y: offset.y };
-      movedDistance.current = 0;
-    } else if (e.touches.length === 2) {
-      // Two fingers → pinch
-      isDragging.current = false; // cancel any single drag
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      lastTouchDistance.current = Math.sqrt(dx * dx + dy * dy);
-      pinchStartScale.current = scale;
-      pinchStartOffset.current = { x: offset.x, y: offset.y };
-      pinchCenter.current = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-      };
-    }
-  }, [scale, offset]);
+  // Removed handleTouchStart and handleTouchMove from direct React events
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     e.preventDefault(); // prevent page scroll
@@ -140,6 +118,36 @@ export function useMapZoom() {
     }
   }, [offset]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const nativeTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        isDragging.current = true;
+        lastPos.current = { x: touch.clientX, y: touch.clientY };
+        dragStartOffset.current = { x: offset.x, y: offset.y };
+        movedDistance.current = 0;
+      } else if (e.touches.length === 2) {
+        isDragging.current = false;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        lastTouchDistance.current = Math.sqrt(dx * dx + dy * dy);
+        pinchStartScale.current = scale;
+        pinchStartOffset.current = { x: offset.x, y: offset.y };
+        pinchCenter.current = {
+          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+          y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+        };
+      }
+    };
+
+    container.addEventListener('touchstart', nativeTouchStart, { passive: false });
+    return () => container.removeEventListener('touchstart', nativeTouchStart);
+  }, [scale, offset]);
+
   // Combined handlers object to spread on the container div
   const handlers = {
     onWheel: handleWheel,
@@ -147,7 +155,6 @@ export function useMapZoom() {
     onMouseMove: handleMouseMove,
     onMouseUp: handleMouseUp,
     onMouseLeave: handleMouseUp,
-    onTouchStart: handleTouchStart,
     onTouchMove: handleTouchMove,
     onTouchEnd: handleTouchEnd,
   };

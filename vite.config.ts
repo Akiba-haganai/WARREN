@@ -39,8 +39,16 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         navigateFallback: "/index.html",
-
+        navigateFallbackDenylist: [/\/api\//],
         runtimeCaching: [
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: { maxEntries: 50 },
+            },
+          },
           {
             // Only cache your own static assets – nothing external
             // @ts-ignore – `self` is available inside the service worker

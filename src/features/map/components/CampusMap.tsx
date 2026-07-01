@@ -78,7 +78,7 @@ export function CampusMap({ canManage, onEditPin, onDeletePin }: Props) {
           }}
         >
           <img
-            src="/campus-map.png"
+            src={`${import.meta.env.BASE_URL}campus-map.png`}
             alt="Campus map"
             className="w-full h-full object-contain select-none pointer-events-none"
             draggable={false}
