@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, ArrowLeft, Loader2 } from "lucide-react";
-import { fetchConversation, sendDirectMessage, type DirectMessageWithProfile } from "../../services/directMessageService";
+import { fetchConversation, sendDirectMessage, type DirectMessageWithProfile } from "../../features/messages/services/messages.service";
 import { useAuthStore } from "../../store/authStore";
-
+import { useToastStore } from "../../store/toastStore";
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -12,6 +12,7 @@ interface Props {
 
 export default function DirectMessageDrawer({ open, onClose, receiverId, receiverName }: Props) {
   const user = useAuthStore((s) => s.user);
+  const { showToast } = useToastStore();
   const [messages, setMessages] = useState<DirectMessageWithProfile[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,7 +43,7 @@ export default function DirectMessageDrawer({ open, onClose, receiverId, receive
       setNewMsg("");
     } catch (err) {
       console.error(err);
-      alert("Failed to send message.");
+      showToast("Failed to send message", "err");
     } finally {
       setSending(false);
     }
@@ -109,7 +110,7 @@ export default function DirectMessageDrawer({ open, onClose, receiverId, receive
 }
 
 function DirectMessageBubble({ message, isMine }: { message: DirectMessageWithProfile; isMine: boolean }) {
-  const senderName = message.sender?.username ?? "Unknown";
+  const senderName = message.profiles?.username ?? "Unknown";
 
   return (
     <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/authStore";
-import { fetchProfile } from "../services/profileService";
+import { fetchProfile } from "../features/profile/services/profile.service";
+
 
 export function useUserRole() {
   const user = useAuthStore((s) => s.user);

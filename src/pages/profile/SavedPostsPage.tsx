@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import AppShell from "../../components/layout/AppShell";
 import { useAuthStore } from "../../store/authStore";
 import { getSavedPosts } from "../../services/savedPostsService";
-import PostCard from "../../components/posts/PostCard";
+import { usePostVote } from "../../features/posts/hooks/usePostVote";
+import PostCard from "../../features/posts/components/PostCard";
 import { Bookmark } from "lucide-react";
 
 export default function SavedPostsPage() {
   const user = useAuthStore((s) => s.user);
+  const { mutate: vote } = usePostVote();
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +55,7 @@ export default function SavedPostsPage() {
                 comments_count: 0,
               }}
               userVote={null}
-              onVote={() => {}}
+              onVote={(postId, type) => vote({ postId, type })}
               onDelete={() => handleUnsave(item.posts.id)}
             />
           ))}

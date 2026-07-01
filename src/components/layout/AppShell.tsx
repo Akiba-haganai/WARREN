@@ -2,6 +2,8 @@ import { Suspense, memo } from "react";
 import type { ReactNode } from "react";
 import MobileNavbar from "./MobileNavbar";
 import BottomNavigation from "./BottomNavigation";
+import { useToastStore } from "../../store/toastStore";
+import { Toast } from "../common/Toast";
 
 interface AppShellProps {
   children: ReactNode;
@@ -10,6 +12,7 @@ interface AppShellProps {
 const AppShell = memo(function AppShell({
   children,
 }: AppShellProps) {
+  const { toast, hideToast } = useToastStore();
   return (
     <div
       className="
@@ -67,6 +70,7 @@ const AppShell = memo(function AppShell({
       <footer className="fixed bottom-0 left-0 right-0 z-50">
         <BottomNavigation />
       </footer>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
     </div>
   );
 });

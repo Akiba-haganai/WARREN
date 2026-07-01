@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import AppShell from "../../components/layout/AppShell";
-import { getUserMemberships, fetchCommunities } from "../../services/communityService";
+import { getUserMemberships, fetchCommunities } from "../../features/communities/services/communities.service";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { Users } from "lucide-react";

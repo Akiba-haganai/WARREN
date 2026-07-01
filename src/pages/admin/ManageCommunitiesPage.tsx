@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
-import { fetchCommunities, deleteCommunity } from "../../services/communityService";
+import { fetchCommunities, deleteCommunity } from "../../features/communities/services/communities.service";
 import type { Community } from "../../types/community";
 import { Pencil, Trash2 } from "lucide-react";
+
 
 export default function ManageCommunitiesPage() {
   const [communities, setCommunities] = useState<Community[]>([]);

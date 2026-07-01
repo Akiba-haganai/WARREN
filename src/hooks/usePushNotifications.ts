@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/authStore";
+import { useToastStore } from "../store/toastStore";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -15,6 +16,7 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export function usePushNotifications() {
   const user = useAuthStore((s) => s.user);
+  const { showToast } = useToastStore();
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [subscribed, setSubscribed] = useState(false);
 
@@ -77,7 +79,7 @@ export function usePushNotifications() {
       if (error) throw error;
       setSubscribed(true);
     } catch (err) {
-      console.error("Push subscribe failed:", err);
+      showToast("Failed to enable push notifications", "err");
       throw err;
     }
   };

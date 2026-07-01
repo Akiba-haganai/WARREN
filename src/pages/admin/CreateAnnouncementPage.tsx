@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
 import { createAnnouncement } from "../../services/announcementService";
 import { supabase } from "../../lib/supabase";
+import { useToastStore } from "../../store/toastStore";
 
 export default function CreateAnnouncementPage() {
   const navigate =
     useNavigate();
+  const { showToast } = useToastStore();
 
   const [title, setTitle] =
     useState("");
@@ -66,12 +68,12 @@ export default function CreateAnnouncementPage() {
     e.preventDefault();
 
     if (!title.trim()) {
-      alert("Title required");
+      showToast("Title is required", "err");
       return;
     }
 
     if (!content.trim()) {
-      alert("Content required");
+      showToast("Content required", "err");
       return;
     }
 
@@ -119,9 +121,9 @@ if (documentFile) {
     } catch (err: any) {
       console.error(err);
 
-      alert(
+      showToast(
         err?.message ??
-          "Failed to create announcement"
+          "Failed to create announcement", "err"
       );
     } finally {
       setLoading(false);

@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../store/authStore";
 import AppShell from "../../components/layout/AppShell";
+import { useToastStore } from "../../store/toastStore";
 
 export default function EditProfile() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
+  const { showToast } = useToastStore();
 
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
@@ -62,7 +64,7 @@ export default function EditProfile() {
       navigate("/profile");
     } catch (err) {
       console.error(err);
-      alert("Failed to update profile");
+      showToast("Failed to update profile", "err");
     } finally {
       setLoading(false);
     }

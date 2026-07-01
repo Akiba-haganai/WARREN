@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import AppShell from "../../components/layout/AppShell";
 import { fetchEvents, toggleReminder, getReminderStatus } from "../../services/eventsService";
-import { fetchCommunities } from "../../services/communityService";
+import { fetchCommunities } from "../../features/communities/services/communities.service";
 import { useAuthStore } from "../../store/authStore";
 import type { Database } from "../../types/database.types";
 import { Clock, Bell, BellOff } from "lucide-react";
 import { format } from "date-fns";
+// ... rest unchanged;
 
 type Event = Database["public"]["Tables"]["events"]["Row"];
 type Community = Database["public"]["Tables"]["communities"]["Row"];

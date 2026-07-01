@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../store/authStore";
 import { useUserRole } from "../../hooks/useUserRole";
@@ -39,7 +39,7 @@ interface Comment {
 
 const MAX_COMMENT_LENGTH = 500;
 
-export default function CommentSection({ postId, postOwnerId }: Props) {
+export default function CommentSection({ postId, postOwnerId, onClose }: Props) {
   const user = useAuthStore((s) => s.user);
   const { role } = useUserRole();
 
@@ -118,6 +118,29 @@ export default function CommentSection({ postId, postOwnerId }: Props) {
       supabase.removeChannel(channel);
     };
   }, [postId, user?.id]);
+
+  const commentsContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const container = commentsContainerRef.current;
+    if (!container || e.touches.length !== 1) return;
+
+    // Only proceed if the user has scrolled to the very top
+    if (container.scrollTop > 0) return;
+
+    const deltaY = e.touches[0].clientY - touchStartY.current;
+    // If the downward swipe exceeds a threshold, close the sheet
+    if (deltaY > 80) {
+      onClose?.();
+    }
+  };
 
   async function uploadImage() {
     if (!imageFile) return null;
@@ -223,7 +246,12 @@ export default function CommentSection({ postId, postOwnerId }: Props) {
 
   return (
     <div className="p-3">
-      <div className="space-y-4 max-h-[500px] overflow-y-auto">
+      <div
+        ref={commentsContainerRef}
+        className="space-y-4 max-h-[500px] overflow-y-auto"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+      >
         {comments.map((comment) => (
           <div key={comment.id} className="flex gap-3">
             {/* Avatar – clickable to profile */}

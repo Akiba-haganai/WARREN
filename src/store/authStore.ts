@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         body: "Connect with students, share ideas, and stay updated with campus life.",
       });
     if (notifError) {
-      console.error("[AuthStore] Welcome notification error:", notifError);
+      console.warn("[AuthStore] Welcome notification could not be created. The user can still log in.", notifError.message);
     }
 
     return result;

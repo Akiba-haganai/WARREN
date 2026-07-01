@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
-import { createCommunity, updateCommunity, fetchCommunities } from "../../services/communityService";
+import { createCommunity, updateCommunity, fetchCommunities } from "../../features/communities/services/communities.service";
 import type { Community, CommunityType } from "../../types/community";
-
 const PASTEL_COLORS = [
   "from-pink-200 to-rose-200",
   "from-blue-200 to-cyan-200",

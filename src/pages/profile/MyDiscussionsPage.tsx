@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import AppShell from "../../components/layout/AppShell";
-import { fetchRecentActivity } from "../../services/profileService";
+import { fetchRecentActivity } from "../../features/profile/services/profile.service";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { MessageSquare } from "lucide-react";

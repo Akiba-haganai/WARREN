@@ -13,12 +13,14 @@ import {
 } from "../../services/communityChatService";
 import { ArrowLeft, Send, Image as ImageIcon, Loader2 } from "lucide-react";
 import DirectMessageDrawer from "../../components/community/DirectMessageDrawer";
+import { useToastStore } from "../../store/toastStore";
 
 export default function CommunityChatPage() {
   const { id: communityId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const user = useAuthStore((s) => s.user);
+  const { showToast } = useToastStore();
   const [messages, setMessages] = useState<CommunityMessageWithProfile[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,7 @@ export default function CommunityChatPage() {
       setNewMsg("");
     } catch (err) {
       console.error(err);
-      alert("Failed to send message.");
+      showToast("Failed to send message", "err");
     } finally {
       setSending(false);
     }
@@ -93,7 +95,7 @@ export default function CommunityChatPage() {
       await sendImageMessage(communityId, user.id, imageUrl);
     } catch (err) {
       console.error(err);
-      alert("Failed to upload image.");
+      showToast("Failed to upload image", "err");
     } finally {
       setSending(false);
     }

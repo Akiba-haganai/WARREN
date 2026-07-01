@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
-import { uploadStudyMaterial } from "../../services/studyService";
+import { uploadStudyMaterial } from "../../features/study/services/study.service";
 import { useAuthStore } from "../../store/authStore";
 import { supabase } from "../../lib/supabase";
 

@@ -6,9 +6,10 @@ import {
   fetchAllCommentsForModeration,
   deletePost,
   deleteComment,
-} from "../../services/postsService";   // correct import
-import type { PostWithProfile } from "../../services/postsService";
+} from "../../features/posts/services/posts.service";   // ✅ new path
+import type { PostWithProfile } from "../../features/posts/services/posts.service";
 import { Trash2, AlertTriangle } from "lucide-react";
+
 
 export default function ModerationPage() {
   const { role } = useUserRole();

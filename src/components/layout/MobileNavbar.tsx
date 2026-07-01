@@ -1,26 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Moon,
-  Sun,
-  User,
-  LogOut,
-  Shield,
-  ChevronDown,
-  MapPinned,
-  Calendar,
-  MessageCircleQuestion,
-  Radio,
-  Search,
-  MessageSquare,
+  Moon, Sun, User, LogOut, Shield, ChevronDown, MapPinned, Calendar,
+  MessageCircleQuestion, Radio, Search, MessageSquare,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
-import { fetchProfile } from "../../services/profileService";
+import { fetchProfile } from "../../features/profile/services/profile.service";
 import { useUserRole } from "../../hooks/useUserRole";
 
-import NotificationBell from "../notifications/NotificationBell";
+import { NotificationBell } from "../notifications/NotificationBell";
 
 export default function MobileNavbar() {
   const [open, setOpen] = useState(false);
