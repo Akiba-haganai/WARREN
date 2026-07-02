@@ -4,7 +4,7 @@
   ],
   "headers": [
     {
-      "source": "/index.html",
+      "source": "/",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]
@@ -13,12 +13,6 @@
       "source": "/manifest.webmanifest",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
-      ]
-    },
-    {
-      "source": "/(.*\\.(css|js|png|jpg|jpeg|gif|svg|webp|ico|json|webmanifest))",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
   ]
