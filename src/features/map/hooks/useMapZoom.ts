@@ -5,25 +5,21 @@ export function useMapZoom() {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ----- Mouse / Touch drag state -----
   const isDragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
   const dragStartOffset = useRef({ x: 0, y: 0 });
-  const movedDistance = useRef(0); // distinguish click from drag
+  const movedDistance = useRef(0);
 
-  // ----- Pinch state -----
   const lastTouchDistance = useRef<number | null>(null);
   const pinchStartScale = useRef(1);
   const pinchStartOffset = useRef({ x: 0, y: 0 });
   const pinchCenter = useRef({ x: 0, y: 0 });
 
-  // ----- Reset -----
   const resetTransform = useCallback(() => {
     setScale(1);
     setOffset({ x: 0, y: 0 });
   }, []);
 
-  // ----- Wheel -----
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -43,7 +39,6 @@ export function useMapZoom() {
     [scale, offset]
   );
 
-  // ----- Mouse drag -----
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button, a")) return;
     isDragging.current = true;
@@ -66,9 +61,9 @@ export function useMapZoom() {
     isDragging.current = false;
   }, []);
 
-  // ----- Touch helpers (pan + pinch) -----
+  // Native touch handlers (attached directly to DOM to avoid passive event warning)
   const touchStartHandler = useCallback((e: TouchEvent) => {
-    e.preventDefault(); // now allowed because we attached as non‑passive
+    e.preventDefault();
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       isDragging.current = true;
@@ -134,7 +129,6 @@ export function useMapZoom() {
     }
   }, [offset]);
 
-  // Attach native non‑passive touch listeners
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -150,14 +144,12 @@ export function useMapZoom() {
     };
   }, [touchStartHandler, touchMoveHandler, touchEndHandler]);
 
-  // Synthetic handlers for mouse and wheel (still via React)
   const handlers = {
     onWheel: handleWheel,
     onMouseDown: handleMouseDown,
     onMouseMove: handleMouseMove,
     onMouseUp: handleMouseUp,
     onMouseLeave: handleMouseUp,
-    // No onTouchStart/onTouchMove – handled natively above
   };
 
   return {
