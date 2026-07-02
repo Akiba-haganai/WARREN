@@ -8,7 +8,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      // Completely disable the service worker for now.
+      // The PWA manifest and install prompt will still work,
+      // but no files will be cached – every load is fresh.
+      injectRegister: false,
+      selfDestroying: true,
 
       includeAssets: [
         "favicon.svg",
@@ -24,7 +28,7 @@ export default defineConfig({
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
-        start_url: "/?v=7",
+        start_url: "/?v=8",
         scope: "/",
         icons: [
           { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
@@ -34,35 +38,7 @@ export default defineConfig({
       },
 
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/\/api\//],
-        runtimeCaching: [
-          {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'images',
-              expiration: { maxEntries: 50 },
-            },
-          },
-          {
-            // Only cache your own static assets – nothing external
-            // @ts-ignore – `self` is available inside the service worker
-            urlPattern: ({ url }) => url.origin === self.location.origin,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "static-assets",
-              expiration: {
-                maxEntries: 60,
-                maxAgeSeconds: 60 * 60 * 24,
-              },
-            },
-          },
-        ],
+        globPatterns: [],
       },
     }),
   ],
