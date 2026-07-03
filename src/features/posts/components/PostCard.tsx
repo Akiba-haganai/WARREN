@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "../../../lib/supabase";
+import { getTier, TIER_COLORS } from "../../study/utils/tiers";
+import { LecturerBadge } from "../../profile/components/LecturerBadge";
 
 import { useUserRole } from "../../../hooks/useUserRole";
 import { useAuthStore } from "../../../store/authStore";
@@ -37,6 +39,8 @@ interface Post {
     username: string | null;
     avatar_url: string | null;
     role: string | null;
+    karma?: number | null;
+    is_lecturer?: boolean | null;
   } | null;
   comments_count: number;
 }
@@ -226,6 +230,12 @@ export default function PostCard({
               <h3 className="font-semibold text-slate-900 dark:text-white truncate max-w-[100px] text-[11px] sm:text-xs">
                 {displayName}
               </h3>
+              {!isAnonymous && post.profiles?.karma !== undefined && (
+                <span style={{ backgroundColor: TIER_COLORS[getTier(post.profiles.karma ?? 0)] }} className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white capitalize">
+                  {getTier(post.profiles.karma ?? 0)}
+                </span>
+              )}
+              {!isAnonymous && post.profiles?.is_lecturer && <LecturerBadge />}
               {isAnonymous && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 dark:bg-purple-950/40 px-1.5 py-0.5 text-[9px] font-bold uppercase text-purple-600 dark:text-purple-400">
                   🎭 Anon

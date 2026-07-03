@@ -34,7 +34,7 @@ export async function fetchPosts({
 }: { cursor?: string; limit?: number; sortBy?: "hot" | "new" } = {}) {
   let query = supabase
     .from("posts")
-    .select("*, profiles(username, avatar_url, role)")
+    .select("*, profiles(username, avatar_url, role, karma)")
     .limit(limit + 1);
 
   if (sortBy === "hot") {
@@ -73,7 +73,7 @@ export async function fetchAnonymousPosts(limit = 20) {
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("posts")
-    .select("*, profiles(username, avatar_url, role)")
+    .select("*, profiles(username, avatar_url, role, karma)")
     .eq("is_anonymous", true)
     .gte("created_at", twentyFourHoursAgo)
     .order("upvotes", { ascending: false })
@@ -156,7 +156,7 @@ export function subscribeToPosts(callback: (payload: any) => void) {
 export async function fetchAllPostsForModeration() {
   const { data, error } = await supabase
     .from("posts")
-    .select("*, profiles(username, avatar_url, role)")
+    .select("*, profiles(username, avatar_url, role, karma)")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((post: any) => ({

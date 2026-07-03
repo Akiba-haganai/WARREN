@@ -4,22 +4,22 @@ import { queryClient } from "./lib/queryClient";
 import AppRouter from "./routes/AppRouter";
 import { useAuthStore } from "./store/authStore";
 import { useThemeStore } from "./store/themeStore";
+import { useAccessibilityStore } from "./store/accessibility.store";
 import InstallBanner from "./components/pwa/InstallBanner";
 
 export default function App() {
   const initAuth = useAuthStore((s) => s.initialize);
   const initTheme = useThemeStore((s) => s.initTheme);
+  const initA11y = useAccessibilityStore((s) => s.init);
   const [ready, setReady] = useState(false);
   const booted = useRef(false);
 
   useEffect(() => {
     if (booted.current) return;
     booted.current = true;
-    try {
-      localStorage.removeItem("warren-needs-recovery");
-    } catch (_) {}
-    Promise.allSettled([initAuth(), initTheme()]).finally(() => setReady(true));
-  }, [initAuth, initTheme]);
+    try { localStorage.removeItem("warren-needs-recovery"); } catch (_) {}
+    Promise.allSettled([initAuth(), initTheme(), initA11y()]).finally(() => setReady(true));
+  }, [initAuth, initTheme, initA11y]);
 
   if (!ready) {
     return (

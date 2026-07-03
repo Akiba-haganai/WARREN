@@ -5,14 +5,12 @@ import { supabase } from "../lib/supabase";
 interface AuthState {
   user: User | null;
   loading: boolean;
-
   initialize: () => Promise<void>;
-  login: (email: string, password: string) => Promise<any>;
-  register: (email: string, password: string, username: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<{ error?: string }>;
+  register: (email: string, password: string, username: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
 }
 
-// Store the full subscription object so we can call .data.subscription.unsubscribe()
 let authSubscription: { data: { subscription: { unsubscribe: () => void } } } | null = null;
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -22,66 +20,75 @@ export const useAuthStore = create<AuthState>((set) => ({
   initialize: async () => {
     try {
       set({ loading: true });
-
-      // Clean up previous listener (important for HMR + PWA reloads)
       authSubscription?.data?.subscription?.unsubscribe();
       authSubscription = null;
 
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-
-      // If the session is invalid (e.g., expired refresh token), force sign out
+      const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
-        console.warn("[AuthStore] Session invalid or expired. Signing out.");
-        await supabase.auth.signOut();
+        console.warn("[AuthStore] No valid session.");
         set({ user: null, loading: false });
         return;
       }
 
       set({ user: session.user ?? null, loading: false });
 
-      // Store the full subscription object
       authSubscription = supabase.auth.onAuthStateChange((_event, session) => {
         set({ user: session?.user ?? null, loading: false });
       });
     } catch (err) {
       console.error("[AuthStore] initialize error:", err);
-      await supabase.auth.signOut();
       set({ user: null, loading: false });
     }
   },
 
   login: async (email, password) => {
-    return supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      // Map Supabase error codes to user‑friendly messages
+      const message =
+        error.message === "Invalid login credentials"
+          ? "Invalid email or password."
+          : error.message || "Login failed. Please try again.";
+      return { error: message };
+    }
+    // Immediately set the user so ProtectedRoute doesn't bounce the user back
+    set({ user: data.user ?? null });
+    return {};
   },
 
   register: async (email, password, username) => {
-    const result = await supabase.auth.signUp({ email, password });
-    if (result.error) throw result.error;
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      const message =
+        error.message === "User already registered"
+          ? "An account with this email already exists."
+          : error.message || "Registration failed. Please try again.";
+      return { error: message };
+    }
 
-    const user = result.data.user;
-    if (!user) throw new Error("Failed to create account");
+    const user = data.user;
+    if (!user) return { error: "Failed to create account." };
 
+    // Create profile
     const { error: profileError } = await supabase
       .from("profiles")
       .upsert({ id: user.id, username: username.trim(), role: "student" });
-    if (profileError) throw profileError;
-
-    const { error: notifError } = await supabase
-      .from("notifications")
-      .insert({
-        user_id: user.id,
-        type: "welcome",
-        title: "🎉 Welcome to Campus Social!",
-        body: "Connect with students, share ideas, and stay updated with campus life.",
-      });
-    if (notifError) {
-      console.warn("[AuthStore] Welcome notification could not be created. The user can still log in.", notifError.message);
+    if (profileError) {
+      return { error: "Account created but failed to save profile. Contact support." };
     }
 
-    return result;
+    // Welcome notification (optional)
+    const { error: notifError } = await supabase.from("notifications").insert({
+      user_id: user.id,
+      type: "welcome",
+      title: "🎉 Welcome to Warren!",
+      body: "Connect with students, share ideas, and stay updated with campus life.",
+    });
+    if (notifError) console.warn("[AuthStore] Welcome notification error:", notifError);
+
+    // Immediately set the user
+    set({ user });
+    return {};
   },
 
   logout: async () => {

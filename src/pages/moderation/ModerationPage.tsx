@@ -6,10 +6,9 @@ import {
   fetchAllCommentsForModeration,
   deletePost,
   deleteComment,
-} from "../../features/posts/services/posts.service";   // ✅ new path
+} from "../../features/posts/services/posts.service";
 import type { PostWithProfile } from "../../features/posts/services/posts.service";
 import { Trash2, AlertTriangle } from "lucide-react";
-
 
 export default function ModerationPage() {
   const { role } = useUserRole();
@@ -18,22 +17,7 @@ export default function ModerationPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"posts" | "comments">("posts");
 
-  if (role !== "admin" && role !== "moderator") {
-    return (
-      <AppShell>
-        <div className="p-6 text-center">
-          <AlertTriangle size={48} className="mx-auto text-yellow-500 mb-4" />
-          <h1 className="text-xl font-bold">Access Denied</h1>
-          <p className="opacity-70 mt-2">Only moderators and admins can view this page.</p>
-        </div>
-      </AppShell>
-    );
-  }
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
+  // Always call hooks – never early‑return before them
   const loadData = async () => {
     setLoading(true);
     const [p, c] = await Promise.all([
@@ -44,6 +28,10 @@ export default function ModerationPage() {
     setComments(c);
     setLoading(false);
   };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const handleDeletePost = async (id: string) => {
     if (!confirm("Delete this post permanently?")) return;
@@ -56,6 +44,19 @@ export default function ModerationPage() {
     await deleteComment(id);
     setComments((prev) => prev.filter((c) => c.id !== id));
   };
+
+  // Only after all hooks, render the appropriate UI
+  if (role !== "admin" && role !== "moderator") {
+    return (
+      <AppShell>
+        <div className="p-6 text-center">
+          <AlertTriangle size={48} className="mx-auto text-yellow-500 mb-4" />
+          <h1 className="text-xl font-bold">Access Denied</h1>
+          <p className="opacity-70 mt-2">Only moderators and admins can view this page.</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (loading) return <AppShell><div className="p-4">Loading moderation data...</div></AppShell>;
 

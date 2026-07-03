@@ -24,3 +24,8 @@ export async function uploadCommentImage(
 
   return data.publicUrl;
 }
+
+// Lightweight passthrough image compressor (no-op) used by UploadMaterialPage.
+export async function compressImage(file: File): Promise<File> {
+  return file;
+}

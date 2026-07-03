@@ -1,83 +1,127 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
 import { uploadStudyMaterial } from "../../features/study/services/study.service";
 import { useAuthStore } from "../../store/authStore";
 import { supabase } from "../../lib/supabase";
+import { compressImage } from "../../services/commentImageService";
 
-const YEAR_GROUPS = ["All Years", "Year 1", "Year 2", "Year 3", "Year 4", "Postgraduate"];
-
-const MATERIAL_TYPES = [
-  { value: "notes",      label: "Notes",      icon: "📝" },
-  { value: "slides",     label: "Slides",     icon: "🖼️" },
-  { value: "past_paper", label: "Past Paper", icon: "📄" },
-  { value: "assignment", label: "Assignment", icon: "✏️" },
-  { value: "resource",   label: "Resource",   icon: "🔗" },
-  { value: "video",      label: "Video",      icon: "🎬" },
+const YEAR_GROUPS = [
+  "All Years",
+  "Year 1",
+  "Year 2",
+  "Year 3",
+  "Year 4",
+  "Postgraduate",
 ] as const;
 
-type MaterialType = typeof MATERIAL_TYPES[number]["value"];
+const MATERIAL_TYPES = [
+  { value: "notes", label: "Notes", icon: "📝" },
+  { value: "slides", label: "Slides", icon: "🖼️" },
+  { value: "past_paper", label: "Past Paper", icon: "📄" },
+  { value: "assignment", label: "Assignment", icon: "✏️" },
+  { value: "resource", label: "Resource", icon: "🔗" },
+  { value: "video", label: "Video", icon: "🎬" },
+] as const;
+
+type MaterialType = (typeof MATERIAL_TYPES)[number]["value"];
+
+/** Initial form state with all fields required by the StudyMaterial Insert type */
+const initialForm = {
+  title: "",
+  description: "",
+  subject: "",
+  year_group: "All Years" as string,
+  material_type: "notes" as MaterialType,
+  external_url: "",
+  tags: "",
+  is_pinned: false,
+  is_premium: false,
+  premium_cost: 0,
+  trending_score: 0,
+  programme: "",
+};
 
 export default function UploadMaterialPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    subject: "",
-    year_group: "All Years",
-    material_type: "notes" as MaterialType,
-    external_url: "",
-    tags: "",
-    is_pinned: false,
-  });
-  const [file, setFile]       = useState<File | null>(null);
+  const [form, setForm] = useState(initialForm);
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
+  const [error, setError] = useState("");
 
-  const set = (key: string, value: unknown) => setForm((f) => ({ ...f, [key]: value }));
+  const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
+    }
+  };
 
   async function handleSubmit() {
     if (!user) return;
-    if (!form.title.trim())   return setError("Title is required.");
+    if (!form.title.trim()) return setError("Title is required.");
     if (!form.subject.trim()) return setError("Subject is required.");
-    if (!file && !form.external_url.trim()) return setError("Provide a file or an external URL.");
+    if (files.length === 0 && !form.external_url.trim()) return setError("Provide a file or an external URL.");
 
     setLoading(true);
     setError("");
 
     try {
-      let file_url: string | null = null;
-
-      if (file) {
-        const ext  = file.name.split(".").pop();
-        const path = `study-materials/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: uploadErr } = await supabase.storage
-          .from("materials")
-          .upload(path, file, { cacheControl: "3600", upsert: false });
-        if (uploadErr) throw uploadErr;
-        file_url = supabase.storage.from("materials").getPublicUrl(path).data.publicUrl;
+      // Duplicate check using Dice coefficient
+      const existingTitles = await supabase.from("study_materials").select("title");
+      if (existingTitles.error) throw existingTitles.error;
+      const { diceCoefficient } = await import("../../utils/stringSimilarity");
+      const duplicate = existingTitles.data?.some((m) => diceCoefficient(form.title, m.title) > 0.7);
+      if (duplicate && !confirm("A similar material already exists. Upload anyway?")) {
+        setLoading(false);
+        return;
       }
 
+      let file_url: string | null = null;
+
+      if (files.length > 0) {
+        const file = files[0];
+        const compressed = await compressImage(file);
+        const filePath = `study/${user.id}/${Date.now()}_${compressed.name}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("study-materials")
+          .upload(filePath, compressed);
+        if (uploadErr) throw uploadErr;
+        const { data } = supabase.storage.from("study-materials").getPublicUrl(filePath);
+        file_url = data.publicUrl;
+      }
+
+      // The uploadStudyMaterial function expects all non‑null fields of StudyMaterial Insert
       await uploadStudyMaterial({
-        title:         form.title.trim(),
-        description:   form.description.trim() || null,
-        subject:       form.subject.trim(),
-        year_group:    form.year_group,
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        subject: form.subject.trim(),
+        programme: form.programme.trim() || null,
+        year_group: form.year_group,
         material_type: form.material_type,
         file_url,
-        external_url:  form.external_url.trim() || null,
+        external_url: form.external_url.trim() || null,
         thumbnail_url: null,
-        uploaded_by:   user.id,
-        tags:          form.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean),
-        is_pinned:     form.is_pinned,
+        uploaded_by: user.id,
+        tags: form.tags
+          .split(",")
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean),
+        is_pinned: form.is_pinned,
+        is_premium: form.is_premium,
+        premium_cost: form.premium_cost,
+        trending_score: form.trending_score,
       });
 
       navigate("/study");
-    } catch (e: any) {
-      setError(e.message ?? "Something went wrong. Try again.");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Something went wrong. Try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -100,7 +144,6 @@ export default function UploadMaterialPage() {
       </div>
 
       <div className="flex flex-col gap-5">
-
         {/* ── Material type ── */}
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Type</p>
@@ -127,9 +170,7 @@ export default function UploadMaterialPage() {
 
         {/* ── Title ── */}
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-2">
-            Title *
-          </label>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-2">Title *</label>
           <input
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
@@ -140,13 +181,24 @@ export default function UploadMaterialPage() {
 
         {/* ── Subject ── */}
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-2">
-            Subject *
-          </label>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-2">Subject *</label>
           <input
             value={form.subject}
             onChange={(e) => set("subject", e.target.value)}
             placeholder="e.g. Physics, Mathematics, Computer Science"
+            className="w-full bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-400 dark:focus:border-cyan-500 transition-colors"
+          />
+        </div>
+
+        {/* ── Programme ── */}
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-2">
+            Programme / Course
+          </label>
+          <input
+            value={form.programme}
+            onChange={(e) => set("programme", e.target.value)}
+            placeholder="e.g. Computer Science, Geology"
             className="w-full bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-400 dark:focus:border-cyan-500 transition-colors"
           />
         </div>
@@ -173,9 +225,7 @@ export default function UploadMaterialPage() {
 
         {/* ── Description ── */}
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-2">
-            Description
-          </label>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-2">Description</label>
           <textarea
             rows={3}
             value={form.description}
@@ -188,32 +238,35 @@ export default function UploadMaterialPage() {
         {/* ── File upload ── */}
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Upload File</p>
-          <label className="flex items-center gap-3 bg-white dark:bg-slate-800/60 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 cursor-pointer">
-            <input
-              type="file"
-              className="hidden"
-              accept=".pdf,.ppt,.pptx,.doc,.docx,.xlsx,.mp4,.png,.jpg"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,.pdf,.doc,.docx,.ppt,.pptx"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <label
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-3 bg-white dark:bg-slate-800/60 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 cursor-pointer"
+          >
             <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
               <Upload size={14} className="text-slate-400 dark:text-slate-500" />
             </div>
-            <span className={`text-sm ${file ? "text-blue-600 dark:text-cyan-400 font-medium" : "text-slate-400 dark:text-slate-500"}`}>
-              {file ? file.name : "Tap to choose a file"}
+            <span className={`text-sm ${files.length > 0 ? "text-blue-600 dark:text-cyan-400 font-medium" : "text-slate-400 dark:text-slate-500"}`}>
+              {files.length > 0 ? `${files.length} file(s) selected` : "Tap to choose files"}
             </span>
           </label>
-          {file && (
-            <button onClick={() => setFile(null)} className="mt-1.5 text-xs text-red-500 dark:text-red-400 font-medium px-1">
-              Remove file
+          {files.length > 0 && (
+            <button onClick={() => setFiles([])} className="mt-1.5 text-xs text-red-500 dark:text-red-400 font-medium px-1">
+              Remove files
             </button>
           )}
         </div>
 
         {/* ── External URL ── */}
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-2">
-            Or External URL
-          </label>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-2">Or External URL</label>
           <input
             value={form.external_url}
             onChange={(e) => set("external_url", e.target.value)}
@@ -243,14 +296,50 @@ export default function UploadMaterialPage() {
           </div>
           <button
             onClick={() => set("is_pinned", !form.is_pinned)}
-            className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0
-              ${form.is_pinned ? "bg-blue-600 dark:bg-cyan-500" : "bg-slate-200 dark:bg-slate-700"}`}
+            className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${
+              form.is_pinned ? "bg-blue-600 dark:bg-cyan-500" : "bg-slate-200 dark:bg-slate-700"
+            }`}
           >
             <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200
-                ${form.is_pinned ? "translate-x-5" : "translate-x-0"}`}
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                form.is_pinned ? "translate-x-5" : "translate-x-0"
+              }`}
             />
           </button>
+        </div>
+
+        {/* ── Premium & Credits (optional) ── */}
+        <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-2xl px-4 py-3.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Premium Content</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Require credits to unlock</p>
+            </div>
+            <button
+              onClick={() => set("is_premium", !form.is_premium)}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${
+                form.is_premium ? "bg-amber-500" : "bg-slate-200 dark:bg-slate-700"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                  form.is_premium ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+          {form.is_premium && (
+            <div className="mt-3">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Credit Cost</label>
+              <input
+                type="number"
+                min={0}
+                value={form.premium_cost}
+                onChange={(e) => set("premium_cost", Number(e.target.value) || 0)}
+                className="w-24 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white outline-none"
+              />
+            </div>
+          )}
         </div>
 
         {/* ── Error ── */}
@@ -268,7 +357,6 @@ export default function UploadMaterialPage() {
         >
           {loading ? "Uploading…" : "Publish Material"}
         </button>
-
       </div>
     </AppShell>
   );

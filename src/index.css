@@ -94,3 +94,27 @@ html.dark .glass {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
+
+/* Font size adjustments */
+.text-large { font-size: 1.125rem; }
+.text-x-large { font-size: 1.25rem; }
+
+/* High contrast mode */
+.high-contrast {
+  --tw-bg-opacity: 1;
+  background-color: black !important;
+  color: white !important;
+}
+.high-contrast * {
+  border-color: white !important;
+  color: white !important;
+  background-color: black !important;
+}
+.high-contrast a, .high-contrast button {
+  color: yellow !important;
+}
+.high-contrast input, .high-contrast select, .high-contrast textarea {
+  background-color: black !important;
+  border-color: white !important;
+  color: white !important;
+}

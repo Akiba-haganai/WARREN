@@ -730,6 +730,200 @@ export type Database = {
           },
         ]
       }
+      material_ratings: {
+        Row: {
+          created_at: string | null
+          id: string
+          material_id: string
+          rating: number
+          review: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          material_id: string
+          rating: number
+          review?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          material_id?: string
+          rating?: number
+          review?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_ratings_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          material_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          material_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          material_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_reactions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_requests: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          subject: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          subject?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          subject?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_versions: {
+        Row: {
+          created_at: string | null
+          file_url: string | null
+          id: string
+          material_id: string | null
+          uploaded_by: string | null
+          version_number: number
+        }
+        Insert: {
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          material_id?: string | null
+          uploaded_by?: string | null
+          version_number: number
+        }
+        Update: {
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          material_id?: string | null
+          uploaded_by?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_versions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_versions_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_views: {
+        Row: {
+          id: string
+          material_id: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          material_id: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          material_id?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_views_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -894,7 +1088,9 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
+          credits: number | null
           id: string
+          is_lecturer: boolean | null
           is_senior: boolean
           karma: number
           role: Database["public"]["Enums"]["app_role"]
@@ -904,7 +1100,9 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          credits?: number | null
           id: string
+          is_lecturer?: boolean | null
           is_senior?: boolean
           karma?: number
           role?: Database["public"]["Enums"]["app_role"]
@@ -914,7 +1112,9 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          credits?: number | null
           id?: string
+          is_lecturer?: boolean | null
           is_senior?: boolean
           karma?: number
           role?: Database["public"]["Enums"]["app_role"]
@@ -1027,25 +1227,35 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          post_id: string
+          material_id: string | null
+          post_id: string | null
           reason: string
           reporter_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
-          post_id: string
+          material_id?: string | null
+          post_id?: string | null
           reason: string
           reporter_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
-          post_id?: string
+          material_id?: string | null
+          post_id?: string | null
           reason?: string
           reporter_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reports_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reports_post_id_fkey"
             columns: ["post_id"]
@@ -1120,6 +1330,112 @@ export type Database = {
           },
         ]
       }
+      starter_packs: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          material_ids: string[]
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          material_ids?: string[]
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          material_ids?: string[]
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "starter_packs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_group_members: {
+        Row: {
+          group_id: string
+          joined_at: string | null
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          joined_at?: string | null
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          joined_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_groups: {
+        Row: {
+          course: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_private: boolean | null
+          name: string
+        }
+        Insert: {
+          course: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          name: string
+        }
+        Update: {
+          course?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_materials: {
         Row: {
           created_at: string
@@ -1129,11 +1445,15 @@ export type Database = {
           file_url: string | null
           id: string
           is_pinned: boolean
+          is_premium: boolean | null
           material_type: string
+          premium_cost: number | null
+          programme: string | null
           subject: string
           tags: string[] | null
           thumbnail_url: string | null
           title: string
+          trending_score: number | null
           uploaded_by: string
           year_group: string
         }
@@ -1145,11 +1465,15 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_pinned?: boolean
+          is_premium?: boolean | null
           material_type?: string
+          premium_cost?: number | null
+          programme?: string | null
           subject: string
           tags?: string[] | null
           thumbnail_url?: string | null
           title: string
+          trending_score?: number | null
           uploaded_by: string
           year_group?: string
         }
@@ -1161,11 +1485,15 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_pinned?: boolean
+          is_premium?: boolean | null
           material_type?: string
+          premium_cost?: number | null
+          programme?: string | null
           subject?: string
           tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
+          trending_score?: number | null
           uploaded_by?: string
           year_group?: string
         }
@@ -1173,6 +1501,39 @@ export type Database = {
           {
             foreignKeyName: "study_materials_uploaded_by_fkey"
             columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unlocked_materials: {
+        Row: {
+          material_id: string
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          material_id: string
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          material_id?: string
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unlocked_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unlocked_materials_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

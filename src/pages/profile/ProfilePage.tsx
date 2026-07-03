@@ -41,7 +41,7 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <div className="px-4 pb-8 space-y-6">
-        <ProfileHeader avatarUrl={profile.avatar_url} username={profile.username ?? "?"} />
+        <ProfileHeader avatarUrl={profile.avatar_url} username={profile.username ?? "?"} karma={profile.karma} />
         <ProfileInfo
           profile={profile}
           isOwn={isOwn}

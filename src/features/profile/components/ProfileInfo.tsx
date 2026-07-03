@@ -4,6 +4,8 @@ import {
 } from "lucide-react";
 import { usePushNotifications } from "../../../hooks/usePushNotifications";
 import { useThemeStore } from "../../../store/themeStore";
+import { getTier, TIER_COLORS } from "../../study/utils/tiers";
+import { LecturerBadge } from "./LecturerBadge";
 import { ProfileItem } from "./ProfileItem";
 
 interface Props {
@@ -13,6 +15,8 @@ interface Props {
     created_at: string | null;
     bio?: string | null;
     id: string;
+    karma?: number;
+    is_lecturer?: boolean | null;
   };
   isOwn: boolean;
   blocked: boolean;
@@ -28,7 +32,15 @@ export function ProfileInfo({ profile, isOwn, blocked, onMessage, onToggleBlock 
 
   return (
     <div className="pt-12">
-      <h1 className="text-2xl font-bold">{profile.username ?? "Anonymous"}</h1>
+      <div className="flex items-center gap-2 flex-wrap">
+        <h1 className="text-2xl font-bold">{profile.username ?? "Anonymous"}</h1>
+        {profile.karma !== undefined && (
+          <span style={{ backgroundColor: TIER_COLORS[getTier(profile.karma)] }} className="px-2 py-0.5 rounded-full text-xs font-bold text-white capitalize">
+            {getTier(profile.karma)}
+          </span>
+        )}
+        {profile.is_lecturer && <LecturerBadge />}
+      </div>
       <div className="mt-2 flex items-center gap-2">
         <span
           className={`px-3 py-1 rounded-full text-xs text-white ${
