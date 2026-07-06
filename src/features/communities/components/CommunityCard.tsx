@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Plus, UserX, MessageCircle } from "lucide-react";
+import { Users, Plus, UserX, MessageCircle, Phone } from "lucide-react";
 import { useToastStore } from "../../../store/toastStore";
 import type { Community } from "../../../types/community";
 
@@ -90,11 +90,25 @@ function CommunityCard({
 
           <div className="flex items-center gap-2">
             {isJoined ? (
-              <span className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                <MessageCircle size={14} />
-                Open Chat
-              </span>
+              <>
+                <span className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+                  <MessageCircle size={14} />
+                  Open Chat
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/community/${community.id}/room`);
+                  }}
+                  className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white/30"
+                  title="Open Study Room"
+                >
+                  <Phone size={14} />
+                  Study Room
+                </button>
+              </>
             ) : (
+
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -107,6 +121,8 @@ function CommunityCard({
               </button>
             )}
           </div>
+
+
         </div>
       </div>
     </div>

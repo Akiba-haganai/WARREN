@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  Archive,
   Flag,
   Megaphone,
   PlusCircle,
@@ -10,6 +12,7 @@ import {
   Send,
   FileText,
 } from "lucide-react";
+
 import AppShell from "../../components/layout/AppShell";
 
 const tiles = [
@@ -85,9 +88,43 @@ const tiles = [
     color: "text-pink-600 dark:text-pink-400",
     bg: "bg-pink-50 dark:bg-pink-900/20",
   },
+  {
+    to: "#",
+    icon: Archive,
+    label: "Archive Inactive Groups",
+    desc: "Archive study groups inactive for 30+ days",
+    color: "text-gray-600 dark:text-gray-400",
+    bg: "bg-gray-50 dark:bg-gray-900/20",
+    action: true,
+  },
 ];
 
+
+import { supabase } from "../../lib/supabase";
+
+
 export default function AdminDashboardPage() {
+  const [archiving, setArchiving] = useState(false);
+
+  const handleArchive = async () => {
+    if (
+      !confirm(
+        "Archive study groups that have been inactive for 30+ days? Members will be notified."
+      )
+    )
+      return;
+    setArchiving(true);
+    try {
+      const { error } = await supabase.rpc("archive_inactive_communities");
+      if (error) throw error;
+      alert("Archival complete. Inactive groups have been archived.");
+    } catch (err: any) {
+      alert("Failed to archive groups: " + err.message);
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   return (
     <AppShell>
       {/* Page title */}
@@ -101,31 +138,58 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {tiles.map(({ to, icon: Icon, label, desc, color, bg }) => (
-          <Link
-            key={to}
-            to={to}
-            className="flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 active:scale-[0.98] transition-transform duration-100 [-webkit-tap-highlight-color:transparent]"
-          >
-            <div
-              className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}
+        {tiles.map(({ to, icon: Icon, label, desc, color, bg, action }) =>
+          action ? (
+            <button
+              key={label}
+              onClick={handleArchive}
+              disabled={archiving}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 active:scale-[0.98] transition-transform duration-100 [-webkit-tap-highlight-color:transparent] text-left"
             >
-              <Icon size={18} className={color} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                {label}
-              </p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                {desc}
-              </p>
-            </div>
-            <span className="ml-auto text-slate-300 dark:text-slate-600 text-lg shrink-0">
-              ›
-            </span>
-          </Link>
-        ))}
+              <div
+                className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}
+              >
+                <Icon size={18} className={color} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  {label}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                  {desc}
+                </p>
+              </div>
+              <span className="ml-auto text-slate-300 dark:text-slate-600 text-lg shrink-0">
+                ›
+              </span>
+            </button>
+          ) : (
+            <Link
+              key={to}
+              to={to}
+              className="flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 active:scale-[0.98] transition-transform duration-100 [-webkit-tap-highlight-color:transparent]"
+            >
+              <div
+                className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}
+              >
+                <Icon size={18} className={color} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  {label}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                  {desc}
+                </p>
+              </div>
+              <span className="ml-auto text-slate-300 dark:text-slate-600 text-lg shrink-0">
+                ›
+              </span>
+            </Link>
+          )
+        )}
       </div>
     </AppShell>
   );
 }
+

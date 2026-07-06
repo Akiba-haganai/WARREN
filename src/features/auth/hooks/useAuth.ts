@@ -9,6 +9,7 @@ export function useLogin() {
       if (result.error) throw new Error(result.error);
       return result;
     },
+    onError: () => {},
   });
 }
 
@@ -28,6 +29,7 @@ export function useRegister() {
       if (result.error) throw new Error(result.error);
       return result;
     },
+    onError: () => {},
   });
 }
 

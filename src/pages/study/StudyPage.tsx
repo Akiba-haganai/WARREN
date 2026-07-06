@@ -15,6 +15,9 @@ import { usePersonalizedFeed } from "../../features/study/hooks/usePersonalizedF
 import { StudyGrid } from "../../features/study/components/StudyGrid";
 import { MaterialDrawer } from "../../features/study/components/MaterialDrawer";
 import { GradeEstimator } from "../../features/study/components/GradeEstimator";
+import PostCardSkeleton from "../../features/posts/components/PostCardSkeleton";
+import { EmptyState } from "../../components/common/EmptyState";
+
 import {
   SearchBar,
   ChipScroll,
@@ -321,7 +324,9 @@ export default function StudyPage() {
         {/* All Materials */}
         <h2 className="text-lg font-bold mt-6 mb-2">All Materials</h2>
         {isLoading ? (
-          <div className="flex flex-col gap-2.5">Loading...</div>
+          <div className="flex flex-col gap-2.5">
+            {[...Array(4)].map((_, i) => <PostCardSkeleton key={i} />)}
+          </div>
         ) : (
           <StudyGrid
             materials={materials}
@@ -331,6 +336,10 @@ export default function StudyPage() {
             onOpen={handleOpen}
           />
         )}
+        {materials.length === 0 && !isLoading && (
+          <EmptyState icon="📚" title="No materials found" description="Try adjusting your filters." />
+        )}
+
         {hasNextPage && <div ref={loadMoreRef} className="h-10" />}
         {isFetchingNextPage && (
           <p className="text-center text-sm">Loading more...</p>
@@ -344,21 +353,22 @@ export default function StudyPage() {
             subjectColor={subjectColorMap[selected.subject] ?? "#6366F1"}
             meta={TYPE_META[selected.material_type] ?? TYPE_META.resource}
             onToggleSave={handleToggleSave}
+            onOpen={handleOpen}
             onClose={() => setSelected(null)}
             relatedMaterials={related}
+
           />
         )}
       </div>
       
       <a
-        href="https://www.buymeacoffee.com/warren"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-1 text-xs text-pink-600 dark:text-pink-400 hover:underline px-4 pb-4"
-      >
-        ☕ Support
-        Buy me a coffee plz
-      </a>
+  href="mailto:chilengawarren307@gmail.com?subject=Support%20for%20Warren"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="flex items-center gap-1 text-xs text-pink-600 dark:text-pink-400 hover:underline px-4 pb-4"
+>
+  ☕ Buy me a coffee
+</a>
     </AppShell>
   );
 }

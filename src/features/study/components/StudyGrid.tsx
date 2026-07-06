@@ -19,9 +19,11 @@ export function StudyGrid({ materials, savedIds, subjectColorMap, onToggleSave, 
     );
   }
 
+  const uniqueMaterials = Array.from(new Map(materials.map((m) => [m.id, m])).values());
+
   return (
     <div className="flex flex-col gap-2.5">
-      {materials.map((m) => (
+      {uniqueMaterials.map((m) => (
         <MaterialCard
           key={m.id}
           material={m}

@@ -33,18 +33,21 @@ const AppShell = memo(function AppShell({
       {/* Main content */}
       <main
         className="
+
           mx-auto
           w-full
           max-w-lg
           px-3
           pt-20
-          pb-28
+          pb-32
           animate-in
           fade-in
-          duration-200
+          slide-in-from-bottom-4
+          duration-300
           flex-1
         "
       >
+
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-12">

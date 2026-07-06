@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCommunities, getUserMemberships } from "../../features/communities/services/communities.service";
+
 import { Send, ArrowLeft, Loader2 } from "lucide-react";
 import { fetchConversation, sendDirectMessage, type DirectMessageWithProfile } from "../../features/messages/services/messages.service";
 import { useAuthStore } from "../../store/authStore";
+
 import { useToastStore } from "../../store/toastStore";
 interface Props {
   open: boolean;
@@ -18,6 +22,24 @@ export default function DirectMessageDrawer({ open, onClose, receiverId, receive
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const currentUser = useAuthStore((s) => s.user);
+  const { data: commonGroups } = useQuery({
+    queryKey: ["commonGroups", currentUser?.id, receiverId],
+    queryFn: async () => {
+      if (!currentUser || !receiverId) return [];
+      const [myMemberships, theirMemberships] = await Promise.all([
+        getUserMemberships(currentUser.id),
+        getUserMemberships(receiverId),
+      ]);
+      const commonIds = [...myMemberships].filter((id) => theirMemberships.has(id));
+      if (commonIds.length === 0) return [];
+      const allCommunities = await fetchCommunities();
+      return allCommunities.filter((c) => commonIds.includes(c.id) && c.type === "study");
+    },
+    enabled: !!currentUser && !!receiverId,
+  });
+
 
   useEffect(() => {
     if (!open || !user) return;
@@ -84,7 +106,27 @@ export default function DirectMessageDrawer({ open, onClose, receiverId, receive
           <div ref={messagesEndRef} />
         </div>
 
+
+        {commonGroups && commonGroups.length > 0 && (
+          <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950/20 border-t border-blue-200 dark:border-blue-800">
+            <p className="text-xs font-semibold">
+              You're both in <span className="font-bold">{commonGroups[0].name}</span>
+            </p>
+            <button
+              onClick={() => {
+                const inviteUrl = `${window.location.origin}/community/${commonGroups[0].id}/join`;
+                navigator.clipboard.writeText(inviteUrl);
+                alert("Invite link copied!");
+              }}
+              className="text-xs text-blue-600 underline mt-1"
+            >
+              Copy invite link
+            </button>
+          </div>
+        )}
+
         {/* Input */}
+
         <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2">
           <input
             type="text"

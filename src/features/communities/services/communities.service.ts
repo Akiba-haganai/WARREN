@@ -24,7 +24,9 @@ export async function getMemberCounts(communityIds: string[]): Promise<Record<st
   if (communityIds.length === 0) return {};
   const { data } = await supabase.from("community_members").select("community_id").in("community_id", communityIds);
   const counts: Record<string, number> = {};
-  data?.forEach((m) => { counts[m.community_id] = (counts[m.community_id] ?? 0) + 1; });
+  data?.forEach((m) => {
+    counts[m.community_id] = (counts[m.community_id] ?? 0) + 1;
+  });
   return counts;
 }
 
@@ -43,7 +45,11 @@ export async function joinCommunity(communityId: string): Promise<void> {
 export async function leaveCommunity(communityId: string): Promise<void> {
   const user = (await supabase.auth.getUser()).data.user;
   if (!user) throw new Error("Not authenticated");
-  const { error } = await supabase.from("community_members").delete().eq("community_id", communityId).eq("user_id", user.id);
+  const { error } = await supabase
+    .from("community_members")
+    .delete()
+    .eq("community_id", communityId)
+    .eq("user_id", user.id);
   if (error) throw error;
 }
 
@@ -53,7 +59,10 @@ export async function kickMember(communityId: string, userId: string): Promise<v
 }
 
 export async function fetchMembers(communityId: string) {
-  const { data, error } = await supabase.from("community_members").select("user_id, profiles(username, avatar_url)").eq("community_id", communityId);
+  const { data, error } = await supabase
+    .from("community_members")
+    .select("user_id, profiles(username, avatar_url)")
+    .eq("community_id", communityId);
   if (error) throw error;
   return (data ?? []).map((m: any) => ({
     user_id: m.user_id,
@@ -62,16 +71,39 @@ export async function fetchMembers(communityId: string) {
   }));
 }
 
-export async function createCommunity(data: Omit<Community, "id" | "created_by" | "created_at" | "updated_at">): Promise<Community> {
+export async function createCommunity(
+  data: Omit<Community, "id" | "created_by" | "created_at" | "updated_at">
+): Promise<Community> {
   const user = (await supabase.auth.getUser()).data.user;
   if (!user) throw new Error("Not authenticated");
-  const { data: result, error } = await supabase.from("communities").insert({ ...data, created_by: user.id }).select().single();
+
+  const { data: result, error } = await supabase
+    .from("communities")
+    .insert({ ...data, created_by: user.id })
+    .select()
+    .single();
   if (error) throw error;
+
+  // Auto‑join the creator
+  const { error: joinError } = await supabase.from("community_members").insert({
+    community_id: result.id,
+    user_id: user.id,
+  });
+  if (joinError) console.warn("Could not auto‑join creator", joinError);
+
   return result as Community;
 }
 
-export async function updateCommunity(id: string, updates: Partial<Omit<Community, "id" | "created_by" | "created_at" | "updated_at">>): Promise<Community> {
-  const { data, error } = await supabase.from("communities").update({ ...updates, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+export async function updateCommunity(
+  id: string,
+  updates: Partial<Omit<Community, "id" | "created_by" | "created_at" | "updated_at">
+>): Promise<Community> {
+  const { data, error } = await supabase
+    .from("communities")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
   if (error) throw error;
   return data as Community;
 }
@@ -80,3 +112,4 @@ export async function deleteCommunity(id: string): Promise<void> {
   const { error } = await supabase.from("communities").delete().eq("id", id);
   if (error) throw error;
 }
+

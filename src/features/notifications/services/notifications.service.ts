@@ -38,6 +38,18 @@ export async function getUnreadCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
+export async function createNotification(
+  userId: string,
+  title: string,
+  body: string,
+  type = "system"
+) {
+  const { error } = await supabase
+    .from("notifications")
+    .insert({ user_id: userId, title, body, type });
+  if (error) console.warn("Failed to create notification", error);
+}
+
 export function subscribeToNotifications(userId: string, callback: () => void) {
   return supabase
     .channel(`notifications-${userId}`)

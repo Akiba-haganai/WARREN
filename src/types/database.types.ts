@@ -269,6 +269,7 @@ export type Database = {
       }
       communities: {
         Row: {
+          archived: boolean | null
           cover_color: string
           created_at: string
           created_by: string | null
@@ -282,6 +283,7 @@ export type Database = {
           year: string | null
         }
         Insert: {
+          archived?: boolean | null
           cover_color?: string
           created_at?: string
           created_by?: string | null
@@ -295,6 +297,7 @@ export type Database = {
           year?: string | null
         }
         Update: {
+          archived?: boolean | null
           cover_color?: string
           created_at?: string
           created_by?: string | null
@@ -671,6 +674,50 @@ export type Database = {
           {
             foreignKeyName: "live_rooms_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      map_pin_suggestions: {
+        Row: {
+          category: string | null
+          contact: string | null
+          created_at: string | null
+          description: string | null
+          hours: string | null
+          id: string
+          location_description: string | null
+          suggested_by: string | null
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          contact?: string | null
+          created_at?: string | null
+          description?: string | null
+          hours?: string | null
+          id?: string
+          location_description?: string | null
+          suggested_by?: string | null
+          title: string
+        }
+        Update: {
+          category?: string | null
+          contact?: string | null
+          created_at?: string | null
+          description?: string | null
+          hours?: string | null
+          id?: string
+          location_description?: string | null
+          suggested_by?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_pin_suggestions_suggested_by_fkey"
+            columns: ["suggested_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1365,77 +1412,6 @@ export type Database = {
           },
         ]
       }
-      study_group_members: {
-        Row: {
-          group_id: string
-          joined_at: string | null
-          user_id: string
-        }
-        Insert: {
-          group_id: string
-          joined_at?: string | null
-          user_id: string
-        }
-        Update: {
-          group_id?: string
-          joined_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "study_group_members_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "study_groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "study_group_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      study_groups: {
-        Row: {
-          course: string
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          id: string
-          is_private: boolean | null
-          name: string
-        }
-        Insert: {
-          course: string
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_private?: boolean | null
-          name: string
-        }
-        Update: {
-          course?: string
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_private?: boolean | null
-          name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "study_groups_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       study_materials: {
         Row: {
           created_at: string
@@ -1540,12 +1516,52 @@ export type Database = {
           },
         ]
       }
+      webrtc_signals: {
+        Row: {
+          created_at: string | null
+          id: string
+          payload: Json
+          receiver_id: string | null
+          room_id: string
+          sender_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payload: Json
+          receiver_id?: string | null
+          room_id: string
+          sender_id: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payload?: Json
+          receiver_id?: string | null
+          room_id?: string
+          sender_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webrtc_signals_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      archive_inactive_communities: { Args: never; Returns: undefined }
       can_create_post: { Args: { p_user_id: string }; Returns: boolean }
+      cleanup_old_notifications: { Args: never; Returns: undefined }
       decrement_vote: {
         Args: { p_column: string; p_post_id: string }
         Returns: undefined
@@ -1562,6 +1578,7 @@ export type Database = {
         Args: { created_at: string; downvotes: number; upvotes: number }
         Returns: number
       }
+      recalculate_trending_scores: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "student"

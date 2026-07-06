@@ -153,11 +153,19 @@ export async function fetchReactions(materialId: string) {
 
 // ─── Material views ───────────────────────────────────────────────────────
 export async function recordMaterialView(userId: string, materialId: string) {
-  const { error } = await supabase
-    .from("material_views")
-    .upsert({ user_id: userId, material_id: materialId, viewed_at: new Date().toISOString() });
-  if (error) console.warn("Failed to record view", error);
+  try {
+    const { error } = await supabase.from("material_views").insert({
+      user_id: userId,
+      material_id: materialId,
+      viewed_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+  } catch (error: any) {
+    if (error?.code === "23505") return;
+    console.warn("Failed to record view", error);
+  }
 }
+
 
 export async function fetchRecentlyViewed(userId: string, limit = 6): Promise<StudyMaterial[]> {
   const { data, error } = await supabase
@@ -279,8 +287,30 @@ export async function fetchMaterialRating(materialId: string) {
 }
 
 // ─── Upload Study Material (admin) ────────────────────────────────────────
-export async function uploadStudyMaterial(material: Omit<StudyMaterial, "id" | "created_at" | "download_count" | "uploader_username" | "uploader_avatar">) {
-  const { data, error } = await supabase.from("study_materials").insert(material).select().single();
+export async function awardKarma(userId: string, amount: number, _reason?: string) {
+  // Compatibility shim. If your DB has an increment RPC, use it.
+  // Otherwise, this function will effectively no-op.
+  try {
+    for (let i = 0; i < amount; i++) {
+      await supabase.rpc("increment", {
+        table_name: "profiles",
+        column_name: "karma",
+        row_id: userId,
+      });
+    }
+  } catch {
+    // no-op
+  }
+}
+
+export async function uploadStudyMaterial(
+  material: Omit<StudyMaterial, "id" | "created_at" | "download_count" | "uploader_username" | "uploader_avatar">
+) {
+  const { data, error } = await supabase
+    .from("study_materials")
+    .insert(material)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 }

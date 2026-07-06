@@ -19,10 +19,22 @@ interface Props {
   onClose: () => void;
 }
 
-export function MaterialDrawer({ material, saved, savedIds, relatedMaterials, subjectColor, meta, onToggleSave, onOpen, onClose }: Props) {
+export function MaterialDrawer({
+  material,
+  saved,
+  savedIds,
+  relatedMaterials,
+  subjectColor,
+  meta,
+  onToggleSave,
+  onOpen,
+  onClose,
+}: Props) {
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, []);
 
   const user = useAuthStore((s) => s.user);
@@ -47,12 +59,12 @@ export function MaterialDrawer({ material, saved, savedIds, relatedMaterials, su
     if (!file || !user) return;
     setUploading(true);
     try {
-      const filePath = `study/${user.id}/${Date.now()}_${file.name}`;
+      const filePath = `posts/${user.id}/versions/${Date.now()}_${file.name}`;
       const { error: uploadErr } = await supabase.storage
-        .from("study-materials")
+        .from("post-images")   // ✅ correct bucket
         .upload(filePath, file);
       if (uploadErr) throw uploadErr;
-      const { data } = supabase.storage.from("study-materials").getPublicUrl(filePath);
+      const { data } = supabase.storage.from("post-images").getPublicUrl(filePath);
       await uploadNewVersion(material.id, data.publicUrl);
       alert("New version uploaded successfully.");
     } catch (err) {
@@ -66,24 +78,82 @@ export function MaterialDrawer({ material, saved, savedIds, relatedMaterials, su
 
   return (
     <>
+      {/* Chrome/Safari/Edge scrollbar styles */}
+      <style>{`
+        .material-drawer-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .material-drawer-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .material-drawer-scroll::-webkit-scrollbar-thumb {
+          background-color: #94a3b8;
+          border-radius: 20px;
+        }
+      `}</style>
+
       <div onClick={onClose} className="fixed inset-0 bg-black/50 dark:bg-black/70 z-40" />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 rounded-t-[24px] max-h-[85dvh] overflow-y-auto border-t border-slate-200 dark:border-slate-700/60 animate-slide-up">
+
+      <div
+        className="material-drawer-scroll fixed bottom-[70px] left-0 right-0 z-50 bg-white dark:bg-slate-900 rounded-t-[24px] max-h-[65vh] overflow-y-auto border-t border-slate-200 dark:border-slate-700/60 animate-slide-up"
+        style={{
+
+          scrollbarWidth: "thin",
+          scrollbarColor: "#94a3b8 transparent",
+        }}
+      >
         <div className="w-9 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mt-3" />
-        <div style={{ background: `${subjectColor}18`, borderBottom: `1px solid ${subjectColor}33` }} className="flex items-center justify-between px-4 py-3 mt-2">
-          <span style={{ background: meta.bg, color: meta.color }} className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full">
+        <div
+          style={{ background: `${subjectColor}18`, borderBottom: `1px solid ${subjectColor}33` }}
+          className="flex items-center justify-between px-4 py-3 mt-2"
+        >
+          <span
+            style={{ background: meta.bg, color: meta.color }}
+            className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full"
+          >
             {meta.icon} {meta.label}
           </span>
           <div className="flex items-center gap-2">
-            <button onClick={handleReport} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-red-500" aria-label="Report material">
+            <button
+              onClick={handleReport}
+              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-red-500"
+              aria-label="Report material"
+            >
               <Flag size={15} />
             </button>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm" aria-label="Close drawer">✕</button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm"
+              aria-label="Close drawer"
+            >
+              ✕
+            </button>
           </div>
         </div>
+
         <div className="px-5 pt-4 pb-10">
-          <h2 className="text-xl font-black text-slate-900 dark:text-white leading-snug mb-3">{material.title}</h2>
+
+          <h2 className="text-xl font-black text-slate-900 dark:text-white leading-snug mb-3">
+            {material.title}
+          </h2>
+
           {material.description && (
-            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{material.description}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+              {material.description}
+            </p>
+          )}
+
+          {(material.file_url || material.external_url) && (
+            <button
+              onClick={() => {
+                const url = material.file_url || material.external_url;
+                if (url) window.open(url, "_blank", "noopener,noreferrer");
+              }}
+              className="w-full py-3.5 rounded-2xl text-sm font-bold border border-blue-200 bg-gradient-to-r from-blue-600 to-cyan-500 text-white transition-colors"
+              aria-label="View document"
+            >
+              📄 View Document
+            </button>
           )}
 
           <button

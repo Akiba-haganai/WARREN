@@ -14,10 +14,14 @@ export function Toast({ message, type = "ok", onClose }: Props) {
   }, [onClose]);
 
   return (
-    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-xl z-50 ${type === "ok" ? "bg-emerald-600" : "bg-red-600"}`}>
+    <div
+      className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-2 duration-200 flex items-center gap-2 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-xl ${
+        type === "ok" ? "bg-emerald-600" : "bg-red-600"
+      }`}
+    >
       {type === "ok" ? <Check size={13} /> : <AlertCircle size={13} />}
       {message}
-      <button onClick={onClose} className="ml-1"><X size={12} /></button>
+      <button onClick={onClose} className="ml-1" aria-label="Dismiss"><X size={12} /></button>
     </div>
   );
 }

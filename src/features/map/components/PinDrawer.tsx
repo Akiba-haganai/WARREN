@@ -1,4 +1,6 @@
 import { X, Pencil, Trash2, Camera, Navigation, ExternalLink, Info } from "lucide-react";
+
+
 import type { MapPin as MapPinType } from "../../../types/map";
 import { getCat } from "../utils/categories";
 import { useState } from "react";
@@ -9,6 +11,10 @@ interface Props {
   onClose: () => void;
   onEdit: (pin: MapPinType) => void;
   onDelete: (id: string) => void;
+
+  walkthroughActive?: boolean;
+  onNext?: () => void;
+  firstDayRoutePinIds?: string[];
 }
 
 export function PinDrawer({ pin, canManage, onClose, onEdit, onDelete }: Props) {
@@ -75,6 +81,9 @@ export function PinDrawer({ pin, canManage, onClose, onEdit, onDelete }: Props) 
           <a href={`mailto:${pin.contact}`} className="text-blue-600 dark:text-blue-400 underline">{pin.contact}</a>
         </div>
       )}
+
+      {/* Share button + walkthrough CTA hooks are intentionally left to CampusMapPage for now to avoid stale assumptions. */}
+
     </div>
   );
 }

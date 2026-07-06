@@ -11,7 +11,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToastStore } from "../../store/toastStore";
 import type { Community } from "../../types/community";
 
+
 type FilterType = "all" | "social" | "educational";
+
+
 
 export default function CommunityPage() {
   const user = useAuthStore((s) => s.user);
@@ -64,12 +67,16 @@ export default function CommunityPage() {
           ))}
         </div>
 
+        {/* If you need a community detail view inside this page, wire the Room tab here. */}
+
         {/* Educational filters */}
         {filterType === "educational" && (
           <div className="flex gap-2 mb-4 flex-wrap">
             <select
+              title="Select school"
               value={selectedParentId ?? ""}
               onChange={(e) => setSelectedParentId(e.target.value || null)}
+
               className="min-h-[44px] px-4 py-2.5 rounded-2xl border text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
             >
               <option value="">All Schools</option>
@@ -78,8 +85,10 @@ export default function CommunityPage() {
               ))}
             </select>
             <select
+              title="Select year"
               value={selectedYear ?? ""}
               onChange={(e) => setSelectedYear(e.target.value || null)}
+
               className="min-h-[44px] px-4 py-2.5 rounded-2xl border text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
             >
               <option value="">All Years</option>

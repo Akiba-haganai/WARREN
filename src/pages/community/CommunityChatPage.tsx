@@ -11,7 +11,8 @@ import {
   subscribeToMessages,
   type CommunityMessageWithProfile,
 } from "../../services/communityChatService";
-import { ArrowLeft, Send, Image as ImageIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, Loader2, Link } from "lucide-react";
+
 import DirectMessageDrawer from "../../components/community/DirectMessageDrawer";
 import { useToastStore } from "../../store/toastStore";
 
@@ -112,7 +113,14 @@ export default function CommunityChatPage() {
     setDirectMessageUser({ id: userId, name: username });
   };
 
+  const handleCopyInvite = () => {
+    const inviteUrl = `${window.location.origin}/community/${communityId}/join`;
+    navigator.clipboard.writeText(inviteUrl);
+    alert("Invite link copied! Share it with your friends.");
+  };
+
   if (!communityId) return null;
+
 
   return (
     <AppShell>
@@ -122,8 +130,12 @@ export default function CommunityChatPage() {
           <button onClick={() => navigate(-1)} className="p-1" aria-label="Go back">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="font-bold text-lg">Chat</h1>
+          <h1 className="font-bold text-lg flex-1">Chat</h1>
+          <button onClick={handleCopyInvite} className="p-1" aria-label="Copy invite link">
+            <Link size={20} />
+          </button>
         </div>
+
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">

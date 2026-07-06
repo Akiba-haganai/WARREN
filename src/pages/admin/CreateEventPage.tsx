@@ -5,6 +5,8 @@ import { createEvent, updateEvent, fetchEvents } from "../../services/eventsServ
 import { supabase } from "../../lib/supabase";
 import type { Database } from "../../types/database.types";
 
+
+
 type EventInsert = Database["public"]["Tables"]["events"]["Insert"];
 
 export default function CreateEventPage() {
@@ -66,7 +68,28 @@ export default function CreateEventPage() {
         });
       }
 
+      // Notify community members
+      if (communityId) {
+        const { data: members } = await supabase
+          .from("community_members")
+          .select("user_id")
+          .eq("community_id", communityId);
+
+        if (members) {
+          for (const m of members) {
+            await supabase.from("notifications").insert({
+              user_id: m.user_id,
+              title: "New event in your community",
+              body: `"${title.trim()}" is happening on ${new Date(eventDate).toLocaleDateString()}.`,
+              data: { type: "event" },
+              type: "event",
+            });
+          }
+        }
+      }
+
       navigate("/admin/events");
+
     } catch (err: any) {
       setError(err.message || "Failed to save event");
     } finally {
@@ -83,8 +106,11 @@ export default function CreateEventPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold mb-1">Title *</label>
+            <label className="block text-xs font-semibold mb-1" htmlFor="event-title">
+              Title *
+            </label>
             <input
+              id="event-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Exam Registration Deadline"
@@ -94,12 +120,14 @@ export default function CreateEventPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1">Date & Time *</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              Event Date & Time *
+            </label>
             <input
               type="datetime-local"
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border"
+              className="w-full px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
@@ -121,6 +149,8 @@ export default function CreateEventPage() {
             <button
               type="button"
               onClick={() => setNotifyAll(!notifyAll)}
+              title="Send notification to all users"
+              aria-label="Send notification to all users"
               className={`relative w-12 h-6 rounded-full transition-colors ${
                 notifyAll ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-600"
               }`}
@@ -147,3 +177,4 @@ export default function CreateEventPage() {
     </AppShell>
   );
 }
+

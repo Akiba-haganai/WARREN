@@ -2,10 +2,11 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
-import { uploadStudyMaterial } from "../../features/study/services/study.service";
+import { uploadStudyMaterial, awardKarma } from "../../features/study/services/study.service";
 import { useAuthStore } from "../../store/authStore";
 import { supabase } from "../../lib/supabase";
 import { compressImage } from "../../services/commentImageService";
+import { createNotification } from "../../features/notifications/services/notifications.service";
 
 const YEAR_GROUPS = [
   "All Years",
@@ -87,12 +88,12 @@ export default function UploadMaterialPage() {
       if (files.length > 0) {
         const file = files[0];
         const compressed = await compressImage(file);
-        const filePath = `study/${user.id}/${Date.now()}_${compressed.name}`;
+        const filePath = `posts/${user.id}/${Date.now()}_${compressed.name}`;
         const { error: uploadErr } = await supabase.storage
-          .from("study-materials")
+          .from("post-images")
           .upload(filePath, compressed);
         if (uploadErr) throw uploadErr;
-        const { data } = supabase.storage.from("study-materials").getPublicUrl(filePath);
+        const { data } = supabase.storage.from("post-images").getPublicUrl(filePath);
         file_url = data.publicUrl;
       }
 
@@ -117,6 +118,32 @@ export default function UploadMaterialPage() {
         premium_cost: form.premium_cost,
         trending_score: form.trending_score,
       });
+
+      // Award karma independently of notification success.
+      awardKarma(user.id, 5, "Uploaded a study material").catch(() => {});
+
+
+      // Notify users who requested this subject
+      try {
+        const { data: matchingRequests } = await supabase
+          .from("material_requests")
+          .select("user_id, title")
+          .eq("subject", form.subject.trim());
+
+        if (matchingRequests) {
+          for (const req of matchingRequests) {
+            await createNotification(
+              req.user_id,
+              "Material uploaded for your request",
+              `"${form.title}" was uploaded for subject "${form.subject}".`,
+              "study"
+            ).catch(() => {});
+          }
+        }
+      } catch (err) {
+        // Never block upload/karma on notification failures.
+        console.warn("Failed to notify matching requesters", err);
+      }
 
       navigate("/study");
     } catch (e) {

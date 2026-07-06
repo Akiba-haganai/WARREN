@@ -1,4 +1,10 @@
+
+
+import { useEffect } from "react";
 import { Search, X, Plus } from "lucide-react";
+
+import { useSearchParams } from "react-router-dom";
+
 import AppShell from "../../components/layout/AppShell";
 import { useCampusMap } from "../../features/map/hooks/useCampusMap";
 import { CampusMap } from "../../features/map/components/CampusMap";
@@ -7,6 +13,17 @@ import { QuickActions } from "../../features/map/components/QuickActions";
 import { CategoryFilter } from "../../features/map/components/CategoryFilter";
 import type { PinFormData } from "../../features/map/components/PinForm";
 import type { MapPin } from "../../types/map";
+import { useGeolocation } from "../../features/map/hooks/useGeolocation";
+
+const FIRST_DAY_PIN_IDS = [
+  "b1a2c3d4-e5f6-7890-abcd-ef1234567890",
+  "c2b3d4e5-f6a7-8901-bcde-f12345678901",
+  "d3c4e5f6-a7b8-9012-cdef-123456789012",
+  "e4d5f6a7-b8c9-0123-defa-234567890123",
+  "f5e6a7b8-c9d0-1234-efab-345678901234",
+];
+
+
 
 export default function CampusMapPage() {
   const {
@@ -23,9 +40,24 @@ export default function CampusMapPage() {
     pendingCoords,
     showForm,
     setPlacingMode,
+    pins,
+    setActivePin,
   } = useCampusMap();
 
+
+  const [searchParams] = useSearchParams();
+  const geo = useGeolocation();
+
+  // Deep link: open pin from URL ?pin=<id>
+  useEffect(() => {
+    const pinId = searchParams.get("pin");
+    if (!pinId) return;
+    const pin = pins.find((p) => p.id === pinId);
+    if (pin) setActivePin(pin);
+  }, [searchParams, pins, setActivePin]);
+
   // When the user finishes placing a pin, the store will have pendingCoords and showForm = true
+
   // (usePinPlacement calls openForm() which sets showForm true). So no extra useEffect needed.
 
   const handleSave = async (data: PinFormData) => {
@@ -67,6 +99,8 @@ export default function CampusMapPage() {
     <AppShell>
       <div className="flex flex-col h-full relative" style={{ minHeight: "100dvh" }}>
         {/* Header */}
+        {/* Walkthrough / sharing / suggestions UI are shown on top of the map drawer */}
+
         <div className="px-4 pt-4 pb-2 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 z-20">
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -113,7 +147,9 @@ export default function CampusMapPage() {
           canManage={canManage}
           onEditPin={handleEdit}
           onDeletePin={handleDelete}
+          userPosition={geo.lat && geo.lng ? { lat: geo.lat, lng: geo.lng } : null}
         />
+
 
         {/* PinForm drawer */}
         {showForm && (

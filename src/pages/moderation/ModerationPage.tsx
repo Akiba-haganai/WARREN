@@ -35,14 +35,51 @@ export default function ModerationPage() {
 
   const handleDeletePost = async (id: string) => {
     if (!confirm("Delete this post permanently?")) return;
+
+    const deleted = posts.find((p) => p.id === id);
     await deletePost(id);
     setPosts((prev) => prev.filter((p) => p.id !== id));
+
+    if (deleted?.user_id) {
+      try {
+        const { createNotification } = await import(
+          "../../features/notifications/services/notifications.service"
+        );
+        await createNotification(
+          deleted.user_id,
+          "Your post was removed",
+          `A moderator removed your post: "${deleted.content?.slice(0, 50)}…"`,
+          "moderation"
+        );
+      } catch (err) {
+        // Notifications should never break moderation actions.
+        console.warn("Failed to notify post author", err);
+      }
+    }
   };
 
   const handleDeleteComment = async (id: string) => {
     if (!confirm("Delete this comment permanently?")) return;
+
+    const deleted = comments.find((c) => c.id === id);
     await deleteComment(id);
     setComments((prev) => prev.filter((c) => c.id !== id));
+
+    if (deleted?.user_id) {
+      try {
+        const { createNotification } = await import(
+          "../../features/notifications/services/notifications.service"
+        );
+        await createNotification(
+          deleted.user_id,
+          "Your comment was removed",
+          `A moderator removed your comment: "${deleted.content?.slice(0, 50)}…"`,
+          "moderation"
+        );
+      } catch (err) {
+        console.warn("Failed to notify comment author", err);
+      }
+    }
   };
 
   // Only after all hooks, render the appropriate UI
@@ -58,7 +95,15 @@ export default function ModerationPage() {
     );
   }
 
-  if (loading) return <AppShell><div className="p-4">Loading moderation data...</div></AppShell>;
+  if (loading) return (
+    <AppShell>
+      <div className="p-4 space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-20 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
+        ))}
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>
