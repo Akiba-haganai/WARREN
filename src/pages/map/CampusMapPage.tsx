@@ -21,7 +21,10 @@ const FIRST_DAY_PIN_IDS = [
   "d3c4e5f6-a7b8-9012-cdef-123456789012",
   "e4d5f6a7-b8c9-0123-defa-234567890123",
   "f5e6a7b8-c9d0-1234-efab-345678901234",
-];
+] as const;
+// Used by the first-day walkthrough (planned). Keep it referenced to satisfy TS/noUnusedLocals.
+void FIRST_DAY_PIN_IDS;
+
 
 
 
