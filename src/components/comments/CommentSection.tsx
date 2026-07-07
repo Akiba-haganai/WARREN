@@ -151,6 +151,25 @@ export default function CommentSection({ postId, postOwnerId, onClose }: Props) 
 
       if (insertError) throw insertError;
 
+      // Build a local comment object for instant UI update
+      const newComment: Comment = {
+        id: crypto.randomUUID(), // temporary ID – will be replaced when realtime fires
+        post_id: postId,
+        user_id: user.id,
+        content: content.trim(),
+        image_url: imageUrl,
+        created_at: new Date().toISOString(),
+        profiles: {
+          username: user.user_metadata?.username || "You",
+          avatar_url: user.user_metadata?.avatar_url || null,
+          role: "student",
+        },
+        upvotes: 0,
+        downvotes: 0,
+        userVote: null,
+      };
+
+      setComments((prev) => [...prev, newComment]);
       setContent("");
       setImageFile(null);
     } catch (err: any) {

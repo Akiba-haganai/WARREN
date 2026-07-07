@@ -12,37 +12,43 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       VitePWA({
-        // Completely disable the service worker for now.
-        // The PWA manifest and install prompt will still work,
-        // but no files will be cached – every load is fresh.
-        injectRegister: false,
-        selfDestroying: true,
-
-        includeAssets: [
-          "favicon.svg",
-          "pwa-192.png",
-          "pwa-512.png",
-        ],
-
+        registerType: "autoUpdate",
+        workbox: {
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
+          navigateFallback: "/index.html",
+          runtimeCaching: [
+            {
+              urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+              handler: "CacheFirst",
+              options: { cacheName: "images", expiration: { maxEntries: 50 } },
+            },
+            {
+              // Cache your own JS/CSS/HTML (app shell)
+              urlPattern: ({ url }: { url: URL }) => url.origin === self.location.origin,
+              handler: "StaleWhileRevalidate",
+              options: {
+                cacheName: "app-shell",
+                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 },
+              },
+            },
+          ],
+        },
         manifest: {
-          name: "Warren",
+          name: "Warren Connect",
           short_name: "Warren",
-          description: "Connect, share, and study together",
-          theme_color: "#2563eb",
-          background_color: "#ffffff",
+          description: "Connect with students, buy/sell, find housing.",
+          theme_color: "#1E40AF",
+          background_color: "#1E40AF",
           display: "standalone",
-          orientation: "portrait",
           start_url: `/?v=${buildId}`,
           scope: "/",
           icons: [
             { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
             { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
-            { src: "/pwa-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           ],
-        },
-
-        workbox: {
-          globPatterns: [],
         },
       }),
     ],
