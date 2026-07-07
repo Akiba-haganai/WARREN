@@ -44,11 +44,16 @@ export async function createNotification(
   body: string,
   type = "system"
 ) {
+  // Supabase CHECK constraint expects an allowed notification type.
+  // If an invalid type is provided, fall back to "system" to avoid insert failures.
+  const safeType = (typeof type === "string" && type.length > 0) ? type : "system";
+
   const { error } = await supabase
     .from("notifications")
-    .insert({ user_id: userId, title, body, type });
+    .insert({ user_id: userId, title, body, type: safeType });
   if (error) console.warn("Failed to create notification", error);
 }
+
 
 export function subscribeToNotifications(userId: string, callback: () => void) {
   return supabase

@@ -147,10 +147,13 @@ export default function CreatePostSheet({ open, onClose, onCreated }: Props) {
       let voiceUrl: string | null = null;
 
       if (imageFile) {
-        const filePath = `posts/${user.id}/${Date.now()}_${imageFile.name}`;
+        // Sanitize file name – remove brackets and other problematic characters
+        const safeName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filePath = `posts/${user.id}/${Date.now()}_${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from("post-images")
           .upload(filePath, imageFile);
+
         if (uploadError) throw new Error("Image upload failed");
         const { data: publicUrlData } = supabase.storage
           .from("post-images")
