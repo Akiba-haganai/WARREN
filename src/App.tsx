@@ -18,13 +18,15 @@ export default function App() {
     if (booted.current) return;
     booted.current = true;
     try { localStorage.removeItem("warren-needs-recovery"); } catch (_) {}
-    Promise.allSettled([initAuth(), initTheme(), initA11y()]).finally(() => setReady(true));
+    Promise.allSettled([initAuth(), initTheme(), initA11y()]).finally(() =>
+      setReady(true)
+    );
   }, [initAuth, initTheme, initA11y]);
 
   if (!ready) {
     return (
-      <div className="h-screen flex items-center justify-center bg-white dark:bg-slate-950">
-        <div className="w-10 h-10 rounded-2xl bg-blue-600 animate-pulse" />
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-slate-950 transition-colors duration-500">
+        <div className="w-8 h-8 rounded-xl bg-blue-600 animate-bounce" />
       </div>
     );
   }

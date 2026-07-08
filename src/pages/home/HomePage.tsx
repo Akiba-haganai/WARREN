@@ -100,11 +100,12 @@ export default function HomePage() {
       {/* FAB */}
       <button
         onClick={() => setOpenSheet(true)}
-        className="fixed bottom-24 right-5 z-40 min-h-[56px] min-w-[56px] px-5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all duration-200 motion-safe:active:scale-95 hover:shadow-xl"
+        className="fixed bottom-24 right-5 z-50 min-h-[56px] min-w-[56px] px-5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-transform duration-150 ease-out hover:shadow-xl active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/40 touch-manipulation"
       >
         <Plus size={24} />
         <span className="font-semibold text-base hidden sm:inline">Post</span>
       </button>
+
 
       <CreatePostSheet open={openSheet} onClose={() => setOpenSheet(false)} onCreated={() => { setOpenSheet(false); refetch(); }} />
 

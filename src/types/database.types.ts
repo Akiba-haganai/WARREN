@@ -184,6 +184,101 @@ export type Database = {
           },
         ]
       }
+      chat_poll_options: {
+        Row: {
+          id: string
+          option_text: string
+          poll_id: string | null
+        }
+        Insert: {
+          id?: string
+          option_text: string
+          poll_id?: string | null
+        }
+        Update: {
+          id?: string
+          option_text?: string
+          poll_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "chat_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_poll_votes: {
+        Row: {
+          option_id: string
+          user_id: string
+        }
+        Insert: {
+          option_id: string
+          user_id: string
+        }
+        Update: {
+          option_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "chat_poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_poll_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_polls: {
+        Row: {
+          community_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          question: string
+        }
+        Insert: {
+          community_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          question: string
+        }
+        Update: {
+          community_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_polls_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_polls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_votes: {
         Row: {
           comment_id: string
@@ -270,6 +365,7 @@ export type Database = {
       communities: {
         Row: {
           archived: boolean | null
+          auto_delete_days: number | null
           cover_color: string
           created_at: string
           created_by: string | null
@@ -284,6 +380,7 @@ export type Database = {
         }
         Insert: {
           archived?: boolean | null
+          auto_delete_days?: number | null
           cover_color?: string
           created_at?: string
           created_by?: string | null
@@ -298,6 +395,7 @@ export type Database = {
         }
         Update: {
           archived?: boolean | null
+          auto_delete_days?: number | null
           cover_color?: string
           created_at?: string
           created_by?: string | null
@@ -366,9 +464,12 @@ export type Database = {
           content: string | null
           created_at: string
           expires_at: string | null
+          file_name: string | null
           file_url: string | null
           id: string
           image_url: string | null
+          is_announcement: boolean | null
+          parent_id: string | null
           sticker_url: string | null
           type: string
           updated_at: string
@@ -380,9 +481,12 @@ export type Database = {
           content?: string | null
           created_at?: string
           expires_at?: string | null
+          file_name?: string | null
           file_url?: string | null
           id?: string
           image_url?: string | null
+          is_announcement?: boolean | null
+          parent_id?: string | null
           sticker_url?: string | null
           type?: string
           updated_at?: string
@@ -394,9 +498,12 @@ export type Database = {
           content?: string | null
           created_at?: string
           expires_at?: string | null
+          file_name?: string | null
           file_url?: string | null
           id?: string
           image_url?: string | null
+          is_announcement?: boolean | null
+          parent_id?: string | null
           sticker_url?: string | null
           type?: string
           updated_at?: string
@@ -409,6 +516,13 @@ export type Database = {
             columns: ["community_id"]
             isOneToOne: false
             referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "community_messages"
             referencedColumns: ["id"]
           },
           {
@@ -964,6 +1078,39 @@ export type Database = {
           },
           {
             foreignKeyName: "material_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reads: {
+        Row: {
+          message_id: string
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          message_id: string
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          message_id?: string
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reads_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "community_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1561,6 +1708,7 @@ export type Database = {
     Functions: {
       archive_inactive_communities: { Args: never; Returns: undefined }
       can_create_post: { Args: { p_user_id: string }; Returns: boolean }
+      cleanup_old_messages: { Args: never; Returns: undefined }
       cleanup_old_notifications: { Args: never; Returns: undefined }
       decrement_vote: {
         Args: { p_column: string; p_post_id: string }

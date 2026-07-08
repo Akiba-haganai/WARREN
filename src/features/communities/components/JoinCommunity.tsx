@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { joinCommunity } from "../../features/communities/services/communities.service";
-import { useAuthStore } from "../../store/authStore";
+import { joinCommunity } from "../services/communities.service";
+import { useAuthStore } from "../../../store/authStore";
 import { Loader2 } from "lucide-react";
 
 export default function JoinCommunity() {

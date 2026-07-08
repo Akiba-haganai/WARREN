@@ -59,27 +59,37 @@ export default function CommunityMembersDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl p-4 animate-slide-up max-h-[60vh] overflow-hidden"
+        className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl p-4 animate-slide-up flex flex-col shadow-2xl"
+        style={{ maxHeight: "70vh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-lg">Members</h2>
-          <button onClick={onClose} className="p-2" aria-label="Close members drawer">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 shrink-0">
+          <h2 className="font-bold text-lg">Members ({members.length})</h2>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close members drawer">
             <X size={18} />
           </button>
         </div>
 
-        {loading ? (
-          <p className="text-center text-sm opacity-60 py-4">Loading…</p>
-        ) : members.length === 0 ? (
-          <p className="text-center text-sm opacity-60 py-4">No members</p>
-        ) : (
-          <div className="overflow-y-auto max-h-[50vh] space-y-2">
-            {members.map((m) => (
+        {/* Scrollable member list */}
+        <div
+          className="flex-1 overflow-y-auto space-y-2"
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: "#94a3b8 transparent",
+            paddingBottom: "env(safe-area-inset-bottom, 16px)",
+          }}
+        >
+          {loading ? (
+            <p className="text-center text-sm opacity-60 py-4">Loading…</p>
+          ) : members.length === 0 ? (
+            <p className="text-center text-sm opacity-60 py-4">No members</p>
+          ) : (
+            members.map((m) => (
               <div
                 key={m.user_id}
                 className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800"
@@ -122,9 +132,9 @@ export default function CommunityMembersDrawer({
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

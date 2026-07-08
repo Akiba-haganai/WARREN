@@ -17,7 +17,7 @@ export default function TermsPage() {
             defamatory, or otherwise objectionable. We reserve the right to
             remove any content and terminate accounts at our sole discretion.
           </p>
-          <h3>Intellectual Property</h3>
+          <h3>Content Rights</h3>
           <p>
             All content and materials available on Warren are protected by
             applicable intellectual property laws. You may not reproduce,

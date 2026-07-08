@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
             },
             {
               // Cache your own JS/CSS/HTML (app shell)
-              urlPattern: ({ url }: { url: URL }) => url.origin === self.location.origin,
+              urlPattern: ({ url }: { url: URL }) => url.origin === (globalThis as any).location.origin,
               handler: "StaleWhileRevalidate",
               options: {
                 cacheName: "app-shell",
@@ -37,9 +37,9 @@ export default defineConfig(({ mode }) => {
           ],
         },
         manifest: {
-          name: "Warren Connect",
+          name: "Warren",
           short_name: "Warren",
-          description: "Connect with students, buy/sell, find housing.",
+          description: "Connect with students, share ideas, and study together.",
           theme_color: "#1E40AF",
           background_color: "#1E40AF",
           display: "standalone",

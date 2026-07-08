@@ -24,6 +24,9 @@ export function useWebRTC(roomId: string) {
   const [isJoined, setIsJoined] = useState(false);
   const [participants, setParticipants] = useState<string[]>([]);
   const [isMuted, setIsMuted] = useState(false);
+  const [micError, setMicError] = useState<null | { type: "NotAllowedError" | "NotFoundError" | "Unknown"; message?: string }>(null);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(false);
+
 
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   const localStream = useRef<MediaStream | null>(null);
@@ -40,14 +43,25 @@ export function useWebRTC(roomId: string) {
   // Start local media
   const startLocalStream = useCallback(async () => {
     try {
+      // Keep existing constraints minimal to avoid WebRTC logic changes.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStream.current = stream;
+      setMicError(null);
       return stream;
-    } catch (err) {
+    } catch (err: any) {
       console.warn("Microphone access denied or not available.");
+      const name: string | undefined = err?.name;
+      if (name === "NotAllowedError") {
+        setMicError({ type: "NotAllowedError", message: err?.message });
+      } else if (name === "NotFoundError") {
+        setMicError({ type: "NotFoundError", message: err?.message });
+      } else {
+        setMicError({ type: "Unknown", message: err?.message });
+      }
       return null;
     }
   }, []);
+
 
 
   const createPeerConnection = useCallback(() => {
@@ -152,7 +166,6 @@ export function useWebRTC(roomId: string) {
   }, [startLocalStream, sendOffer]);
 
   const leaveRoom = useCallback(() => {
-
     peerConnection.current?.close();
     localStream.current?.getTracks().forEach((t) => t.stop());
     if (remoteAudioRef.current?.srcObject) {
@@ -166,13 +179,21 @@ export function useWebRTC(roomId: string) {
 
     setIsJoined(false);
     setParticipants([]);
+    setMicError(null);
+    setIsSpeakerOn(false);
   }, []);
 
   const toggleMute = useCallback(() => {
     if (!localStream.current) return;
-    localStream.current.getAudioTracks().forEach((t) => (t.enabled = isMuted));
+    localStream.current.getAudioTracks().forEach((t) => (t.enabled = !isMuted));
     setIsMuted((prev) => !prev);
   }, [isMuted]);
+
+  const toggleSpeaker = useCallback(() => {
+    // Placeholder UI toggle only. (Real output-device switching can be added later.)
+    setIsSpeakerOn((prev) => !prev);
+  }, []);
+
 
   // Realtime subscription for signals
   useEffect(() => {
@@ -201,6 +222,16 @@ export function useWebRTC(roomId: string) {
     };
   }, [roomId, handleSignal]);
 
-  return { isJoined, participants, isMuted, joinRoom, leaveRoom, toggleMute };
+  return {
+    isJoined,
+    participants,
+    isMuted,
+    joinRoom,
+    leaveRoom,
+    toggleMute,
+    micError,
+    isSpeakerOn,
+    toggleSpeaker,
+  };
 }
 

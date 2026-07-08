@@ -367,7 +367,7 @@ export default function StudyPage() {
   rel="noopener noreferrer"
   className="flex items-center gap-1 text-xs text-pink-600 dark:text-pink-400 hover:underline px-4 pb-4"
 >
-  ☕ Buy me a coffee
+  ☕ Send support
 </a>
     </AppShell>
   );

@@ -5,31 +5,17 @@
 @theme {
   --font-sans: "Plus Jakarta Sans", "Outfit", system-ui, -apple-system, sans-serif;
   --font-display: "Outfit", system-ui, -apple-system, sans-serif;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card-hover: 0 10px 25px rgba(0,0,0,0.08);
+  --shadow-button: 0 4px 12px rgba(37,99,235,0.25);
 }
 
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-  }
-
-  to {
-    transform: translateY(0);
-  }
-}
-
-@keyframes bounce-subtle {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-4px);
-  }
-}
-
+/* ───── Base ───── */
 html {
   scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
   color-scheme: light;
 }
 
@@ -49,9 +35,8 @@ body {
   font-family: var(--font-sans);
   background-color: white;
   color: rgb(15 23 42);
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  touch-action: manipulation;                 /* prevent double‑tap zoom */
 }
 
 html.dark body {
@@ -59,6 +44,7 @@ html.dark body {
   color: rgb(248 250 252);
 }
 
+/* ───── Form elements ───── */
 input,
 textarea,
 select {
@@ -75,6 +61,27 @@ html.dark textarea::placeholder {
   color: rgb(100 116 139);
 }
 
+/* ───── Focus ring – only for interactive elements ───── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+/* ───── Animations ───── */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
 .animate-slide-up {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -83,6 +90,7 @@ html.dark textarea::placeholder {
   animation: bounce-subtle 3s ease-in-out infinite;
 }
 
+/* ───── Glass effect (only for navigation) ───── */
 .glass {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px);
@@ -91,26 +99,21 @@ html.dark textarea::placeholder {
 
 html.dark .glass {
   background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
 }
 
+/* ───── Design tokens ───── */
 :root {
   --radius-sm: 0.75rem;
   --radius-md: 1rem;
   --radius-lg: 1.5rem;
   --radius-xl: 2rem;
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-card-hover: 0 10px 25px rgba(0,0,0,0.08);
-  --shadow-button: 0 4px 12px rgba(37,99,235,0.25);
 }
 
 /* Font size adjustments */
-.text-large { font-size: 1.125rem; }
+.text-large   { font-size: 1.125rem; }
 .text-x-large { font-size: 1.25rem; }
 
-
-/* High contrast mode */
+/* ───── High contrast mode ───── */
 .high-contrast {
   --tw-bg-opacity: 1;
   background-color: black !important;
@@ -121,10 +124,13 @@ html.dark .glass {
   color: white !important;
   background-color: black !important;
 }
-.high-contrast a, .high-contrast button {
+.high-contrast a,
+.high-contrast button {
   color: yellow !important;
 }
-.high-contrast input, .high-contrast select, .high-contrast textarea {
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea {
   background-color: black !important;
   border-color: white !important;
   color: white !important;

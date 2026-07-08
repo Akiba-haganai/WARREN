@@ -1,84 +1,108 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
 import { useAuthStore } from "../../store/authStore";
 import {
   fetchMessages,
   sendTextMessage,
   sendImageMessage,
-  sendGifMessage,
   uploadChatImage,
   subscribeToMessages,
+  markMessagesAsRead,
+  notifyMentions,
+  createPoll,
+  fetchPoll,
   type CommunityMessageWithProfile,
 } from "../../services/communityChatService";
-import { ArrowLeft, Send, Image as ImageIcon, Loader2, Link } from "lucide-react";
-
-import DirectMessageDrawer from "../../components/community/DirectMessageDrawer";
 import { useToastStore } from "../../store/toastStore";
+import { ChatHeader } from "../../features/communities/components/ChatHeader";
+import { ChatMessages } from "../../features/communities/components/ChatMessages";
+import { ChatInput } from "../../features/communities/components/ChatInput";
+import { ShareMaterialModal } from "../../features/communities/components/ShareMaterialModal";
+import { CreatePollForm } from "../../features/communities/components/CreatePollForm";
+import { MentionsDropdown } from "../../features/communities/components/MentionsDropdown";
+import { supabase } from "../../lib/supabase";
+import type { StudyMaterial } from "../../features/study/services/study.service";
 
 export default function CommunityChatPage() {
   const { id: communityId } = useParams<{ id: string }>();
+
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const user = useAuthStore((s) => s.user);
   const { showToast } = useToastStore();
+
   const [messages, setMessages] = useState<CommunityMessageWithProfile[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showShareMaterial, setShowShareMaterial] = useState(false);
+  const [showPollForm, setShowPollForm] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAnnouncementsOnly, setShowAnnouncementsOnly] = useState(false);
+  const [isAnnouncement, setIsAnnouncement] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [communityName, setCommunityName] = useState("Chat");
+
   const channelRef = useRef<ReturnType<typeof subscribeToMessages> | null>(null);
 
-  const dmUserIdFromParam = searchParams.get("dm");
-  const [directMessageUser, setDirectMessageUser] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
-
+  // Fetch community name
   useEffect(() => {
-    if (dmUserIdFromParam && communityId) {
-      navigate(`/community/${communityId}/chat`, { replace: true });
-      setDirectMessageUser({ id: dmUserIdFromParam, name: "User" });
-    }
-  }, [dmUserIdFromParam, communityId, navigate]);
+    if (!communityId) return;
+    import("../../features/communities/services/communities.service").then(({ fetchCommunities }) => {
+      fetchCommunities().then((all) => {
+        const found = all.find((c) => c.id === communityId);
+        if (found) setCommunityName(found.name);
+      });
+    });
+  }, [communityId]);
 
+  // Fetch messages
   useEffect(() => {
     if (!communityId || !user) return;
+    setLoading(true);
     fetchMessages(communityId)
-      .then((msgs) => {
-        setMessages(msgs);
-        setLoading(false);
-      })
+      .then((msgs) => { setMessages(msgs); setLoading(false); })
       .catch(console.error);
   }, [communityId, user]);
 
+  // Realtime subscription
   useEffect(() => {
     if (!communityId) return;
     channelRef.current = subscribeToMessages(communityId, (newMsg) => {
       setMessages((prev) => [...prev, newMsg]);
     });
-    return () => {
-      channelRef.current?.unsubscribe();
-    };
+    return () => { channelRef.current?.unsubscribe(); };
   }, [communityId]);
 
+  // Mark as read
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!communityId || !user || messages.length === 0) return;
+    markMessagesAsRead(communityId, user.id);
+  }, [communityId, user, messages]);
 
+  // Read receipts
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("message_reads")
+      .select("message_id")
+      .eq("user_id", user.id)
+      .then(({ data }) => setReadIds(new Set((data ?? []).map((r) => r.message_id))));
+  }, [user, messages]);
+
+  // Handlers
   const handleSend = async () => {
     if (!newMsg.trim() || !user || !communityId) return;
     setSending(true);
     try {
-      if (
-        /^https?:\/\/\S+\.(gif|webp)(\?.*)?$/i.test(newMsg.trim()) &&
-        (newMsg.includes("giphy") || newMsg.includes("tenor"))
-      ) {
-        await sendGifMessage(communityId, user.id, newMsg.trim());
-      } else {
-        await sendTextMessage(communityId, user.id, newMsg.trim());
-      }
+      await notifyMentions(user.id, newMsg.trim());
+      await sendTextMessage(communityId, user.id, newMsg.trim(), replyingTo?.id, isAnnouncement);
       setNewMsg("");
+      setReplyingTo(null);
+      setIsAnnouncement(false);
     } catch (err) {
       console.error(err);
       showToast("Failed to send message", "err");
@@ -102,162 +126,142 @@ export default function CommunityChatPage() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const handleShareMaterial = (material: StudyMaterial) => {
+    const text = `📚 ${material.title} — /study`;
+    if (!communityId || !user) return;
+    sendTextMessage(communityId, user.id, text);
+  };
+
+  const handleCreatePoll = async (question: string, options: string[]) => {
+    const poll = await createPoll(communityId!, question, options);
+    if (poll) {
+      // sendTextMessage supports optional arguments; pass poll.id only if defined by the service signature.
+      // Send as poll message: message.type should be "poll" and poll id in content
+      await sendTextMessage(communityId!, user!.id, poll.id as any, undefined, false, "poll");
+
+      
+
     }
   };
 
-  const openDirectMessage = (userId: string, username: string) => {
-    setDirectMessageUser({ id: userId, name: username });
+  const exportChat = async () => {
+    const allMessages = await fetchMessages(communityId!, 1000);
+    const text = allMessages.map((m) => `[${new Date(m.created_at).toLocaleTimeString()}] ${m.profiles?.username ?? "Unknown"}: ${m.content}`).join("\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `chat-${communityId}.txt`; a.click();
   };
 
-  const handleCopyInvite = () => {
-    const inviteUrl = `${window.location.origin}/community/${communityId}/join`;
-    navigator.clipboard.writeText(inviteUrl);
-    alert("Invite link copied! Share it with your friends.");
+  const filteredMessages = searchTerm
+    ? messages.filter((m) => m.content?.toLowerCase().includes(searchTerm.toLowerCase()) || m.profiles?.username?.toLowerCase().includes(searchTerm.toLowerCase()))
+    : messages;
+  const displayedMessages = showAnnouncementsOnly
+    ? filteredMessages.filter((m) => (m as any).is_announcement)
+    : filteredMessages;
+
+  const handleInputChange = (val: string) => {
+    setNewMsg(val);
+    // Simple mention detection
+    const cursor = val.length;
+    const textBeforeCursor = val.slice(0, cursor);
+    const match = textBeforeCursor.match(/@(\w*)$/);
+    setMentionQuery(match ? match[1] : null);
+  };
+
+  const insertMention = (userId: string) => {
+    const before = newMsg.slice(0, newMsg.lastIndexOf("@"));
+    setNewMsg(before + `<@${userId}> `);
   };
 
   if (!communityId) return null;
 
-
   return (
-    <AppShell>
-      <div className="flex flex-col h-full" style={{ minHeight: "100dvh" }}>
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 sticky top-0 z-10">
-          <button onClick={() => navigate(-1)} className="p-1" aria-label="Go back">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="font-bold text-lg flex-1">Chat</h1>
-          <button onClick={handleCopyInvite} className="p-1" aria-label="Copy invite link">
-            <Link size={20} />
-          </button>
-        </div>
-
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {loading && (
-            <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin" size={24} />
-            </div>
-          )}
-          {messages.map((msg) => (
-            <MessageBubble
-              key={msg.id}
-              message={msg}
-              isMine={msg.user_id === user?.id}
-              onDirectMessage={openDirectMessage}
-            />
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center gap-2">
-          <label className="p-2 cursor-pointer" aria-label="Upload image">
-            <ImageIcon size={20} />
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-          </label>
-          <textarea
-            value={newMsg}
-            onChange={(e) => setNewMsg(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            rows={1}
-            className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-2 resize-none outline-none"
-            aria-label="Message input"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!newMsg.trim() || sending}
-            className="p-2 bg-blue-600 text-white rounded-full disabled:opacity-50"
-            aria-label="Send message"
-          >
-            {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Direct Message Drawer */}
-      {directMessageUser && (
-        <DirectMessageDrawer
-          open={!!directMessageUser}
-          onClose={() => setDirectMessageUser(null)}
-          receiverId={directMessageUser.id}
-          receiverName={directMessageUser.name}
+    <AppShell hideTopNav hideBottomNav>
+    <div className="h-dvh flex flex-col">
+      <div className="shrink-0">
+        <ChatHeader
+          communityName={communityName}
+          onBack={() => navigate(-1)}
+          onToggleSearch={() => setShowSearch(!showSearch)}
+          onExport={exportChat}
+          onToggleAnnouncements={() => setShowAnnouncementsOnly(!showAnnouncementsOnly)}
+          showAnnouncementsOnly={showAnnouncementsOnly}
+          onCopyInvite={() => {
+            navigator.clipboard.writeText(`${window.location.origin}/community/${communityId}/join`);
+            showToast("Invite link copied!", "ok");
+          }}
+          onVoiceRoom={() => navigate(`/community/${communityId}/room`)}
+          onSchedule={() => navigate(`/admin/events/new?community_id=${communityId}`)}
         />
-      )}
-    </AppShell>
-  );
-}
-
-// ── Message Bubble ────────────────────────────────────────────────────────────
-function MessageBubble({
-  message,
-  isMine,
-  onDirectMessage,
-}: {
-  message: CommunityMessageWithProfile;
-  isMine: boolean;
-  onDirectMessage: (userId: string, username: string) => void;
-}) {
-  const username = message.profiles?.username ?? "Anonymous";
-  const avatar = message.profiles?.avatar_url;
-
-  return (
-    <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-      <div className={`max-w-[80%] ${isMine ? "order-2" : "order-1"}`}>
-        {!isMine && (
-          <div className="flex items-center gap-2 mb-1">
-            {avatar ? (
-              <img src={avatar} className="w-5 h-5 rounded-full object-cover" alt={username} />
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">
-                {username[0]?.toUpperCase()}
-              </div>
-            )}
-            <button
-              onClick={() => onDirectMessage(message.user_id, username)}
-              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-              aria-label={`Message ${username}`}
-            >
-              {username}
-            </button>
-          </div>
-        )}
-        <div
-          className={`p-3 rounded-2xl text-sm ${
-            isMine
-              ? "bg-blue-600 text-white rounded-br-md"
-              : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-bl-md"
-          }`}
-        >
-          {message.type === "text" && <p>{message.content}</p>}
-          {message.type === "image" && message.image_url && (
-            <img src={message.image_url} alt="Shared" className="rounded-lg max-h-60 w-full object-cover" />
-          )}
-          {message.type === "gif" && message.image_url && (
-            <img src={message.image_url} alt="GIF" className="rounded-lg max-h-60 w-full object-cover" />
-          )}
-          {message.type === "sticker" && message.sticker_url && (
-            <img src={message.sticker_url} alt="Sticker" className="w-24 h-24 object-contain" />
-          )}
-          {message.type === "voice" && message.voice_url && (
-            <audio controls className="max-w-full mt-1">
-              <source src={message.voice_url} />
-            </audio>
-          )}
-          <div className={`text-[10px] mt-1 ${isMine ? "text-blue-200" : "text-slate-400"}`}>
-            {new Date(message.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </div>
-        </div>
       </div>
+
+      {showSearch && (
+        <div className="shrink-0 px-3 pb-2 max-w-lg mx-auto w-full">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search messages..."
+            className="w-full px-3 py-1.5 text-sm rounded-xl border bg-slate-50 dark:bg-slate-800"
+          />
+        </div>
+      )}
+
+      {/* Messages list */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 space-y-2 max-w-lg mx-auto w-full">
+        <ChatMessages
+          messages={displayedMessages}
+          loading={loading}
+          currentUserId={user?.id}
+          readIds={readIds}
+          onReply={(id) => {
+            const parent = messages.find((m) => m.id === id);
+            if (parent) setReplyingTo({ id, username: parent.profiles?.username || "User" });
+          }}
+          onFetchPoll={fetchPoll}
+        />
+      </div>
+
+      {/* Composer */}
+      <div className="shrink-0 pb-[env(safe-area-inset-bottom)]">
+        <ChatInput
+          value={newMsg}
+          onChange={handleInputChange}
+          onSend={handleSend}
+          sending={sending}
+          onShareMaterial={() => setShowShareMaterial(true)}
+          onImageUpload={handleImageUpload}
+          onPoll={() => setShowPollForm(true)}
+          replyingTo={replyingTo}
+          onCancelReply={() => setReplyingTo(null)}
+          mentionDropdown={
+            mentionQuery !== null ? (
+              <MentionsDropdown
+                communityId={communityId!}
+                query={mentionQuery}
+                onSelect={(userId) => insertMention(userId)}
+                onClose={() => setMentionQuery(null)}
+              />
+            ) : null
+          }
+          isAnnouncement={isAnnouncement}
+          onToggleAnnouncement={() => setIsAnnouncement(!isAnnouncement)}
+          canAnnounce={user?.role === "admin" || user?.role === "moderator"}
+        />
+      </div>
+
+      <ShareMaterialModal
+        open={showShareMaterial}
+        onClose={() => setShowShareMaterial(false)}
+        onSelect={handleShareMaterial}
+      />
+      <CreatePollForm
+        open={showPollForm}
+        onClose={() => setShowPollForm(false)}
+        onSubmit={handleCreatePoll}
+      />
     </div>
-  );
+  </AppShell>
+);
 }

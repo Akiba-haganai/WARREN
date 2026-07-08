@@ -1,21 +1,15 @@
-# TODO - Campus Map improvements
+# TODO
 
-## Plan items
-- [x] Add Supabase table + RLS policies (done via SQL)
-- [x] Add geolocation hook + Haversine helper (`useGeolocation`, `getDistance`)
-- [x] Update map component props to accept `userPosition` (kept unused for now; pins use `x_percent/y_percent`)
-- [ ] Update `PinDrawer` with:
-  - [ ] Walkthrough “Next Stop” / “Finish Walkthrough”
-  - [ ] Share button (copy/share deep link `/campus-map?pin=<id>`)
-  - [ ] Open/Closed indicator derived from `pin.hours`
-- [ ] Update `CampusMapPage` with:
-  - [ ] Deep link handling `?pin=<id>` opens drawer
-  - [ ] First Day Route walkthrough button + steps for the 5 UUID pins
-  - [ ] Missing place suggestion link + modal
-  - [ ] On submit insert into `map_pin_suggestions`
+## StudyRoom mobile-first UX upgrades
+- [x] Update `src/features/rooms/components/StudyRoom.tsx`:
+- [x] Pre-join screen: community name + participant count + CTA
+- [x] Participant avatars (initials) and skeletons
+  - [x] Fixed bottom bar call controls (48x48 touch targets, active:scale-95)
+  - [x] Call duration timer (mm:ss)
+  - [x] Friendly mic error fallback UI
+  - [x] Dark mode compatibility
+- [ ] Optionally update `src/features/rooms/hooks/useWebRTC.ts` (minimal API additions only):
+  - [ ] Expose `micError` state (typed/normalized)
+  - [ ] Add `isSpeakerOn` + `toggleSpeaker` placeholder (UI state only)
+- [ ] Validate TypeScript build
 
-## Potential build note
-- `npm run build` failed earlier due to Windows EPERM emptying `dist/` while locked. If it happens again, close any process using `dist/` and retry.
-
-## Notes
-- Lint currently fails due to existing errors in `supabase/functions/send-push/index.ts` (unrelated to map changes).

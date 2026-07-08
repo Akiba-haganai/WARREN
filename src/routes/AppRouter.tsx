@@ -25,7 +25,7 @@ const SearchPage = lazy(() => import("../pages/search/SearchPage"));
 const AnnouncementsPage = lazy(() => import("../pages/announcements/AnnouncementsPage"));
 const CommunityPage = lazy(() => import("../pages/community/CommunityPage"));
 const CommunityChatPage = lazy(() => import("../pages/community/CommunityChatPage"));
-const JoinCommunity = lazy(() => import("../pages/community/JoinCommunity"));
+const JoinCommunity = lazy(() => import("../features/communities/components/JoinCommunity"));
 
 const CampusMapPage = lazy(() => import("../pages/map/CampusMapPage"));
 const StudyPage = lazy(() => import("../pages/study/StudyPage"));
