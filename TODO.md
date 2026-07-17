@@ -1,15 +1,9 @@
 # TODO
 
-## StudyRoom mobile-first UX upgrades
-- [x] Update `src/features/rooms/components/StudyRoom.tsx`:
-- [x] Pre-join screen: community name + participant count + CTA
-- [x] Participant avatars (initials) and skeletons
-  - [x] Fixed bottom bar call controls (48x48 touch targets, active:scale-95)
-  - [x] Call duration timer (mm:ss)
-  - [x] Friendly mic error fallback UI
-  - [x] Dark mode compatibility
-- [ ] Optionally update `src/features/rooms/hooks/useWebRTC.ts` (minimal API additions only):
-  - [ ] Expose `micError` state (typed/normalized)
-  - [ ] Add `isSpeakerOn` + `toggleSpeaker` placeholder (UI state only)
-- [ ] Validate TypeScript build
+- [x] Phase 4 (Lecturer AMAs & Cohort Communities): add AMA service + pages + routes
+- [ ] Fix remaining TypeScript issues in `src/services/amaService.ts`
+- [x] Optional Enhancement: ExamCountdown widget created at `src/features/events/components/ExamCountdown.tsx`
+- [x] Optional Enhancement: Integrate ExamCountdown into `src/pages/community/CommunityPage.tsx`
+- [x] Optional Enhancement: Admin event creation form supports `event_type` at `src/pages/admin/CreateEventPage.tsx`
+
 

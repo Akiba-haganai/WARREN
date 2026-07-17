@@ -117,6 +117,12 @@ export default function UploadMaterialPage() {
         is_premium: form.is_premium,
         premium_cost: form.premium_cost,
         trending_score: form.trending_score,
+
+        // required fields for admin uploads
+        submitted_by: user.id,
+        status: "approved",
+        is_hidden: false,
+        verified_by_staff: false,
       });
 
       // Award karma independently of notification success.

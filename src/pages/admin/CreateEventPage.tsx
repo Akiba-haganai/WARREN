@@ -19,6 +19,8 @@ export default function CreateEventPage() {
   const [eventDate, setEventDate] = useState("");
   const [communityId, setCommunityId] = useState<string | null>(null);
   const [notifyAll, setNotifyAll] = useState(false);
+  const [eventType, setEventType] = useState<"general" | "exam" | "assignment" | "lecture" | "workshop">("general");
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,6 +34,8 @@ export default function CreateEventPage() {
         setDescription(event.description ?? "");
         setEventDate(new Date(event.event_date).toISOString().slice(0, 16));
         setCommunityId(event.community_id ?? null);
+        setEventType((event.event_type ?? "general") as any);
+
       } else {
         navigate("/admin/events");
       }
@@ -50,6 +54,7 @@ export default function CreateEventPage() {
         description: description.trim() || null,
         event_date: new Date(eventDate).toISOString(),
         community_id: communityId,
+        event_type: eventType,
         created_by: "", // will be set by the service
       };
 
@@ -133,8 +138,26 @@ export default function CreateEventPage() {
           </div>
 
           <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              Event Type
+            </label>
+            <select
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value as any)}
+              className="w-full px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
+            >
+              <option value="general">General</option>
+              <option value="exam">Exam</option>
+              <option value="assignment">Assignment</option>
+              <option value="lecture">Lecture</option>
+              <option value="workshop">Workshop</option>
+            </select>
+          </div>
+
+          <div>
             <label className="block text-xs font-semibold mb-1">Description</label>
             <textarea
+
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="More details about the event..."

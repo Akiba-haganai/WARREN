@@ -14,6 +14,126 @@ export type Database = {
   }
   public: {
     Tables: {
+      ama_question_votes: {
+        Row: {
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ama_question_votes_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "ama_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ama_question_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ama_questions: {
+        Row: {
+          answered: boolean | null
+          asked_by: string
+          created_at: string | null
+          id: string
+          question: string
+          session_id: string
+          upvotes: number | null
+        }
+        Insert: {
+          answered?: boolean | null
+          asked_by: string
+          created_at?: string | null
+          id?: string
+          question: string
+          session_id: string
+          upvotes?: number | null
+        }
+        Update: {
+          answered?: boolean | null
+          asked_by?: string
+          created_at?: string | null
+          id?: string
+          question?: string
+          session_id?: string
+          upvotes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ama_questions_asked_by_fkey"
+            columns: ["asked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ama_questions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ama_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ama_sessions: {
+        Row: {
+          community_id: string
+          created_at: string | null
+          duration_minutes: number | null
+          id: string
+          lecturer_id: string
+          scheduled_for: string
+          status: string | null
+        }
+        Insert: {
+          community_id: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lecturer_id: string
+          scheduled_for: string
+          status?: string | null
+        }
+        Update: {
+          community_id?: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lecturer_id?: string
+          scheduled_for?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ama_sessions_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ama_sessions_lecturer_id_fkey"
+            columns: ["lecturer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           category: string | null
@@ -470,6 +590,7 @@ export type Database = {
           image_url: string | null
           is_announcement: boolean | null
           parent_id: string | null
+          poll_id: string | null
           sticker_url: string | null
           type: string
           updated_at: string
@@ -487,6 +608,7 @@ export type Database = {
           image_url?: string | null
           is_announcement?: boolean | null
           parent_id?: string | null
+          poll_id?: string | null
           sticker_url?: string | null
           type?: string
           updated_at?: string
@@ -504,6 +626,7 @@ export type Database = {
           image_url?: string | null
           is_announcement?: boolean | null
           parent_id?: string | null
+          poll_id?: string | null
           sticker_url?: string | null
           type?: string
           updated_at?: string
@@ -526,8 +649,109 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "community_messages_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "chat_polls"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "community_messages_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cram_plan_items: {
+        Row: {
+          day_offset: number
+          material_id: string | null
+          plan_id: string | null
+        }
+        Insert: {
+          day_offset: number
+          material_id?: string | null
+          plan_id?: string | null
+        }
+        Update: {
+          day_offset?: number
+          material_id?: string | null
+          plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cram_plan_items_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cram_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "cram_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cram_plans: {
+        Row: {
+          exam_date: string
+          generated_at: string | null
+          id: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          exam_date: string
+          generated_at?: string | null
+          id?: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          exam_date?: string
+          generated_at?: string | null
+          id?: string
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cram_plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cram_templates: {
+        Row: {
+          category: string
+          created_by: string | null
+          day_sequence: Json
+          id: string
+        }
+        Insert: {
+          category: string
+          created_by?: string | null
+          day_sequence: Json
+          id?: string
+        }
+        Update: {
+          category?: string
+          created_by?: string | null
+          day_sequence?: Json
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cram_templates_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -616,6 +840,7 @@ export type Database = {
           created_by: string
           description: string | null
           event_date: string
+          event_type: string | null
           id: string
           title: string
           updated_at: string
@@ -626,6 +851,7 @@ export type Database = {
           created_by: string
           description?: string | null
           event_date: string
+          event_type?: string | null
           id?: string
           title: string
           updated_at?: string
@@ -636,6 +862,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           event_date?: string
+          event_type?: string | null
           id?: string
           title?: string
           updated_at?: string
@@ -754,27 +981,36 @@ export type Database = {
       }
       live_rooms: {
         Row: {
+          break_minutes: number | null
           community_id: string | null
           created_at: string
           created_by: string
+          cycle_minutes: number | null
           expires_at: string
           id: string
+          sprint_type: string | null
           topic: string
         }
         Insert: {
+          break_minutes?: number | null
           community_id?: string | null
           created_at?: string
           created_by: string
+          cycle_minutes?: number | null
           expires_at: string
           id?: string
+          sprint_type?: string | null
           topic: string
         }
         Update: {
+          break_minutes?: number | null
           community_id?: string | null
           created_at?: string
           created_by?: string
+          cycle_minutes?: number | null
           expires_at?: string
           id?: string
+          sprint_type?: string | null
           topic?: string
         }
         Relationships: [
@@ -844,6 +1080,7 @@ export type Database = {
           contact: string | null
           created_at: string | null
           created_by: string | null
+          current_occupancy: string | null
           description: string
           floor: string | null
           hours: string | null
@@ -858,6 +1095,7 @@ export type Database = {
           contact?: string | null
           created_at?: string | null
           created_by?: string | null
+          current_occupancy?: string | null
           description: string
           floor?: string | null
           hours?: string | null
@@ -872,6 +1110,7 @@ export type Database = {
           contact?: string | null
           created_at?: string | null
           created_by?: string | null
+          current_occupancy?: string | null
           description?: string
           floor?: string | null
           hours?: string | null
@@ -887,6 +1126,54 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_edits: {
+        Row: {
+          content_after: string | null
+          content_before: string | null
+          created_at: string | null
+          diff_summary: string
+          editor_id: string | null
+          id: string
+          material_id: string | null
+          status: string | null
+        }
+        Insert: {
+          content_after?: string | null
+          content_before?: string | null
+          created_at?: string | null
+          diff_summary: string
+          editor_id?: string | null
+          id?: string
+          material_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          content_after?: string | null
+          content_before?: string | null
+          created_at?: string | null
+          diff_summary?: string
+          editor_id?: string | null
+          id?: string
+          material_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_edits_editor_id_fkey"
+            columns: ["editor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_edits_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
             referencedColumns: ["id"]
           },
         ]
@@ -1118,6 +1405,57 @@ export type Database = {
           },
         ]
       }
+      moderation_queue: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          item_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_note: string | null
+          status: string
+          submitted_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          status?: string
+          submitted_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          status?: string
+          submitted_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_queue_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_queue_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1238,6 +1576,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_anonymous: boolean | null
+          is_hidden: boolean | null
           score: number | null
           upvotes: number | null
           user_id: string | null
@@ -1250,6 +1589,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_anonymous?: boolean | null
+          is_hidden?: boolean | null
           score?: number | null
           upvotes?: number | null
           user_id?: string | null
@@ -1262,6 +1602,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_anonymous?: boolean | null
+          is_hidden?: boolean | null
           score?: number | null
           upvotes?: number | null
           user_id?: string | null
@@ -1287,8 +1628,10 @@ export type Database = {
           is_lecturer: boolean | null
           is_senior: boolean
           karma: number
+          last_seen: string | null
           role: Database["public"]["Enums"]["app_role"]
           username: string | null
+          year_of_study: number | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1299,8 +1642,10 @@ export type Database = {
           is_lecturer?: boolean | null
           is_senior?: boolean
           karma?: number
+          last_seen?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           username?: string | null
+          year_of_study?: number | null
         }
         Update: {
           avatar_url?: string | null
@@ -1311,8 +1656,10 @@ export type Database = {
           is_lecturer?: boolean | null
           is_senior?: boolean
           karma?: number
+          last_seen?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           username?: string | null
+          year_of_study?: number | null
         }
         Relationships: []
       }
@@ -1392,6 +1739,177 @@ export type Database = {
             columns: ["community_id"]
             isOneToOne: false
             referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_match_answers: {
+        Row: {
+          answer_time_ms: number | null
+          answered_index: number | null
+          created_at: string | null
+          is_correct: boolean | null
+          match_id: string | null
+          question_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          answer_time_ms?: number | null
+          answered_index?: number | null
+          created_at?: string | null
+          is_correct?: boolean | null
+          match_id?: string | null
+          question_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          answer_time_ms?: number | null
+          answered_index?: number | null
+          created_at?: string | null
+          is_correct?: boolean | null
+          match_id?: string | null
+          question_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_match_answers_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_match_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_match_answers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_match_players: {
+        Row: {
+          match_id: string
+          score: number | null
+          user_id: string
+        }
+        Insert: {
+          match_id: string
+          score?: number | null
+          user_id: string
+        }
+        Update: {
+          match_id?: string
+          score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_match_players_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_match_players_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_matches: {
+        Row: {
+          community_id: string | null
+          created_at: string | null
+          id: string
+          status: string | null
+          subject: string
+        }
+        Insert: {
+          community_id?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          subject: string
+        }
+        Update: {
+          community_id?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_matches_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          correct_index: number
+          created_at: string | null
+          difficulty: string | null
+          id: string
+          material_id: string | null
+          options: Json
+          question: string
+          status: string | null
+          subject: string
+          submitted_by: string | null
+        }
+        Insert: {
+          correct_index: number
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          material_id?: string | null
+          options: Json
+          question: string
+          status?: string | null
+          subject: string
+          submitted_by?: string | null
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          material_id?: string | null
+          options?: Json
+          question?: string
+          status?: string | null
+          subject?: string
+          submitted_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_questions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1524,6 +2042,94 @@ export type Database = {
           },
         ]
       }
+      spot_checkins: {
+        Row: {
+          created_at: string | null
+          id: string
+          occupancy_report: string
+          pin_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          occupancy_report: string
+          pin_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          occupancy_report?: string
+          pin_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spot_checkins_pin_id_fkey"
+            columns: ["pin_id"]
+            isOneToOne: false
+            referencedRelation: "map_pins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spot_checkins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sprint_dropoffs: {
+        Row: {
+          created_at: string | null
+          id: string
+          material_id: string | null
+          note: string | null
+          room_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          material_id?: string | null
+          note?: string | null
+          room_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          material_id?: string | null
+          note?: string | null
+          room_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_dropoffs_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sprint_dropoffs_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "live_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sprint_dropoffs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       starter_packs: {
         Row: {
           created_at: string | null
@@ -1567,17 +2173,21 @@ export type Database = {
           external_url: string | null
           file_url: string | null
           id: string
+          is_hidden: boolean | null
           is_pinned: boolean
           is_premium: boolean | null
           material_type: string
           premium_cost: number | null
           programme: string | null
+          status: string | null
           subject: string
+          submitted_by: string | null
           tags: string[] | null
           thumbnail_url: string | null
           title: string
           trending_score: number | null
           uploaded_by: string
+          verified_by_staff: boolean | null
           year_group: string
         }
         Insert: {
@@ -1587,17 +2197,21 @@ export type Database = {
           external_url?: string | null
           file_url?: string | null
           id?: string
+          is_hidden?: boolean | null
           is_pinned?: boolean
           is_premium?: boolean | null
           material_type?: string
           premium_cost?: number | null
           programme?: string | null
+          status?: string | null
           subject: string
+          submitted_by?: string | null
           tags?: string[] | null
           thumbnail_url?: string | null
           title: string
           trending_score?: number | null
           uploaded_by: string
+          verified_by_staff?: boolean | null
           year_group?: string
         }
         Update: {
@@ -1607,26 +2221,224 @@ export type Database = {
           external_url?: string | null
           file_url?: string | null
           id?: string
+          is_hidden?: boolean | null
           is_pinned?: boolean
           is_premium?: boolean | null
           material_type?: string
           premium_cost?: number | null
           programme?: string | null
+          status?: string | null
           subject?: string
+          submitted_by?: string | null
           tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
           trending_score?: number | null
           uploaded_by?: string
+          verified_by_staff?: boolean | null
           year_group?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "study_materials_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "study_materials_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_streaks: {
+        Row: {
+          current_streak: number | null
+          last_active_date: string | null
+          longest_streak: number | null
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number | null
+          last_active_date?: string | null
+          longest_streak?: number | null
+          user_id: string
+        }
+        Update: {
+          current_streak?: number | null
+          last_active_date?: string | null
+          longest_streak?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_streaks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subject_watches: {
+        Row: {
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          subject: string
+          user_id: string
+        }
+        Update: {
+          subject?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_watches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_listings: {
+        Row: {
+          created_at: string | null
+          credit_rate: number
+          description: string | null
+          id: string
+          status: string | null
+          subject: string
+          tutor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credit_rate: number
+          description?: string | null
+          id?: string
+          status?: string | null
+          subject: string
+          tutor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credit_rate?: number
+          description?: string | null
+          id?: string
+          status?: string | null
+          subject?: string
+          tutor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_listings_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          rating: number
+          reviewer_id: string
+          slot_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating: number
+          reviewer_id: string
+          slot_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number
+          reviewer_id?: string
+          slot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_reviews_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_slots: {
+        Row: {
+          booked_by: string | null
+          created_at: string | null
+          end_time: string
+          escrowed_credits: number | null
+          id: string
+          listing_id: string
+          start_time: string
+          status: string | null
+        }
+        Insert: {
+          booked_by?: string | null
+          created_at?: string | null
+          end_time: string
+          escrowed_credits?: number | null
+          id?: string
+          listing_id: string
+          start_time: string
+          status?: string | null
+        }
+        Update: {
+          booked_by?: string | null
+          created_at?: string | null
+          end_time?: string
+          escrowed_credits?: number | null
+          id?: string
+          listing_id?: string
+          start_time?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_slots_booked_by_fkey"
+            columns: ["booked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_slots_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_slots_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_ranking"
+            referencedColumns: ["listing_id"]
           },
         ]
       }
@@ -1703,17 +2515,74 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      tutor_ranking: {
+        Row: {
+          avg_rating: number | null
+          completed_sessions: number | null
+          disputes: number | null
+          listing_id: string | null
+          score: number | null
+          tutor_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_listings_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       archive_inactive_communities: { Args: never; Returns: undefined }
       can_create_post: { Args: { p_user_id: string }; Returns: boolean }
+      cancel_tutor_slot: { Args: { p_slot_id: string }; Returns: undefined }
       cleanup_old_messages: { Args: never; Returns: undefined }
       cleanup_old_notifications: { Args: never; Returns: undefined }
+      complete_tutor_slots: { Args: never; Returns: undefined }
+      compute_score: {
+        Args: {
+          age_hours: number
+          avg_rating: number
+          downloads: number
+          is_pinned: boolean
+          upvotes: number
+        }
+        Returns: number
+      }
+      create_daily_sprint_rooms: { Args: never; Returns: undefined }
+      decrement_credits: {
+        Args: { amount: number; user_id: string }
+        Returns: undefined
+      }
       decrement_vote: {
         Args: { p_column: string; p_post_id: string }
         Returns: undefined
       }
+      draw_quiz_questions: {
+        Args: { count: number; subj: string }
+        Returns: {
+          correct_index: number
+          created_at: string | null
+          difficulty: string | null
+          id: string
+          material_id: string | null
+          options: Json
+          question: string
+          status: string | null
+          subject: string
+          submitted_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "quiz_questions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      finish_quiz_match: { Args: { match_id: string }; Returns: undefined }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1722,11 +2591,19 @@ export type Database = {
         Args: { column_name: string; row_id: string; table_name: string }
         Returns: undefined
       }
+      increment_quiz_score: {
+        Args: { p_match_id: string; p_points: number; p_user_id: string }
+        Returns: undefined
+      }
       post_hot_score: {
         Args: { created_at: string; downvotes: number; upvotes: number }
         Returns: number
       }
+      recalculate_canonicals: { Args: never; Returns: undefined }
       recalculate_trending_scores: { Args: never; Returns: undefined }
+      send_weekly_digest: { Args: never; Returns: undefined }
+      touch_last_seen: { Args: never; Returns: undefined }
+      update_ama_statuses: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "student"

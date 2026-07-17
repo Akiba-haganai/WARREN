@@ -42,11 +42,18 @@ export async function sendTextMessage(
     .insert({
       community_id: communityId,
       user_id: userId,
+
+      // For polls we store the poll_id inside `content` (existing app convention)
+      // while still setting message.type = "poll".
       content,
       type: messageType,
       parent_id: parentId ?? null,
       is_announcement: isAnnouncement ?? false,
-    })
+
+      // If the table has a dedicated poll_id column, populate it.
+      // (This keeps poll rendering working without breaking text messages.)
+      poll_id: messageType === "poll" ? content : null,
+    } as any)
     .select("*, profiles:user_id (username, avatar_url, role)")
     .single();
   if (error) throw error;

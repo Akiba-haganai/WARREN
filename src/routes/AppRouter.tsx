@@ -38,6 +38,8 @@ const QuestionDetailPage = lazy(() => import("../pages/QandA/QuestionDetailPage"
 const LiveRoomsList = lazy(() => import("../pages/rooms/LiveRoomsPage").then(m => ({ default: m.LiveRoomsList })));
 const LiveRoomChat = lazy(() => import("../pages/rooms/LiveRoomsPage").then(m => ({ default: m.LiveRoomChat })));
 const StudyRoom = lazy(() => import("../features/rooms/components/StudyRoom"));
+const AMAsPage = lazy(() => import("../pages/community/AMAsPage"));
+const AMASessionPage = lazy(() => import("../pages/community/AMASessionPage"));
 
 const ProfilePage = lazy(() => import("../pages/profile/ProfilePage"));
 const EditProfile = lazy(() => import("../pages/profile/EditProfile"));
@@ -119,8 +121,11 @@ export default function AppRouter() {
       <Route path="/community" element={<Protected><Suspense fallback={<PageLoader />}><CommunityPage /></Suspense></Protected>} />
       <Route path="/community/:id/chat" element={<Protected><Suspense fallback={<PageLoader />}><CommunityChatPage /></Suspense></Protected>} />
       <Route path="/community/:id/room" element={<Protected><Suspense fallback={<PageLoader />}><StudyRoom /></Suspense></Protected>} />
+      <Route path="/community/:id/ama" element={<Protected><Suspense fallback={<PageLoader />}><AMAsPage /></Suspense></Protected>} />
+      <Route path="/community/:communityId/ama/:sessionId" element={<Protected><Suspense fallback={<PageLoader />}><AMASessionPage /></Suspense></Protected>} />
 
       <Route path="/community/:id/join" element={<Suspense fallback={<PageLoader />}><JoinCommunity /></Suspense>} />
+
 
       <Route path="/campus-map" element={<Protected><Suspense fallback={<PageLoader />}><CampusMapPage /></Suspense></Protected>} />
       <Route path="/study" element={<Protected><Suspense fallback={<PageLoader />}><StudyPage /></Suspense></Protected>} />

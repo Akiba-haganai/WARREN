@@ -4,7 +4,7 @@ import { PollCard } from "./PollCard";
 import type { CommunityMessageWithProfile } from "../../../services/communityChatService";
 
 interface Props {
-  message: CommunityMessageWithProfile & { is_announcement?: boolean; file_name?: string; poll_id?: string };
+  message: (CommunityMessageWithProfile & { is_announcement?: boolean; file_name?: string; poll_id?: string | null })
   isMine: boolean;
   readIds?: Set<string>;
   onReply?: (msgId: string) => void;

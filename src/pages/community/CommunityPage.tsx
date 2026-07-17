@@ -14,6 +14,8 @@ import type { Community } from "../../types/community";
 import { Grid3X3, List } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
+// Optional UI enhancement: Exam countdown widget (events table + event_type=exam)
+import { ExamCountdown } from "../../features/events/components/ExamCountdown";
 
 type FilterType = "all" | "social" | "educational";
 
@@ -30,17 +32,16 @@ export default function CommunityPage() {
   const selectedYear = useCommunitiesStore((s) => s.selectedYear);
   const setSelectedYear = useCommunitiesStore((s) => s.setSelectedYear);
 
-  const { communities, parentSchools, memberCounts, userMemberships, isLoading } = useCommunities();
+  const { communities, parentSchools, memberCounts, userMemberships, isLoading } =
+    useCommunities();
   const { join, leave, isJoining } = useCommunityMembership();
 
   const [manageCommunityId, setManageCommunityId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Realtime events hook placeholder. If you later track a currently selected/opened community here,
+  // Realtime events hook placeholder. If you later track a currently opened community here,
   // set selectedCommunity accordingly.
   const [selectedCommunity] = useState<string | null>(null);
-
-
 
   const canManage = (community: Community) => {
     if (!user) return false;
@@ -57,7 +58,6 @@ export default function CommunityPage() {
     // If/when we track a currently opened community on this page, we can stream events into the cache.
     if (!selectedCommunity) return;
 
-
     const channel = supabase
       .channel(`events-${selectedCommunity}`)
       .on(
@@ -69,8 +69,6 @@ export default function CommunityPage() {
           filter: `community_id=eq.${selectedCommunity}`,
         },
         (payload) => {
-          // We don’t have an explicit events list in this page; this effect is here to enable instant UI elsewhere.
-          // Keeping it minimal avoids breaking existing layout.
           queryClient.setQueryData(["communityEvents", selectedCommunity], (prev: any) => {
             const prevList = (prev ?? []) as any[];
             return [payload.new, ...prevList];
@@ -87,8 +85,6 @@ export default function CommunityPage() {
   return (
     <AppShell>
       <div className="px-4 pb-8">
-
-        {/* Header with view toggle */}
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Communities</h1>
           <button
@@ -99,6 +95,13 @@ export default function CommunityPage() {
             {viewMode === "grid" ? <List size={20} /> : <Grid3X3 size={20} />}
           </button>
         </div>
+
+        {/* Exam countdown widget (only when a community is selected/opened) */}
+        {selectedCommunity && (
+          <div className="mb-4">
+            <ExamCountdown communityId={selectedCommunity} />
+          </div>
+        )}
 
         {/* Filter tabs */}
         <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
@@ -128,7 +131,9 @@ export default function CommunityPage() {
             >
               <option value="">All Schools</option>
               {parentSchools.map((school) => (
-                <option key={school.id} value={school.id}>{school.name}</option>
+                <option key={school.id} value={school.id}>
+                  {school.name}
+                </option>
               ))}
             </select>
             <select
@@ -170,7 +175,6 @@ export default function CommunityPage() {
             onManageMembers={setManageCommunityId}
           />
         ) : (
-          /* Compact list view */
           <div className="space-y-1">
             {communities.map((community) => (
               <div
@@ -224,3 +228,4 @@ export default function CommunityPage() {
     </AppShell>
   );
 }
+
