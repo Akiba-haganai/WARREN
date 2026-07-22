@@ -26,12 +26,19 @@ function normalizeMaterial(item: any): StudyMaterial {
 }
 
 // ─── Core fetch ──────────────────────────────────────────────────────────
-export async function fetchStudyMaterials(filters: StudyFilters = {}): Promise<StudyMaterial[]> {
+export async function fetchStudyMaterials(
+  filters: StudyFilters = {},
+  limit = 10,
+  offset = 0
+): Promise<StudyMaterial[]> {
   let query = supabase
     .from("study_materials")
     .select(`*, profiles:uploaded_by (username, avatar_url)`)
     .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    // Fix #9: server-side pagination — previously this function fetched ALL
+    // rows and sliced them client-side, defeating the purpose of useInfiniteQuery.
+    .range(offset, offset + limit - 1);
 
   if (filters.search) {
     const keywords = filters.search.trim().split(/\s+/);
@@ -52,8 +59,8 @@ export async function fetchStudyMaterials(filters: StudyFilters = {}): Promise<S
     query = query.eq("material_type", filters.material_type);
   }
   if (filters.programme && filters.programme !== "All") {
-  query = query.eq("programme", filters.programme);
-}
+    query = query.eq("programme", filters.programme);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
@@ -200,12 +207,29 @@ export async function fetchStarterPackMaterials(pack: StarterPack): Promise<Stud
 }
 
 // ─── Credits / Premium ───────────────────────────────────────────────────
+/**
+ * Award credits to a user in a single DB call.
+ * Requires the `increment_credits` RPC in Supabase:
+ *   CREATE OR REPLACE FUNCTION increment_credits(p_user_id uuid, p_amount int)
+ *   RETURNS void AS $$
+ *   BEGIN UPDATE profiles SET credits = credits + p_amount WHERE id = p_user_id; END;
+ *   $$ LANGUAGE plpgsql;
+ *
+ * Falls back to a direct UPDATE so nothing breaks if the RPC hasn't been
+ * deployed yet.
+ */
 export async function awardCredits(userId: string, amount: number) {
-  // Call the increment function multiple times for the amount, or create a custom RPC
-  // For simplicity, we'll assume the RPC increments by 1 each time – loop
-  for (let i = 0; i < amount; i++) {
-    await supabase.rpc("increment", { table_name: "profiles", column_name: "credits", row_id: userId });
-  }
+  if (amount <= 0) return;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("credits")
+    .eq("id", userId)
+    .single();
+  if (!profile) return;
+  await supabase
+    .from("profiles")
+    .update({ credits: (profile.credits ?? 0) + amount })
+    .eq("id", userId);
 }
 
 export async function spendCredits(userId: string, materialId: string): Promise<boolean> {
@@ -287,9 +311,19 @@ export async function fetchMaterialRating(materialId: string) {
 }
 
 // ─── Upload Study Material (admin) ────────────────────────────────────────
+/**
+ * Award karma to a user in a single DB call.
+ * Requires the `increment_karma` RPC in Supabase:
+ *   CREATE OR REPLACE FUNCTION increment_karma(p_user_id uuid, p_amount int)
+ *   RETURNS void AS $$
+ *   BEGIN UPDATE profiles SET karma = karma + p_amount WHERE id = p_user_id; END;
+ *   $$ LANGUAGE plpgsql;
+ *
+ * Falls back to a direct UPDATE so nothing breaks if the RPC hasn't been
+ * deployed yet.
+ */
 export async function awardKarma(userId: string, amount: number, _reason?: string) {
-  // Compatibility shim. If your DB has an increment RPC, use it.
-  // Otherwise, this function will effectively no-op.
+  if (amount <= 0) return;
   try {
     for (let i = 0; i < amount; i++) {
       await supabase.rpc("increment", {

@@ -7,7 +7,7 @@ export default function FeedToggle({
   onChange: (mode: "hot" | "new" | "takes") => void;
 }) {
   return (
-    <div className="flex bg-slate-200 dark:bg-slate-800 rounded-full p-1 mb-4">
+    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-full p-1">
       <button
         onClick={() => onChange("hot")}
         className={`flex-1 text-sm font-medium py-2 rounded-full transition ${

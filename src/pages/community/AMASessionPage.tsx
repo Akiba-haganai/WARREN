@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppShell from "../../components/layout/AppShell";
 import { useAuthStore } from "../../store/authStore";
-import { supabase } from "../../lib/supabase";
+import { fetchAMASession, toggleUpvote, submitAMAQuestion } from "../../features/ama/services/amaService";
 import { ArrowLeft, ArrowBigUp, Clock, Loader2, Send } from "lucide-react";
 import { useToastStore } from "../../store/toastStore";
 
@@ -17,39 +17,17 @@ export default function AMASessionPage() {
   const [newQuestion, setNewQuestion] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { data: session, isLoading: sessionLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["amaSession", sessionId],
-    queryFn: async () => {
-      if (!sessionId) throw new Error("Missing sessionId");
-      const { data, error } = await supabase
-        .from("ama_sessions")
-        .select("*, profiles:lecturer_id(username, avatar_url)")
-        .eq("id", sessionId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchAMASession(sessionId!, user?.id ?? null),
     enabled: !!sessionId,
   });
 
-  const { data: questions = [], isLoading: questionsLoading } = useQuery({
-    queryKey: ["amaQuestions", sessionId],
-    queryFn: async () => {
-      if (!sessionId) throw new Error("Missing sessionId");
-      const { data, error } = await supabase
-        .from("ama_questions")
-        .select("*, profiles:asked_by(username)")
-        .eq("session_id", sessionId)
-        .order("upvotes", { ascending: false })
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!sessionId,
-  });
+  const session = data?.session;
+  const questions = data?.questions ?? [];
 
   const totalUpvotes = useMemo(
-    () => questions.reduce((acc: number, q: any) => acc + (q.upvotes ?? 0), 0),
+    () => questions.reduce((acc, q: any) => acc + (q.upvotes ?? 0), 0),
     [questions]
   );
 
@@ -57,39 +35,29 @@ export default function AMASessionPage() {
 
   const handleUpvote = async (questionId: string) => {
     if (!user) return;
-
-    // Keep it simple and functional: upsert vote row.
-    // If unique constraint exists (question_id,user_id), duplicates are ignored.
-    const { error } = await supabase.from("ama_question_votes").upsert({
-      question_id: questionId,
-      user_id: user.id,
-    });
-
-    if (error && error.code !== "23505") {
-      showToast("Upvote failed", "err");
-      return;
+    try {
+      await toggleUpvote(questionId);
+      queryClient.invalidateQueries({ queryKey: ["amaSession", sessionId] });
+    } catch (err: any) {
+      if (err?.code !== "23505") {
+        showToast("Upvote failed", "err");
+      }
     }
-
-    queryClient.invalidateQueries({ queryKey: ["amaQuestions", sessionId] });
   };
 
   const handleAsk = async () => {
     if (!newQuestion.trim() || !user || !sessionId) return;
 
     setSubmitting(true);
-    const { error } = await supabase.from("ama_questions").insert({
-      session_id: sessionId,
-      asked_by: user.id,
-      question: newQuestion.trim(),
-    });
-
-    if (error) {
-      showToast("Failed to ask", "err");
-    } else {
+    try {
+      await submitAMAQuestion(sessionId, newQuestion.trim());
       setNewQuestion("");
-      queryClient.invalidateQueries({ queryKey: ["amaQuestions", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["amaSession", sessionId] });
+    } catch (err: any) {
+      showToast(err.message || "Failed to ask", "err");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
@@ -103,7 +71,9 @@ export default function AMASessionPage() {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="font-bold text-lg">{session?.profiles?.username ?? "Lecturer"} AMA</h1>
+            <h1 className="font-bold text-lg">
+              {session?.lecturer?.username ?? "Lecturer"} AMA
+            </h1>
             <p className="text-xs text-slate-500">
               {session ? (
                 <>
@@ -127,7 +97,7 @@ export default function AMASessionPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {sessionLoading || questionsLoading ? (
+          {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="animate-spin" size={24} />
             </div>
@@ -145,15 +115,17 @@ export default function AMASessionPage() {
                 <div className="flex items-start gap-3">
                   <button
                     onClick={() => handleUpvote(q.id)}
-                    className="flex flex-col items-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className={`flex flex-col items-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                      q.userVote === "up" ? "text-blue-500" : "text-slate-500"
+                    }`}
                   >
-                    <ArrowBigUp size={18} className="text-slate-500" />
+                    <ArrowBigUp size={18} />
                     <span className="text-xs font-semibold">{q.upvotes ?? 0}</span>
                   </button>
 
                   <div className="flex-1">
                     <p className="text-sm font-medium">
-                      {q.profiles?.username ?? "Anonymous"}
+                      {q.askedByProfile?.username ?? "Anonymous"}
                     </p>
                     <p className="text-sm mt-1">{q.question}</p>
                     {q.answered && (
@@ -172,6 +144,7 @@ export default function AMASessionPage() {
               <input
                 value={newQuestion}
                 onChange={(e) => setNewQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleAsk()}
                 placeholder="Ask a question..."
                 className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-2 text-sm outline-none"
               />
@@ -180,7 +153,11 @@ export default function AMASessionPage() {
                 disabled={!newQuestion.trim() || submitting || !user}
                 className="p-2 bg-blue-600 text-white rounded-full disabled:opacity-50"
               >
-                {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                {submitting ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Send size={18} />
+                )}
               </button>
             </div>
           </div>
@@ -189,4 +166,3 @@ export default function AMASessionPage() {
     </AppShell>
   );
 }
-

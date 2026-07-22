@@ -20,12 +20,16 @@ export function useStudyMaterials() {
 
   const materialsQuery = useInfiniteQuery({
     queryKey: ["studyMaterials", filters],
+    // Fix #9: pageParam is now an offset into the DB result set.
+    // Previously the queryFn fetched ALL records then sliced client-side,
+    // meaning every page request transferred the entire table over the wire.
     queryFn: async ({ pageParam = 0 }) => {
-      const all = await fetchStudyMaterials(filters);
-      const start = pageParam * PAGE_SIZE;
+      const offset = (pageParam as number) * PAGE_SIZE;
+      const data = await fetchStudyMaterials(filters, PAGE_SIZE, offset);
       return {
-        data: all.slice(start, start + PAGE_SIZE),
-        nextCursor: all.length > start + PAGE_SIZE ? pageParam + 1 : undefined,
+        data,
+        // If we got a full page, there may be more; otherwise we're at the end.
+        nextCursor: data.length === PAGE_SIZE ? (pageParam as number) + 1 : undefined,
       };
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor,
@@ -63,10 +67,10 @@ export function useTrendingMaterials() {
     queryKey: ["trendingMaterials"],
     queryFn: async ({ pageParam = 0 }) => {
       const all = await fetchTrendingMaterials(20);
-      const start = pageParam * PAGE_SIZE;
+      const start = (pageParam as number) * PAGE_SIZE;
       return {
         data: all.slice(start, start + PAGE_SIZE),
-        nextCursor: all.length > start + PAGE_SIZE ? pageParam + 1 : undefined,
+        nextCursor: all.length > start + PAGE_SIZE ? (pageParam as number) + 1 : undefined,
       };
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor,

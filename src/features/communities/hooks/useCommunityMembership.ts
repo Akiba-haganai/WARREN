@@ -7,8 +7,12 @@ export function useCommunityMembership() {
   const joinMutation = useMutation({
     mutationFn: (communityId: string) => joinCommunity(communityId),
     onSuccess: () => {
+      // Invalidate all community-related queries so the UI updates immediately
+      // without requiring a page refresh.
       queryClient.invalidateQueries({ queryKey: ["userMemberships"] });
       queryClient.invalidateQueries({ queryKey: ["communityMemberCounts"] });
+      queryClient.invalidateQueries({ queryKey: ["communities"] });
+      queryClient.invalidateQueries({ queryKey: ["studyGroups"] });
     },
   });
 
@@ -17,6 +21,8 @@ export function useCommunityMembership() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userMemberships"] });
       queryClient.invalidateQueries({ queryKey: ["communityMemberCounts"] });
+      queryClient.invalidateQueries({ queryKey: ["communities"] });
+      queryClient.invalidateQueries({ queryKey: ["studyGroups"] });
     },
   });
 

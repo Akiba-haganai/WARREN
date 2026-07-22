@@ -4,6 +4,7 @@ import {
   Archive,
   Flag,
   Megaphone,
+  Mic,
   PlusCircle,
   Shield,
   Upload,
@@ -87,6 +88,14 @@ const tiles = [
     desc: "Manage student communities",
     color: "text-pink-600 dark:text-pink-400",
     bg: "bg-pink-50 dark:bg-pink-900/20",
+  },
+  {
+    to: "/admin/create-ama",
+    icon: Mic,
+    label: "Create AMA Session",
+    desc: "Schedule a lecturer Q&A session",
+    color: "text-violet-600 dark:text-violet-400",
+    bg: "bg-violet-50 dark:bg-violet-900/20",
   },
   {
     to: "#",

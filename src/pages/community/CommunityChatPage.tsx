@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import AppShell from "../../components/layout/AppShell";
 import { useAuthStore } from "../../store/authStore";
+import { useUserRole } from "../../hooks/useUserRole";
 import {
   fetchMessages,
   sendTextMessage,
@@ -29,6 +31,7 @@ export default function CommunityChatPage() {
 
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const { role } = useUserRole();
   const { showToast } = useToastStore();
 
   const [messages, setMessages] = useState<CommunityMessageWithProfile[]>([]);
@@ -44,20 +47,24 @@ export default function CommunityChatPage() {
   const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [communityName, setCommunityName] = useState("Chat");
 
   const channelRef = useRef<ReturnType<typeof subscribeToMessages> | null>(null);
 
-  // Fetch community name
-  useEffect(() => {
-    if (!communityId) return;
-    import("../../features/communities/services/communities.service").then(({ fetchCommunities }) => {
-      fetchCommunities().then((all) => {
-        const found = all.find((c) => c.id === communityId);
-        if (found) setCommunityName(found.name);
-      });
-    });
-  }, [communityId]);
+  // Fix #4: fetch just the community name — one row, not the entire table.
+  const { data: communityNameData } = useQuery({
+    queryKey: ["communityName", communityId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("communities")
+        .select("name")
+        .eq("id", communityId!)
+        .single();
+      return data?.name ?? "Chat";
+    },
+    enabled: !!communityId,
+    staleTime: Infinity, // community names don't change during a session
+  });
+  const communityName = communityNameData ?? "Chat";
 
   // Fetch messages
   useEffect(() => {
@@ -83,15 +90,17 @@ export default function CommunityChatPage() {
     markMessagesAsRead(communityId, user.id);
   }, [communityId, user, messages]);
 
-  // Read receipts
+  // Fix #8: only re-fetch read receipts when the user or community changes,
+  // NOT on every incoming message. Previously `messages` was in the dep array,
+  // causing a Supabase round-trip every time realtime pushed a new message.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !communityId) return;
     supabase
       .from("message_reads")
       .select("message_id")
       .eq("user_id", user.id)
       .then(({ data }) => setReadIds(new Set((data ?? []).map((r) => r.message_id))));
-  }, [user, messages]);
+  }, [user?.id, communityId]);
 
   // Handlers
   const handleSend = async () => {
@@ -247,7 +256,10 @@ export default function CommunityChatPage() {
           }
           isAnnouncement={isAnnouncement}
           onToggleAnnouncement={() => setIsAnnouncement(!isAnnouncement)}
-          canAnnounce={user?.role === "admin" || user?.role === "moderator"}
+          // Fix #3: use profile-level role from useUserRole() hook.
+          // Previously used user?.role which is always "authenticated" (Supabase
+          // auth token role), so admins could never post announcements.
+          canAnnounce={role === "admin" || role === "moderator"}
         />
       </div>
 

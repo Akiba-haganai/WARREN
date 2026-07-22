@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { StudyGroupCard } from "./StudyGroupCard";
 import { useStudyGroups } from "../hooks/useStudyGroups";
 import { useToastStore } from "../../../store/toastStore";
+import { useUserRole } from "../../../hooks/useUserRole";
 import { Loader2 } from "lucide-react";
 import { useAuthStore } from "../../../store/authStore";
 import type { Community } from "../../../types/community";
@@ -10,6 +11,7 @@ import type { Community } from "../../../types/community";
 export function StudyGroupsSection() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { role } = useUserRole();
   const { groups, isLoading, createGroup, join, leave, deleteGroup } = useStudyGroups();
   const { showToast } = useToastStore();
 
@@ -44,12 +46,11 @@ export function StudyGroupsSection() {
     }
   };
 
-  const isMember = (_groupId: string) => true; // placeholder – will be updated with real membership check later
-
   const currentUserId = user?.id;
-  const isAdmin = user?.role === "admin";
+  // Fix: use profile-level role from useUserRole() — user?.role is always
+  // "authenticated" on the Supabase auth object, so isAdmin was always false.
   const canDelete = (group: Community) => {
-    return !!currentUserId && (group.created_by === currentUserId || isAdmin);
+    return !!currentUserId && (group.created_by === currentUserId || role === "admin");
   };
 
   return (
@@ -121,7 +122,9 @@ export function StudyGroupsSection() {
             <StudyGroupCard
               key={group.id}
               group={group}
-              isMember={isMember(group.id)}
+              // Fix #5: use real isJoined from the hook instead of the
+              // hardcoded `true` placeholder that was here before.
+              isMember={group.isJoined ?? false}
               canDelete={canDelete(group)}
               onJoin={() => join(group.id)}
               onLeave={() => leave(group.id)}
@@ -134,4 +137,3 @@ export function StudyGroupsSection() {
     </div>
   );
 }
-

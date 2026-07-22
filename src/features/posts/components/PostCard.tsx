@@ -6,9 +6,9 @@ import {
   MessageCircle,
   Bookmark,
   Trash2,
-  Flag,
   Share2,
   ShieldCheck,
+  Smile,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "../../../lib/supabase";
@@ -57,7 +57,7 @@ interface Props {
   onVote: (id: string, type: "up" | "down") => void;
   onDelete?: (id: string) => void;
   onCommentClick?: () => void;
-  onPostClick?: () => void;   // Tapping the content or image opens the post detail
+  onPostClick?: () => void;
 }
 
 export default function PostCard({
@@ -75,6 +75,7 @@ export default function PostCard({
   const canDelete = isOwner || role === "moderator" || role === "admin";
   const [saved, setSaved] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [showReactions, setShowReactions] = useState(false);
 
   const isAnonymous = post.is_anonymous ?? false;
   const canSeeAuthor = role === "admin" || role === "moderator";
@@ -195,26 +196,31 @@ export default function PostCard({
     }
   };
 
+  // Total active reactions count (for the toggle button badge)
+  const totalReactions = reactions.reduce((sum, r) => sum + r.count, 0);
+
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-sm transition-all duration-200 ease-in-out hover:shadow-md motion-safe:active:scale-[0.99]">
-      {/* ─── Header (not tappable for post detail) ────────────────────────── */}
-      <div className="p-2.5 sm:p-3">
-        <div className="flex items-start gap-2">
+    <article className="overflow-hidden rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-900 shadow-sm transition-all duration-200 ease-in-out hover:shadow-md motion-safe:active:scale-[0.99]">
+
+      {/* ─── Header ────────────────────────────────────────────────────────── */}
+      <div className="p-3 sm:p-4">
+        <div className="flex items-start gap-3">
+          {/* Avatar – 40px, matching major social apps */}
           <Link
             to={isAnonymous && !canSeeAuthor ? "#" : `/profile/${post.user_id}`}
             onClick={(e) => e.stopPropagation()}
-            className="shrink-0 mt-0.5"
+            className="shrink-0"
           >
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={displayName}
                 loading="lazy"
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                className="h-10 w-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
               />
             ) : (
               <div
-                className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-sm ${
+                className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
                   isAnonymous && !canSeeAuthor
                     ? "bg-purple-500 text-white"
                     : "bg-gradient-to-br from-blue-600 to-cyan-500 text-white"
@@ -226,12 +232,15 @@ export default function PostCard({
           </Link>
 
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-1">
-              <h3 className="font-semibold text-slate-900 dark:text-white truncate max-w-[100px] text-[11px] sm:text-xs">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <h3 className="font-semibold text-slate-900 dark:text-white truncate max-w-[130px] text-sm">
                 {displayName}
               </h3>
               {!isAnonymous && post.profiles?.karma !== undefined && (
-                <span style={{ backgroundColor: TIER_COLORS[getTier(post.profiles.karma ?? 0)] }} className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white capitalize">
+                <span
+                  style={{ backgroundColor: TIER_COLORS[getTier(post.profiles.karma ?? 0)] }}
+                  className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white capitalize"
+                >
                   {getTier(post.profiles.karma ?? 0)}
                 </span>
               )}
@@ -242,7 +251,7 @@ export default function PostCard({
                 </span>
               )}
               {isAnonymous && canSeeAuthor && (
-                <span className="text-[9px] text-slate-500 dark:text-slate-400">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
                   (by {post.profiles?.username ?? "Unknown"})
                 </span>
               )}
@@ -257,7 +266,7 @@ export default function PostCard({
                 </span>
               )}
             </div>
-            <div className="mt-0.5 flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
+            <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
               <span>{displayRole}</span>
               <span>·</span>
               <span>
@@ -268,137 +277,165 @@ export default function PostCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-0.5 ml-1">
+          {/* Delete (owner/mod) — Report moved to ··· later */}
+          {canDelete && onDelete && (
             <button
-              onClick={handleReport}
-              aria-label="Report post"
-              className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center transition"
+              onClick={() => onDelete(post.id)}
+              aria-label="Delete post"
+              className="p-2 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 min-w-[36px] min-h-[36px] flex items-center justify-center transition shrink-0"
             >
-              <Flag size={16} />
+              <Trash2 size={16} />
             </button>
-            {canDelete && onDelete && (
-              <button
-                onClick={() => onDelete(post.id)}
-                aria-label="Delete post"
-                className="p-1.5 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center transition"
-              >
-                <Trash2 size={16} />
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Tappable content – opens post detail */}
-        <div onClick={onPostClick} className="cursor-pointer">
+        {/* Tappable content */}
+        <div onClick={onPostClick} className="cursor-pointer mt-2">
           {post.content && (
-            <p className="mt-1.5 whitespace-pre-wrap break-words text-[11px] sm:text-xs leading-snug text-slate-700 dark:text-slate-200">
+            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700 dark:text-slate-200">
               {post.content}
             </p>
           )}
         </div>
       </div>
 
-      {/* Tappable image – opens full screen */}
+      {/* ─── Image – aspect-ratio locked to prevent layout shift ─────────── */}
       {post.image_url && (
-        <div className="border-y border-slate-100 dark:border-slate-800 cursor-pointer" onClick={handleImageClick}>
+        <div
+          className="border-y border-slate-100 dark:border-slate-800 cursor-pointer aspect-[4/3] overflow-hidden"
+          onClick={handleImageClick}
+        >
           <img
             src={post.image_url}
             alt="Post attachment"
             loading="lazy"
-            className="w-full max-h-[320px] object-cover bg-slate-100 dark:bg-slate-800"
+            className="w-full h-full object-cover bg-slate-100 dark:bg-slate-800"
           />
         </div>
       )}
 
       {/* Voice note */}
       {post.voice_url && (
-        <div className="px-2.5 pt-1.5 pb-0.5">
-          <audio controls src={post.voice_url} className="w-full h-7" />
+        <div className="px-3 pt-2 pb-1">
+          <audio controls src={post.voice_url} className="w-full h-8" />
         </div>
       )}
 
-      {/* ─── Action bar ────────────────────────────────────────────────────── */}
-      <div className="px-1.5 py-1.5 sm:px-2 sm:py-1.5 grid grid-cols-5 gap-1">
-        <button
-          onClick={() => onVote(post.id, "up")}
-          className={`flex items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[11px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
-            userVote === "up"
-              ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold shadow-sm"
-              : "bg-slate-50/80 dark:bg-slate-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-slate-600 dark:text-slate-300"
-          }`}
-          aria-label="Upvote"
-        >
-          <ArrowBigUp size={16} />
-          <span className="font-semibold">{post.upvotes ?? 0}</span>
-        </button>
+      {/* ─── Action bar: vote left | comment + share + save right ────────── */}
+      <div className="flex items-center justify-between px-3 py-2.5">
+        {/* Left: votes */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onVote(post.id, "up")}
+            aria-label="Upvote"
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
+              userVote === "up"
+                ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400"
+                : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <ArrowBigUp size={20} />
+            <span>{post.upvotes ?? 0}</span>
+          </button>
 
-        <button
-          onClick={() => onVote(post.id, "down")}
-          className={`flex items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[11px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
-            userVote === "down"
-              ? "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 font-semibold shadow-sm"
-              : "bg-slate-50/80 dark:bg-slate-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-600 dark:text-slate-300"
-          }`}
-          aria-label="Downvote"
-        >
-          <ArrowBigDown size={16} />
-          <span className="font-semibold">{post.downvotes ?? 0}</span>
-        </button>
+          <button
+            onClick={() => onVote(post.id, "down")}
+            aria-label="Downvote"
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
+              userVote === "down"
+                ? "bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400"
+                : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <ArrowBigDown size={20} />
+            <span>{post.downvotes ?? 0}</span>
+          </button>
+        </div>
 
-        <button
-          onClick={onCommentClick}
-          className="flex items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[11px] bg-slate-50/80 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400 text-slate-600 dark:text-slate-300 transition-all duration-200 motion-safe:active:scale-[0.98]"
-          aria-label="Comments"
-        >
-          <MessageCircle size={16} />
-          <span className="font-semibold">{post.comments_count ?? 0}</span>
-        </button>
+        {/* Right: comment, share, save, react */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onCommentClick}
+            aria-label="Comments"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-sm text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400 transition"
+          >
+            <MessageCircle size={18} />
+            <span className="font-semibold text-xs">{post.comments_count ?? 0}</span>
+          </button>
 
-        <button
-          onClick={handleShare}
-          aria-label="Share post"
-          disabled={sharing}
-          className="flex items-center justify-center rounded-xl py-2 min-h-[44px] text-[11px] bg-slate-50/80 dark:bg-slate-800/80 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 hover:text-cyan-600 dark:hover:text-cyan-400 text-slate-600 dark:text-slate-300 transition-all duration-200 motion-safe:active:scale-[0.98] disabled:opacity-50"
-        >
-          <Share2 size={16} />
-        </button>
+          <button
+            onClick={handleShare}
+            disabled={sharing}
+            aria-label="Share post"
+            className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 hover:text-cyan-600 transition disabled:opacity-50"
+          >
+            <Share2 size={18} />
+          </button>
 
-        <button
-          onClick={handleSaveToggle}
-          aria-label={saved ? "Unsave post" : "Save post"}
-          className={`flex items-center justify-center rounded-xl py-2 min-h-[44px] text-[11px] transition-all duration-200 motion-safe:active:scale-[0.98] ${
-            saved
-              ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shadow-sm"
-              : "bg-slate-50/80 dark:bg-slate-800/80 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:text-amber-600 dark:hover:text-amber-400 text-slate-600 dark:text-slate-300"
-          }`}
-        >
-          <Bookmark size={16} fill={saved ? "currentColor" : "none"} />
-        </button>
+          <button
+            onClick={handleSaveToggle}
+            aria-label={saved ? "Unsave post" : "Save post"}
+            className={`p-2 rounded-full transition ${
+              saved
+                ? "text-amber-500"
+                : "text-slate-500 dark:text-slate-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:text-amber-500"
+            }`}
+          >
+            <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
+          </button>
+
+          {/* Reaction toggle – shows count badge when reactions exist */}
+          <button
+            onClick={() => setShowReactions((v) => !v)}
+            aria-label="React to post"
+            className={`flex items-center gap-1 p-2 rounded-full text-sm transition ${
+              showReactions
+                ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <Smile size={18} />
+            {totalReactions > 0 && (
+              <span className="text-xs font-semibold">{totalReactions}</span>
+            )}
+          </button>
+
+          {/* Report (subtle, still accessible) */}
+          <button
+            onClick={handleReport}
+            aria-label="Report post"
+            className="p-2 rounded-full text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
+          </button>
+        </div>
       </div>
 
-      {/* ─── Quick emoji reactions ──────────────────────────────────────────── */}
-      <div className="px-2.5 pb-2 flex items-center gap-1 flex-wrap">
-        {["❤️", "😂", "😮", "😢", "😡"].map((emoji) => {
-          const reaction = reactions.find((r) => r.emoji === emoji);
-          const count = reaction?.count ?? 0;
-          const active = reaction?.userReacted ?? false;
-          return (
-            <button
-              key={emoji}
-              onClick={() => handleReaction(emoji)}
-              className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 min-h-[36px] min-w-[44px] rounded-full transition-all duration-200 motion-safe:active:scale-[0.98] ${
-                active
-                  ? "bg-slate-200 dark:bg-slate-700 shadow-sm"
-                  : "bg-slate-50/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
-              aria-label={`React with ${emoji}`}
-            >
-              <span className="text-xs">{emoji}</span>
-              {count > 0 && <span className="text-slate-500">{count}</span>}
-            </button>
-          );
-        })}
-      </div>
+      {/* ─── Emoji reactions – collapsed by default ────────────────────────── */}
+      {showReactions && (
+        <div className="px-3 pb-3 flex items-center gap-1.5 flex-wrap border-t border-slate-100 dark:border-slate-800 pt-2">
+          {["❤️", "😂", "😮", "😢", "😡"].map((emoji) => {
+            const reaction = reactions.find((r) => r.emoji === emoji);
+            const count = reaction?.count ?? 0;
+            const active = reaction?.userReacted ?? false;
+            return (
+              <button
+                key={emoji}
+                onClick={() => handleReaction(emoji)}
+                className={`flex items-center gap-1 text-sm font-medium px-2.5 py-1.5 min-h-[36px] rounded-full transition-all duration-200 motion-safe:active:scale-95 ${
+                  active
+                    ? "bg-slate-200 dark:bg-slate-700 shadow-sm scale-105"
+                    : "bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+                aria-label={`React with ${emoji}`}
+              >
+                <span>{emoji}</span>
+                {count > 0 && <span className="text-xs text-slate-500 dark:text-slate-400">{count}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </article>
   );
 }

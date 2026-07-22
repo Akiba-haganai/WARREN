@@ -26,6 +26,7 @@ interface Comment {
   content: string | null;
   image_url: string | null;
   created_at: string;
+  parent_id?: string | null;
   profiles?: {
     username?: string;
     avatar_url?: string;
@@ -250,12 +251,19 @@ export default function CommentSection({ postId, postOwnerId, onClose }: Props) 
           <div className="text-center py-4 text-sm text-slate-500">No comments yet. Start the discussion!</div>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className="flex gap-2 group">
+            <div
+              key={comment.id}
+              className={`flex gap-2 group ${
+                comment.parent_id
+                  ? "ml-6 pl-3 border-l-2 border-slate-200 dark:border-slate-700"
+                  : ""
+              }`}
+            >
               <Link to={`/profile/${comment.user_id}`} className="shrink-0 mt-0.5">
                 {comment.profiles?.avatar_url ? (
-                  <img src={comment.profiles.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                  <img src={comment.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold text-[10px]">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold text-xs">
                     {comment.profiles?.username?.[0]?.toUpperCase() ?? "?"}
                   </div>
                 )}
@@ -271,7 +279,7 @@ export default function CommentSection({ postId, postOwnerId, onClose }: Props) 
                       {new Date(comment.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
-                  {comment.content && <p className="text-xs leading-snug whitespace-pre-wrap">{comment.content}</p>}
+                  {comment.content && <p className="text-sm leading-relaxed whitespace-pre-wrap">{comment.content}</p>}
                   {comment.image_url && (
                     <img src={comment.image_url} alt="" loading="lazy" className="mt-1 rounded-lg max-h-32 w-full object-cover" />
                   )}

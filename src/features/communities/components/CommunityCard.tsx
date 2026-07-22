@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Plus, UserX, MessageCircle, Phone } from "lucide-react";
+import { Users, Plus, UserX, MessageCircle, Mic, Phone } from "lucide-react";
 import { useToastStore } from "../../../store/toastStore";
 import type { Community } from "../../../types/community";
 
@@ -95,6 +95,17 @@ function CommunityCard({
                   <MessageCircle size={14} />
                   Open Chat
                 </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/community/${community.id}/ama`);
+                  }}
+                  className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white/30"
+                  title="Ask Me Anything sessions"
+                >
+                  <Mic size={14} />
+                  AMAs
+                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

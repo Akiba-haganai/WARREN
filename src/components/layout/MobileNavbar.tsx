@@ -3,7 +3,7 @@ import {
   Moon, Sun, User, LogOut, Shield, ChevronDown, MapPinned, Calendar,
   MessageCircleQuestion, Radio, Search, MessageSquare,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
@@ -18,6 +18,7 @@ export default function MobileNavbar() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const { role } = useUserRole();
   const darkMode = useThemeStore((s) => s.theme === "dark");
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
@@ -68,6 +69,15 @@ export default function MobileNavbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-1 sm:gap-1.5">
+            {/* Quick search shortcut */}
+            <button
+              onClick={() => navigate("/search")}
+              aria-label="Search"
+              className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition min-w-[40px] min-h-[40px] flex items-center justify-center"
+            >
+              <Search size={20} />
+            </button>
+
             <NotificationBell />
 
             <div ref={menuRef} className="relative">

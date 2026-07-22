@@ -62,6 +62,7 @@ const ManageCommunitiesPage = lazy(() => import("../pages/admin/ManageCommunitie
 const GlobalNotificationsPage = lazy(() => import("../pages/admin/GlobalNotificationsPage"));
 const CreateEventPage = lazy(() => import("../pages/admin/CreateEventPage"));
 const ManageEventsPage = lazy(() => import("../pages/admin/ManageEventsPage"));
+const CreateAMAPage = lazy(() => import("../pages/admin/CreateAMAPage"));
 
 // Helper components
 function Protected({ children }: { children: React.ReactNode }) {
@@ -182,6 +183,7 @@ export default function AppRouter() {
       <Route path="/admin/events" element={<RoleProtected allowedRoles={MOD_ROLES}><Suspense fallback={<PageLoader />}><ManageEventsPage /></Suspense></RoleProtected>} />
       <Route path="/admin/events/new" element={<RoleProtected allowedRoles={MOD_ROLES}><Suspense fallback={<PageLoader />}><CreateEventPage /></Suspense></RoleProtected>} />
       <Route path="/admin/events/edit/:id" element={<RoleProtected allowedRoles={MOD_ROLES}><Suspense fallback={<PageLoader />}><CreateEventPage /></Suspense></RoleProtected>} />
+      <Route path="/admin/create-ama" element={<RoleProtected allowedRoles={ADMIN_ROLES}><Suspense fallback={<PageLoader />}><CreateAMAPage /></Suspense></RoleProtected>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

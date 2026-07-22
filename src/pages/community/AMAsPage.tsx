@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import AppShell from "../../components/layout/AppShell";
-import { supabase } from "../../lib/supabase";
+import { fetchCommunityAMAs } from "../../features/ama/services/amaService";
 import { ArrowLeft, Clock } from "lucide-react";
 
 export default function AMAsPage() {
@@ -11,19 +11,12 @@ export default function AMAsPage() {
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["amaSessions", communityId],
-    queryFn: async () => {
-      if (!communityId) return [];
-      const { data } = await supabase
-        .from("ama_sessions")
-        .select("*, profiles:lecturer_id(username, avatar_url)")
-        .eq("community_id", communityId)
-        .order("scheduled_for", { ascending: false });
-      return data ?? [];
-    },
+    queryFn: () => fetchCommunityAMAs(communityId!),
     enabled: !!communityId,
   });
 
   const [tab, setTab] = useState<"scheduled" | "live" | "ended">("scheduled");
+
   const filtered = useMemo(() => {
     if (tab === "scheduled") return sessions.filter((s: any) => s.status === "scheduled");
     if (tab === "live") return sessions.filter((s: any) => s.status === "live");
@@ -43,12 +36,15 @@ export default function AMAsPage() {
           <h1 className="text-xl font-bold">Ask Me Anything</h1>
         </div>
 
+        {/* Status filter tabs */}
         <div className="flex gap-2 mb-4">
-          {([
-            { key: "scheduled", label: "Upcoming" },
-            { key: "live", label: "Live" },
-            { key: "ended", label: "Ended" },
-          ] as const).map((t) => (
+          {(
+            [
+              { key: "scheduled", label: "Upcoming" },
+              { key: "live", label: "Live" },
+              { key: "ended", label: "Ended" },
+            ] as const
+          ).map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
@@ -82,14 +78,16 @@ export default function AMAsPage() {
               <button
                 key={session.id}
                 onClick={() => navigate(`/community/${communityId}/ama/${session.id}`)}
-                className="w-full p-4 bg-white dark:bg-slate-900 rounded-2xl border text-left"
+                className="w-full p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-left"
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold">
-                    {session.profiles?.username?.[0]?.toUpperCase() ?? "?"}
+                    {session.lecturer?.username?.[0]?.toUpperCase() ?? "?"}
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">{session.profiles?.username ?? "Lecturer"}</p>
+                    <p className="font-semibold text-sm">
+                      {session.lecturer?.username ?? "Lecturer"}
+                    </p>
                     <p className="text-xs text-slate-500">AMA Session</p>
                   </div>
                 </div>
@@ -123,4 +121,3 @@ export default function AMAsPage() {
     </AppShell>
   );
 }
-
