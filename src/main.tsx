@@ -15,13 +15,13 @@ window.addEventListener("beforeinstallprompt", (e) => {
 // ── PWA update handling (temporarily disabled to avoid "disconnected port" errors in dev) ──
 // window.addEventListener("pwa:update-available", () => {
 //   const shouldUpdate = window.confirm(
-//     "A new version of Warren is available. Update now?"
+//     "A new version of Campus is available. Update now?"
 //   );
 //   if (shouldUpdate) window.location.reload();
 // });
 
 const container = document.getElementById("root");
-if (!container) throw new Error("[Warren] Root element not found.");
+if (!container) throw new Error("[Campus] Root element not found.");
 
 createRoot(container).render(
   <StrictMode>

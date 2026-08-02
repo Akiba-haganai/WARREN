@@ -157,7 +157,7 @@ export default function PostCard({
       if (navigator.share) {
         setSharing(true);
         await navigator.share({
-          title: "Warren",
+          title: "Campus",
           text: post.content ?? undefined,
           url: shareUrl,
         });

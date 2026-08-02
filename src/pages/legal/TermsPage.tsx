@@ -8,7 +8,7 @@ export default function TermsPage() {
         <div className="prose prose-sm dark:prose-invert space-y-4">
           <p><strong>Last updated:</strong> {new Date().getFullYear()}-01-01</p>
           <p>
-            By accessing or using Warren, you agree to be bound by these Terms
+            By accessing or using Campus (by Warren), you agree to be bound by these Terms
             of Service. If you do not agree, please do not use the service.
           </p>
           <h3>Acceptable Use</h3>
@@ -19,13 +19,13 @@ export default function TermsPage() {
           </p>
           <h3>Content Rights</h3>
           <p>
-            All content and materials available on Warren are protected by
+            All content and materials available on Campus (by Warren) are protected by
             applicable intellectual property laws. You may not reproduce,
             distribute, or create derivative works without permission.
           </p>
           <h3>Termination</h3>
           <p>
-            We may suspend or terminate your access to Warren at any time,
+            We may suspend or terminate your access to Campus (by Warren) at any time,
             without prior notice, for any reason.
           </p>
           <h3>Contact</h3>

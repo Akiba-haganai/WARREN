@@ -142,7 +142,7 @@ export default function AdminDashboardPage() {
           Admin
         </h1>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-          Manage Warren
+          Manage Campus
         </p>
       </div>
 

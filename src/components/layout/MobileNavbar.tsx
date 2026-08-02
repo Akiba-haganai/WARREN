@@ -62,8 +62,8 @@ export default function MobileNavbar() {
               W
             </div>
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-black leading-none truncate">WARREN</h1>
-              <p className="text-[9px] sm:text-[10px] opacity-60 truncate">Global Student Network</p>
+              <h1 className="text-sm sm:text-base font-black leading-none truncate">Campus</h1>
+              <p className="text-[9px] sm:text-[10px] opacity-60 truncate">by Warren</p>
             </div>
           </Link>
 

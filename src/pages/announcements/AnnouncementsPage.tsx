@@ -273,7 +273,7 @@ export default function AnnouncementsPage() {
                       opacity-50
                     "
                   >
-                    Warren Admin
+                    Campus Admin
                   </span>
 
                   <span

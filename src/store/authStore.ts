@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { error: notifError } = await supabase.from("notifications").insert({
       user_id: user.id,
       type: "welcome",
-      title: "🎉 Welcome to Warren!",
+      title: "🎉 Welcome to Campus!",
       body: "Connect with students, share ideas, and stay updated with campus life.",
     });
     if (notifError) console.warn("[AuthStore] Welcome notification error:", notifError);

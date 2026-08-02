@@ -37,9 +37,9 @@ export default defineConfig(({ mode }) => {
           ],
         },
         manifest: {
-          name: "Warren",
-          short_name: "Warren",
-          description: "Connect with students, share ideas, and study together.",
+          name: "Campus",
+          short_name: "Campus",
+          description: "The digital home of CBU — by Warren",
           theme_color: "#1E40AF",
           background_color: "#1E40AF",
           display: "standalone",

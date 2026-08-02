@@ -101,7 +101,7 @@ export default function InstallBanner() {
                   App Available
                 </p>
                 <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                  Install Warren App
+                  Install Campus
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Add to home screen for native experience
@@ -140,7 +140,7 @@ export default function InstallBanner() {
                   Install on iPhone / iPad
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Add Warren to your home screen in 3 steps
+                  Add Campus to your home screen in 3 steps
                 </p>
               </div>
               <button

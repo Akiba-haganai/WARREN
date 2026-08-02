@@ -36,7 +36,7 @@ export default function RegisterPage() {
               <span className="text-3xl font-black text-white">W</span>
             </div>
             <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-              Join Warren
+              Join Campus
             </h1>
             <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
               Create your account to connect with students worldwide.
