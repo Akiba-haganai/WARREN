@@ -59,11 +59,10 @@ export default function MobileNavbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 min-w-0">
             <div className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-black shadow-lg text-sm sm:text-base">
-              W
+              C
             </div>
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-black leading-none truncate">Campus</h1>
-              <p className="text-[9px] sm:text-[10px] opacity-60 truncate">by Warren</p>
+              <h1 className="text-base sm:text-lg font-black leading-none truncate">Campus</h1>
             </div>
           </Link>
 

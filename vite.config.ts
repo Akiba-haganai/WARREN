@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: "Campus",
           short_name: "Campus",
-          description: "The digital home of CBU — by Warren",
+          description: "The digital home of CBU — Student Hub & Resources",
           theme_color: "#1E40AF",
           background_color: "#1E40AF",
           display: "standalone",

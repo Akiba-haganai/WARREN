@@ -7,7 +7,7 @@ export default function AboutPage() {
         <h1 className="text-2xl font-bold mb-4">About Campus</h1>
         <div className="prose prose-sm dark:prose-invert space-y-4">
           <p>
-            Campus is a student‑only social network — part of the Warren ecosystem — designed to help freshers connect,
+            Campus is a student‑only social network designed to help freshers connect,
             share resources, and navigate campus life. Built with privacy and simplicity
             in mind, Campus brings together communities, study materials, campus maps,
             and real‑time chat.
