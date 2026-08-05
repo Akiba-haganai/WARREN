@@ -12,27 +12,16 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       VitePWA({
-        registerType: "autoUpdate",
+        registerType: "prompt",
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           cleanupOutdatedCaches: true,
-          clientsClaim: true,
-          skipWaiting: true,
           navigateFallback: "/index.html",
           runtimeCaching: [
             {
               urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
               handler: "CacheFirst",
               options: { cacheName: "images", expiration: { maxEntries: 50 } },
-            },
-            {
-              // Cache your own JS/CSS/HTML (app shell)
-              urlPattern: ({ url }: { url: URL }) => url.origin === (globalThis as any).location.origin,
-              handler: "StaleWhileRevalidate",
-              options: {
-                cacheName: "app-shell",
-                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 },
-              },
             },
           ],
         },

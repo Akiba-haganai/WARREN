@@ -6,6 +6,7 @@ import { useAuthStore } from "./store/authStore";
 import { useThemeStore } from "./store/themeStore";
 import { useAccessibilityStore } from "./store/accessibility.store";
 import InstallBanner from "./components/pwa/InstallBanner";
+import UpdatePrompt from "./components/pwa/UpdatePrompt";
 
 export default function App() {
   const initAuth = useAuthStore((s) => s.initialize);
@@ -35,6 +36,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AppRouter />
       <InstallBanner />
+      <UpdatePrompt />
     </QueryClientProvider>
   );
 }
