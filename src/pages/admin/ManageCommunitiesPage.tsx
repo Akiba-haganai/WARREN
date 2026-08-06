@@ -6,7 +6,7 @@ import type { Community } from "../../types/community";
 import { Pencil, Trash2, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { getCommunityGradient } from "../../features/communities/utils/communityColors";
 
-type GroupedCommunity = Community & { children: Community[] };
+
 
 export default function ManageCommunitiesPage() {
   const [communities, setCommunities] = useState<Community[]>([]);
