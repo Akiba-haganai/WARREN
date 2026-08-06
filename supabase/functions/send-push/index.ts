@@ -8,7 +8,7 @@ const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY")!;
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
@@ -57,15 +57,6 @@ serve(async (req: Request) => {
 
   const results = await Promise.allSettled(
     subscriptions.map(async (sub) => {
-      const subscription = {
-        endpoint: sub.endpoint,
-        keys: {
-          p256dh: sub.p256dh,
-          auth: sub.auth,
-        },
-      };
-
-      const encodedVapidPublicKey = urlBase64ToUint8Array(vapidPublicKey);
       const encodedVapidPrivateKey = urlBase64ToUint8Array(vapidPrivateKey);
 
       const vapidHeader = await crypto.subtle.importKey(

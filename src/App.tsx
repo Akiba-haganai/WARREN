@@ -8,6 +8,8 @@ import { useAccessibilityStore } from "./store/accessibility.store";
 import InstallBanner from "./components/pwa/InstallBanner";
 import UpdatePrompt from "./components/pwa/UpdatePrompt";
 
+import { OnboardingCarousel } from "./components/onboarding/OnboardingCarousel";
+
 export default function App() {
   const initAuth = useAuthStore((s) => s.initialize);
   const initTheme = useThemeStore((s) => s.initTheme);
@@ -35,6 +37,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppRouter />
+      <OnboardingCarousel />
       <InstallBanner />
       <UpdatePrompt />
     </QueryClientProvider>

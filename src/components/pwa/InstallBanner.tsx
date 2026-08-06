@@ -87,7 +87,7 @@ export default function InstallBanner() {
   return (
     <>
       {/* Floating Banner */}
-      <div className="fixed bottom-24 left-4 right-4 z-50">
+      <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-4 right-4 z-50">
         <div className="relative overflow-hidden rounded-3xl border border-blue-100 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 p-4 pr-10 shadow-2xl backdrop-blur-md">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500" />
 
