@@ -79,7 +79,15 @@ export default function CommunityChatPage() {
   useEffect(() => {
     if (!communityId) return;
     channelRef.current = subscribeToMessages(communityId, (newMsg) => {
-      setMessages((prev) => [...prev, newMsg]);
+      setMessages((prev) => {
+        const existsIndex = prev.findIndex((m) => m.id === newMsg.id);
+        if (existsIndex >= 0) {
+          const next = [...prev];
+          next[existsIndex] = { ...newMsg, status: "sent" } as any;
+          return next;
+        }
+        return [...prev, { ...newMsg, status: "sent" } as any];
+      });
     });
     return () => { channelRef.current?.unsubscribe(); };
   }, [communityId]);
@@ -106,17 +114,101 @@ export default function CommunityChatPage() {
   const handleSend = async () => {
     if (!newMsg.trim() || !user || !communityId) return;
     setSending(true);
+    
+    const content = newMsg.trim();
+    const tempId = crypto.randomUUID();
+    
+    const optimisticMsg: CommunityMessageWithProfile & { status: "pending" } = {
+      id: tempId,
+      community_id: communityId,
+      user_id: user.id,
+      content,
+      type: "text",
+      parent_id: replyingTo?.id ?? null,
+      is_announcement: isAnnouncement,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      profiles: {
+        username: user.user_metadata?.username ?? "You",
+        avatar_url: user.user_metadata?.avatar_url ?? null,
+        role: role as any,
+      },
+      status: "pending",
+    } as any;
+    
+    setMessages(prev => [...prev, optimisticMsg]);
+    setNewMsg("");
+    setReplyingTo(null);
+    setIsAnnouncement(false);
+
     try {
-      await notifyMentions(user.id, newMsg.trim());
-      await sendTextMessage(communityId, user.id, newMsg.trim(), replyingTo?.id, isAnnouncement);
-      setNewMsg("");
-      setReplyingTo(null);
-      setIsAnnouncement(false);
+      await notifyMentions(user.id, content);
+      await sendTextMessage(
+        communityId, 
+        user.id, 
+        content, 
+        optimisticMsg.parent_id || undefined, 
+        optimisticMsg.is_announcement || false, 
+        "text", 
+        tempId
+      );
+      
+      setMessages(prev => {
+        const next = [...prev];
+        const idx = next.findIndex(m => m.id === tempId);
+        if (idx >= 0) next[idx] = { ...next[idx], status: "sent" } as any;
+        return next;
+      });
     } catch (err) {
       console.error(err);
+      setMessages(prev => {
+        const next = [...prev];
+        const idx = next.findIndex(m => m.id === tempId);
+        if (idx >= 0) next[idx] = { ...next[idx], status: "error" } as any;
+        return next;
+      });
       showToast("Failed to send message", "err");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleRetry = async (messageId: string) => {
+    const msgToRetry = messages.find(m => m.id === messageId);
+    if (!msgToRetry || !user || !communityId) return;
+    
+    setMessages(prev => {
+      const next = [...prev];
+      const idx = next.findIndex(m => m.id === messageId);
+      if (idx >= 0) next[idx] = { ...next[idx], status: "pending" } as any;
+      return next;
+    });
+
+    try {
+      await sendTextMessage(
+        communityId, 
+        user.id, 
+        msgToRetry.content || "", 
+        msgToRetry.parent_id || undefined, 
+        msgToRetry.is_announcement || false, 
+        "text", 
+        messageId
+      );
+      setMessages(prev => {
+        const next = [...prev];
+        const idx = next.findIndex(m => m.id === messageId);
+        if (idx >= 0) next[idx] = { ...next[idx], status: "sent" } as any;
+        return next;
+      });
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => {
+        const next = [...prev];
+        const idx = next.findIndex(m => m.id === messageId);
+        if (idx >= 0) next[idx] = { ...next[idx], status: "error" } as any;
+        return next;
+      });
+      showToast("Failed to retry message", "err");
     }
   };
 
@@ -229,6 +321,7 @@ export default function CommunityChatPage() {
             if (parent) setReplyingTo({ id, username: parent.profiles?.username || "User" });
           }}
           onFetchPoll={fetchPoll}
+          onRetry={handleRetry}
         />
       </div>
 

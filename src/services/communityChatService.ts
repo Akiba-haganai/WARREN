@@ -35,25 +35,26 @@ export async function sendTextMessage(
   content: string,
   parentId?: string,
   isAnnouncement?: boolean,
-  messageType: "text" | "poll" = "text"
+  messageType: "text" | "poll" = "text",
+  messageId?: string
 ): Promise<CommunityMessageWithProfile> {
+  const payload: any = {
+    community_id: communityId,
+    user_id: userId,
+    content,
+    type: messageType,
+    parent_id: parentId ?? null,
+    is_announcement: isAnnouncement ?? false,
+    poll_id: messageType === "poll" ? content : null,
+  };
+  
+  if (messageId) {
+    payload.id = messageId;
+  }
+
   const { data, error } = await supabase
     .from("community_messages")
-    .insert({
-      community_id: communityId,
-      user_id: userId,
-
-      // For polls we store the poll_id inside `content` (existing app convention)
-      // while still setting message.type = "poll".
-      content,
-      type: messageType,
-      parent_id: parentId ?? null,
-      is_announcement: isAnnouncement ?? false,
-
-      // If the table has a dedicated poll_id column, populate it.
-      // (This keeps poll rendering working without breaking text messages.)
-      poll_id: messageType === "poll" ? content : null,
-    } as any)
+    .upsert(payload, { onConflict: "id" })
     .select("*, profiles:user_id (username, avatar_url, role)")
     .single();
   if (error) throw error;

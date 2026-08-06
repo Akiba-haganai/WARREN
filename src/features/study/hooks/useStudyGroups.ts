@@ -58,7 +58,7 @@ export function useStudyGroups(course?: string) {
         description: data.description ?? "",
         type: "study",
         year: null,
-        cover_color: "#93c5fd",
+        cover_color: "from-blue-600 via-cyan-600 to-teal-500",
         icon: "📚",
         parent_id: null,
         archived: false,

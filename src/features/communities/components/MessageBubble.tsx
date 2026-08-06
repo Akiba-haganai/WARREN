@@ -1,17 +1,24 @@
 import { useState, useEffect } from "react";
+import { AlertCircle } from "lucide-react";
 import { FilePreviewCard } from "./FilePreviewCard";
 import { PollCard } from "./PollCard";
 import type { CommunityMessageWithProfile } from "../../../services/communityChatService";
 
 interface Props {
-  message: (CommunityMessageWithProfile & { is_announcement?: boolean; file_name?: string; poll_id?: string | null })
+  message: (CommunityMessageWithProfile & { 
+    is_announcement?: boolean; 
+    file_name?: string; 
+    poll_id?: string | null;
+    status?: "pending" | "sent" | "error";
+  })
   isMine: boolean;
   readIds?: Set<string>;
   onReply?: (msgId: string) => void;
   onFetchPoll: (pollId: string) => Promise<any>;
+  onRetry?: (msgId: string) => void;
 }
 
-export function MessageBubble({ message, isMine, readIds, onReply, onFetchPoll }: Props) {
+export function MessageBubble({ message, isMine, readIds, onReply, onFetchPoll, onRetry }: Props) {
   const username = message.profiles?.username ?? "Anonymous";
   const avatar = message.profiles?.avatar_url;
   const role = message.profiles?.role;
@@ -21,6 +28,9 @@ export function MessageBubble({ message, isMine, readIds, onReply, onFetchPoll }
   if (message.type === "poll" && message.poll_id) {
     return <PollMessage pollId={message.poll_id} onFetchPoll={onFetchPoll} />;
   }
+
+  const isPending = message.status === "pending";
+  const isError = message.status === "error";
 
   return (
     <div className={`flex ${isMine ? "justify-end" : "justify-start"} mb-2`}>
@@ -41,11 +51,15 @@ export function MessageBubble({ message, isMine, readIds, onReply, onFetchPoll }
           </div>
         )}
         <div
-          className={`p-2.5 rounded-2xl text-sm ${
-            isMine
-              ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-br-md"
-              : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-bl-md"
-          }`}
+          className={`p-2.5 rounded-2xl text-sm transition-opacity duration-200 ${
+            isPending ? "opacity-60" : "opacity-100"
+          } ${
+            isError
+              ? "bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100 border border-red-200 dark:border-red-800"
+              : isMine
+              ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white"
+              : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white"
+          } ${isMine ? "rounded-br-md" : "rounded-bl-md"}`}
         >
           {message.parent_id && (
             <div className="text-xs italic opacity-70 mb-1">In reply to a message</div>
@@ -63,12 +77,24 @@ export function MessageBubble({ message, isMine, readIds, onReply, onFetchPoll }
           {message.type === "voice" && message.voice_url && (
             <audio controls className="max-w-full mt-1"><source src={message.voice_url} /></audio>
           )}
-          <div className={`text-[10px] mt-1 ${isMine ? "text-blue-200" : "text-slate-400"}`}>
-            {time}
-            {isMine && readIds?.has(message.id) && <span className="ml-1">✓ Seen</span>}
+          <div className={`text-[10px] mt-1 flex items-center justify-between ${isMine ? (isError ? "text-red-400" : "text-blue-200") : "text-slate-400"}`}>
+            <span>{time}</span>
+            {isMine && !isPending && !isError && readIds?.has(message.id) && <span className="ml-1">✓ Seen</span>}
+            {isPending && <span className="ml-1">Sending...</span>}
           </div>
         </div>
-        {!isMine && onReply && (
+        
+        {isError && isMine && onRetry && (
+          <div className="flex items-center justify-end gap-1 mt-1 text-red-500 text-xs">
+            <AlertCircle size={12} />
+            <span>Failed to send.</span>
+            <button onClick={() => onRetry(message.id)} className="font-semibold underline ml-1">
+              Tap to retry
+            </button>
+          </div>
+        )}
+
+        {!isMine && onReply && !isError && (
           <button onClick={() => onReply(message.id)} className="text-[10px] text-blue-600 ml-1 mt-0.5">Reply</button>
         )}
       </div>

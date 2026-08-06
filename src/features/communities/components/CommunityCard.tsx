@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Users, Plus, UserX, MessageCircle, Mic, Phone } from "lucide-react";
 import { useToastStore } from "../../../store/toastStore";
 import type { Community } from "../../../types/community";
+import { getCommunityGradient } from "../utils/communityColors";
 
 interface Props {
   community: Community;
@@ -34,14 +35,19 @@ function CommunityCard({
     }
   };
 
+  const gradientClass = getCommunityGradient(community.cover_color, community.id || community.name);
+
   return (
     <div
       onClick={handleCardClick}
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${community.cover_color} p-5 shadow-md hover:shadow-lg transition-all duration-300 group cursor-pointer`}
+      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradientClass} p-5 shadow-lg border border-white/10 hover:shadow-xl hover:scale-[1.01] transition-all duration-300 group cursor-pointer`}
       title={isJoined ? "Open chat" : "Join to chat"}
     >
+      {/* Subtle ambient lighting mesh */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/15 pointer-events-none" />
+
       {/* Background icon */}
-      <div className="absolute -bottom-4 -right-4 text-6xl opacity-20 select-none pointer-events-none">
+      <div className="absolute -bottom-4 -right-4 text-6xl opacity-20 select-none pointer-events-none group-hover:scale-110 transition-transform duration-300">
         {community.icon}
       </div>
 
@@ -91,7 +97,7 @@ function CommunityCard({
           <div className="flex items-center gap-2">
             {isJoined ? (
               <>
-                <span className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+                <span className="flex items-center gap-1.5 bg-white text-slate-900 drop-shadow-md text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95">
                   <MessageCircle size={14} />
                   Open Chat
                 </span>
@@ -100,7 +106,7 @@ function CommunityCard({
                     e.stopPropagation();
                     navigate(`/community/${community.id}/ama`);
                   }}
-                  className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white/30"
+                  className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md border border-white/30 drop-shadow-sm text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-200 hover:bg-white/30 hover:scale-105 active:scale-95"
                   title="Ask Me Anything sessions"
                 >
                   <Mic size={14} />
@@ -111,7 +117,7 @@ function CommunityCard({
                     e.stopPropagation();
                     navigate(`/community/${community.id}/room`);
                   }}
-                  className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white/30"
+                  className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md border border-white/30 drop-shadow-sm text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-200 hover:bg-white/30 hover:scale-105 active:scale-95"
                   title="Open Study Room"
                 >
                   <Phone size={14} />

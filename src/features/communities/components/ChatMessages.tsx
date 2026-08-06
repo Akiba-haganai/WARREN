@@ -10,6 +10,7 @@ interface Props {
   onReply: (msgId: string) => void;
   onFetchPoll: (pollId: string) => Promise<any>;
   emptyText?: string;
+  onRetry?: (msgId: string) => void;
 }
 
 export function ChatMessages({
@@ -20,6 +21,7 @@ export function ChatMessages({
   onReply,
   onFetchPoll,
   emptyText = "No messages yet",
+  onRetry,
 }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +59,7 @@ export function ChatMessages({
           readIds={readIds}
           onReply={onReply}
           onFetchPoll={onFetchPoll}
+          onRetry={onRetry}
         />
       ))}
       <div ref={messagesEndRef} />
