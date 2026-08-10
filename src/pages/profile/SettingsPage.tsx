@@ -16,6 +16,7 @@ import { AccessibilityPanel } from "../../features/profile/components/Accessibil
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
+import { ForceRefreshButton } from "../../components/pwa/ForceRefreshButton";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -134,6 +135,9 @@ export default function SettingsPage() {
         </div>
         <div className="mt-6">
           <AccessibilityPanel />
+        </div>
+        <div className="mt-6">
+          <ForceRefreshButton />
         </div>
       </div>
     </AppShell>

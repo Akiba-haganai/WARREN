@@ -5,18 +5,32 @@ import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const buildId = env.VERCEL_GIT_COMMIT_SHA || env.VITE_APP_BUILD_ID || "dev";
+  const buildId = env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || env.VITE_APP_BUILD_ID || "dev";
 
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(buildId),
+    },
     plugins: [
       react(),
       tailwindcss(),
+      // Custom plugin to emit version.json
+      {
+        name: "emit-version-json",
+        generateBundle() {
+          this.emitFile({
+            type: "asset",
+            fileName: "version.json",
+            source: JSON.stringify({ version: buildId }),
+          });
+        },
+      },
       VitePWA({
-        registerType: "prompt",
+        registerType: "autoUpdate",
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           cleanupOutdatedCaches: true,
-          skipWaiting: false,
+          skipWaiting: true,
           clientsClaim: true,
           navigateFallback: "/index.html",
           runtimeCaching: [

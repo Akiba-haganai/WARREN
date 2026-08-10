@@ -7,6 +7,7 @@ import { useThemeStore } from "./store/themeStore";
 import { useAccessibilityStore } from "./store/accessibility.store";
 import InstallBanner from "./components/pwa/InstallBanner";
 import UpdatePrompt from "./components/pwa/UpdatePrompt";
+import { RebrandBanner } from "./components/pwa/RebrandBanner";
 
 import { OnboardingCarousel } from "./components/onboarding/OnboardingCarousel";
 
@@ -40,6 +41,7 @@ export default function App() {
       <OnboardingCarousel />
       <InstallBanner />
       <UpdatePrompt />
+      <RebrandBanner />
     </QueryClientProvider>
   );
 }
