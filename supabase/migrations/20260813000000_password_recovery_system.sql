@@ -139,7 +139,7 @@ BEGIN
         -- Question 3: Saved/Bookmarked Course Material or Post
         SELECT m.subject INTO v_saved_subject
         FROM public.saved_materials sm
-        JOIN public.material_versions m ON m.id = sm.material_id
+        JOIN public.study_materials m ON m.id = sm.material_id
         WHERE sm.user_id = v_user_id LIMIT 1;
 
         IF v_saved_subject IS NOT NULL THEN
