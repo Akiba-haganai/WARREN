@@ -10,7 +10,7 @@ export function RebrandBanner() {
       <div className="flex-1 text-sm">
         <p className="font-bold text-base">We've updated our icon! 🎉</p>
         <p className="text-slate-300 mt-1 leading-relaxed">
-          Your home screen icon may be out of date since we changed our name to "Campus". Please remove this app and add it to your home screen again to get the latest icon.
+          Your home screen icon may be out of date since we changed our name to "Wave". Please remove this app and add it to your home screen again to get the latest icon.
         </p>
       </div>
       <button

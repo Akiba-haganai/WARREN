@@ -49,18 +49,16 @@ export default function SettingsPage() {
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) {
-      // Fallback for iOS or unsupported browsers
-      alert(
-        "To install this app on your iPhone, tap the Share button and then 'Add to Home Screen'."
-      );
-      return;
-    }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setDeferredPrompt(null);
-      setIsInstalled(true);
+    // Trigger custom event to open the PWA Install Banner / iOS modal
+    window.dispatchEvent(new Event("pwa-open-install-banner"));
+
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setDeferredPrompt(null);
+        setIsInstalled(true);
+      }
     }
   };
 

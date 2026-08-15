@@ -38,10 +38,10 @@ export default function LoginPage() {
               <span className="text-3xl font-black text-white">W</span>
             </div>
             <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-              Campus
+              Wave
             </h1>
-            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-              Connect with students, share ideas and stay updated with campus life.
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 font-medium">
+              Connect. Learn. Interact.
             </p>
           </div>
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
                 <div className="text-right mt-2">
-                  <Link to="/reset-password" className="text-sm text-blue-600">
+                  <Link to="/forgot-password" className="text-sm text-blue-600">
                     Forgot Password?
                   </Link>
                 </div>

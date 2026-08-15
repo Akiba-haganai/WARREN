@@ -46,6 +46,13 @@ export default function InstallBanner() {
     };
 
     window.addEventListener("beforeinstallprompt", handler);
+
+    // Custom event to force open install banner/modal on demand (e.g. from Settings)
+    const openHandler = () => {
+      setShowBanner(true);
+    };
+    window.addEventListener("pwa-open-install-banner", openHandler);
+
     // Fallback if the event never fires
     const fallback = setTimeout(() => {
       if (!deferredPrompt) setShowBanner(true);
@@ -53,6 +60,7 @@ export default function InstallBanner() {
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("pwa-open-install-banner", openHandler);
       clearTimeout(fallback);
     };
   }, []);
@@ -87,8 +95,8 @@ export default function InstallBanner() {
   return (
     <>
       {/* Floating Banner */}
-      <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-4 right-4 z-50">
-        <div className="relative overflow-hidden rounded-3xl border border-blue-100 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 p-4 pr-10 shadow-2xl backdrop-blur-md">
+      <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-4 right-4 z-50">
+        <div className="relative overflow-hidden rounded-3xl border border-blue-100 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 p-4 pr-12 shadow-2xl backdrop-blur-md">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500" />
 
           <div className="flex items-center justify-between gap-4">
@@ -101,7 +109,7 @@ export default function InstallBanner() {
                   App Available
                 </p>
                 <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                  Install Campus
+                  Install Wave
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Add to home screen for native experience
@@ -120,10 +128,10 @@ export default function InstallBanner() {
 
           <button
             onClick={handleDismiss}
-            className="absolute top-3.5 right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors duration-150"
+            className="absolute top-2 right-2 w-11 h-11 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors duration-150"
             aria-label="Dismiss banner"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
       </div>
@@ -140,7 +148,7 @@ export default function InstallBanner() {
                   Install on iPhone / iPad
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Add Campus to your home screen in 3 steps
+                  Add Wave to your home screen in 3 steps
                 </p>
               </div>
               <button

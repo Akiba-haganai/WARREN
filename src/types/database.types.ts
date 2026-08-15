@@ -2513,6 +2513,57 @@ export type Database = {
           },
         ]
       }
+      password_recovery_requests: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          ip_address: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          score: number
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          ip_address?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score?: number
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          ip_address?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score?: number
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_recovery_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "password_recovery_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       tutor_ranking: {
@@ -2536,6 +2587,14 @@ export type Database = {
       }
     }
     Functions: {
+      get_password_recovery_challenge: {
+        Args: { p_email: string }
+        Returns: Json
+      }
+      verify_password_recovery_challenge: {
+        Args: { p_answers: Json; p_email: string }
+        Returns: Json
+      }
       archive_inactive_communities: { Args: never; Returns: undefined }
       can_create_post: { Args: { p_user_id: string }; Returns: boolean }
       cancel_tutor_slot: { Args: { p_slot_id: string }; Returns: undefined }

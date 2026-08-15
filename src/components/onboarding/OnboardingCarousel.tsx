@@ -5,8 +5,8 @@ const SLIDES = [
   {
     id: "intro",
     icon: GraduationCap,
-    title: "Welcome to Campus",
-    subtitle: "by Warren",
+    title: "Welcome to Wave",
+    subtitle: "Connect. Learn. Interact.",
     description: "The digital home of CBU. Connect, study, and thrive.",
     color: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-50 dark:bg-blue-950/50",
@@ -43,6 +43,7 @@ const SLIDES = [
 export function OnboardingCarousel() {
   const [isVisible, setIsVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem("has-seen-onboarding");
@@ -70,13 +71,36 @@ export function OnboardingCarousel() {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (diff > 50) {
+      // Swiped left -> Go Next
+      handleNext();
+    } else if (diff < -50) {
+      // Swiped right -> Go Prev
+      handlePrev();
+    }
+    setTouchStartX(null);
+  };
+
   if (!isVisible) return null;
 
   const currentSlide = SLIDES[currentIndex];
   const Icon = currentSlide.icon;
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-hidden">
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="fixed inset-0 z-[200] flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-hidden select-none"
+    >
       {/* Background gradients */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-blue-500/10 blur-[120px]" />

@@ -14,6 +14,7 @@ import TermsPage from "../pages/legal/TermsPage";
 // Auth pages (eager loaded)
 import LoginPage from "../pages/auth/LoginPage";
 import RegisterPage from "../pages/auth/RegisterPage";
+import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../passwordManagement/ResetPasswordPage";
 import UpdatePasswordPage from "../passwordManagement/UpdatePasswordPage";
 
@@ -111,6 +112,7 @@ export default function AppRouter() {
       {/* Auth */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
 
