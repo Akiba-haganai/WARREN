@@ -135,15 +135,9 @@ export default function AdminDashboardPage() {
   const fetchRecoveryRequests = async () => {
     setLoadingRequests(true);
     try {
-      const { data, error } = await (supabase
-        .from("password_recovery_requests" as any)
-        .select("*")
-        .eq("status", "verified_pending_admin")
-        .order("created_at", { ascending: false }) as any);
-
-      if (!error && data) {
-        setRecoveryRequests(data as RecoveryRequest[]);
-      }
+      const { getRecoveryRequests } = await import("../../features/auth/services/auth.service");
+      const data = await getRecoveryRequests();
+      setRecoveryRequests(data as any);
     } catch (_) {
       // Table may not be migrated yet
     } finally {
@@ -158,35 +152,8 @@ export default function AdminDashboardPage() {
   const handleApproveReset = async (request: RecoveryRequest) => {
     setActionId(request.id);
     try {
-      // Call Supabase Edge Function admin-approve-password-reset
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-approve-password-reset`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ requestId: request.id, action: "approve" }),
-        }
-      );
-
-      if (!res.ok) {
-        // Fallback: If edge function is not deployed yet, send standard reset email
-        const { error: resetErr } = await supabase.auth.resetPasswordForEmail(request.email, {
-          redirectTo: `${window.location.origin}/update-password`,
-        });
-        if (resetErr) throw resetErr;
-
-        await (supabase
-          .from("password_recovery_requests" as any)
-          .update({ status: "approved" } as any)
-          .eq("id", request.id) as any);
-      }
-
+      const { adminApproveReset } = await import("../../features/auth/services/auth.service");
+      await adminApproveReset(request.id);
       alert(`Password reset for ${request.email} approved and reset email sent!`);
       setRecoveryRequests((prev) => prev.filter((r) => r.id !== request.id));
     } catch (err: any) {
@@ -199,11 +166,8 @@ export default function AdminDashboardPage() {
   const handleRejectReset = async (requestId: string) => {
     setActionId(requestId);
     try {
-      await (supabase
-        .from("password_recovery_requests" as any)
-        .update({ status: "rejected" } as any)
-        .eq("id", requestId) as any);
-
+      const { adminRejectReset } = await import("../../features/auth/services/auth.service");
+      await adminRejectReset(requestId);
       setRecoveryRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (err: any) {
       alert("Error rejecting reset: " + err.message);

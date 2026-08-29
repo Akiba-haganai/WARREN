@@ -12,28 +12,29 @@ export default function PrivacyPage() {
             This Privacy Policy explains how your personal information is collected,
             used, and disclosed by Wave.
           </p>
-          <h3>Information We Collect</h3>
+          <h3>1. Information We Collect</h3>
           <p>
-            We collect information you provide directly to us, such as when you
-            create an account, post content, or communicate with other users.
-            This may include your email address, username, and profile information.
+            We collect information you provide directly to us when using Wave, such as when you create an account, complete your profile, post questions, upload study resources, participate in communities, or send messages. This may include your email address, chosen username, and profile details.
           </p>
-          <h3>How We Use Your Information</h3>
+          <h3>2. How We Use Your Information</h3>
           <p>
-            We use your information to operate, maintain, and improve our services,
-            to communicate with you, and to personalise your experience.
+            We use collected information solely to provide, maintain, and improve our services, facilitate peer-to-peer student study interactions, personalize community recommendations, and safeguard against bot spam or abusive behavior.
           </p>
-          <h3>Third‑Party Services</h3>
+          <h3>3. Advertising & Cookies</h3>
           <p>
-            Wave uses Google AdSense to display advertisements. AdSense may use
-            cookies to serve ads based on your prior visits to our website or other
-            websites. You can opt out of personalised advertising by visiting
-            Google's Ads Settings.
+            Wave may use third-party advertising partners such as Google AdSense to serve non-intrusive advertisements to help support our zero-budget server hosting costs. Google and third-party vendors use cookies to serve ads based on user visits to this or other websites. Users may opt out of personalized advertising by visiting Google's Ads Settings or <a href="https://aboutads.info" target="_blank" rel="noopener noreferrer" className="underline">aboutads.info</a>.
           </p>
-          <h3>Contact</h3>
+          <h3>4. Data Storage & Security</h3>
           <p>
-            If you have any questions about this Privacy Policy, please contact us
-            at support@warren.app.
+            We implement security best practices to protect your information against unauthorized access. We do not sell, rent, or trade your personal data to third parties.
+          </p>
+          <h3>5. Account Deletion & Data Rights</h3>
+          <p>
+            You have the right to request deletion of your account and associated personal data at any time. You can initiate a deletion request through the app settings or by contacting us directly.
+          </p>
+          <h3>6. Contact</h3>
+          <p>
+            If you have any questions or privacy concerns, please contact our team at <strong>support@warren.app</strong>.
           </p>
         </div>
       </div>

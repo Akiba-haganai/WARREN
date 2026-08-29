@@ -6,61 +6,61 @@ import type { Community, CommunityType } from "../../types/community";
 import { COMMUNITY_GRADIENTS } from "../../features/communities/utils/communityColors";
 import { CheckCircle, Loader2, ChevronRight, Layers, Users } from "lucide-react";
 
-// ─── CBU School Presets ─────────────────────────────────────────────────────────
-export const CBU_SCHOOL_PRESETS = [
+// ─── School Presets ─────────────────────────────────────────────────────────
+export const SCHOOL_PRESETS = [
   {
     name: "School of Natural Resources",
     shortName: "SNR",
-    description: "Agriculture, environmental science, forestry, and natural resource management at CBU.",
+    description: "Agriculture, environmental science, forestry, and natural resource management.",
     icon: "🌿",
     cover_color: "from-emerald-600 via-teal-600 to-cyan-700",
   },
   {
     name: "School of Engineering",
     shortName: "SOE",
-    description: "Civil, mechanical, electrical, and chemical engineering programs at CBU.",
+    description: "Civil, mechanical, electrical, and chemical engineering programs.",
     icon: "⚙️",
     cover_color: "from-slate-600 via-blue-700 to-indigo-800",
   },
   {
     name: "School of Business",
     shortName: "SOB",
-    description: "Accounting, finance, marketing, management, and entrepreneurship at CBU.",
+    description: "Accounting, finance, marketing, management, and entrepreneurship.",
     icon: "💼",
     cover_color: "from-amber-500 via-orange-600 to-red-600",
   },
   {
     name: "School of Humanities and Social Sciences",
     shortName: "SHSS",
-    description: "Languages, literature, philosophy, sociology, and social sciences at CBU.",
+    description: "Languages, literature, philosophy, sociology, and social sciences.",
     icon: "📖",
     cover_color: "from-violet-600 via-purple-600 to-pink-600",
   },
   {
     name: "School of Law",
     shortName: "SOL",
-    description: "Legal studies, criminal law, commercial law, and jurisprudence at CBU.",
+    description: "Legal studies, criminal law, commercial law, and jurisprudence.",
     icon: "⚖️",
     cover_color: "from-indigo-700 via-blue-700 to-cyan-600",
   },
   {
     name: "School of Mines and Natural Sciences",
     shortName: "SMNS",
-    description: "Mining engineering, geology, chemistry, mathematics, and physics at CBU.",
+    description: "Mining engineering, geology, chemistry, mathematics, and physics.",
     icon: "⛏️",
     cover_color: "from-stone-600 via-amber-700 to-yellow-700",
   },
   {
     name: "School of Medicine",
     shortName: "SOM",
-    description: "Medicine, nursing, public health, and biomedical sciences at CBU.",
+    description: "Medicine, nursing, public health, and biomedical sciences.",
     icon: "🏥",
     cover_color: "from-red-600 via-rose-600 to-pink-600",
   },
   {
     name: "School of ICT",
     shortName: "SICT",
-    description: "Computer science, information systems, software engineering, and cybersecurity at CBU.",
+    description: "Computer science, information systems, software engineering, and cybersecurity.",
     icon: "💻",
     cover_color: "from-blue-600 via-cyan-600 to-teal-500",
   },
@@ -90,9 +90,9 @@ export default function CreateCommunityPage() {
   const [parents, setParents] = useState<Community[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"manual" | "cbu">("manual");
+  const [activeTab, setActiveTab] = useState<"manual" | "presets">("manual");
 
-  // CBU batch creation state
+  // School preset batch creation state
   const [createdSchools, setCreatedSchools] = useState<Set<string>>(new Set());
   const [creatingSchool, setCreatingSchool] = useState<string | null>(null);
 
@@ -102,7 +102,7 @@ export default function CreateCommunityPage() {
       // Mark already created schools
       const created = new Set<string>();
       existing.forEach(c => {
-        const match = CBU_SCHOOL_PRESETS.find(p => p.name === c.name);
+        const match = SCHOOL_PRESETS.find(p => p.name === c.name);
         if (match) created.add(match.shortName);
       });
       setCreatedSchools(created);
@@ -153,7 +153,7 @@ export default function CreateCommunityPage() {
     }
   };
 
-  const handleCreateSchool = async (preset: typeof CBU_SCHOOL_PRESETS[0]) => {
+  const handleCreateSchool = async (preset: typeof SCHOOL_PRESETS[0]) => {
     if (createdSchools.has(preset.shortName)) return;
     setCreatingSchool(preset.shortName);
     try {
@@ -181,14 +181,14 @@ export default function CreateCommunityPage() {
   };
 
   const handleCreateAllSchools = async () => {
-    for (const preset of CBU_SCHOOL_PRESETS) {
+    for (const preset of SCHOOL_PRESETS) {
       if (!createdSchools.has(preset.shortName)) {
         await handleCreateSchool(preset);
       }
     }
   };
 
-  const allCreated = CBU_SCHOOL_PRESETS.every(p => createdSchools.has(p.shortName));
+  const allCreated = SCHOOL_PRESETS.every(p => createdSchools.has(p.shortName));
 
   return (
     <AppShell>
@@ -216,26 +216,26 @@ export default function CreateCommunityPage() {
                 Manual
               </button>
               <button
-                onClick={() => setActiveTab("cbu")}
+                onClick={() => setActiveTab("presets")}
                 className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                  activeTab === "cbu"
+                  activeTab === "presets"
                     ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white"
                     : "text-slate-500"
                 }`}
               >
-                🎓 CBU Schools
+                🎓 School Presets
               </button>
             </div>
           </div>
         )}
 
-        {/* ─── CBU Quick-Create Tab ───────────────────────────────────── */}
-        {activeTab === "cbu" && !isEdit && (
+        {/* ─── School Presets Quick-Create Tab ───────────────────────────────────── */}
+        {activeTab === "presets" && !isEdit && (
           <div className="px-4 space-y-3">
             <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 text-white mb-2">
-              <h2 className="font-bold text-base mb-1">Copperbelt University Schools</h2>
+              <h2 className="font-bold text-base mb-1">School Communities</h2>
               <p className="text-xs opacity-85">
-                Create all 8 CBU school communities at once, or pick individual schools. Each creates a parent educational community.
+                Create all 8 school communities at once, or pick individual schools. Each creates a parent educational community.
               </p>
               {!allCreated && (
                 <button
@@ -254,7 +254,7 @@ export default function CreateCommunityPage() {
               )}
             </div>
 
-            {CBU_SCHOOL_PRESETS.map(preset => {
+            {SCHOOL_PRESETS.map(preset => {
               const isDone = createdSchools.has(preset.shortName);
               const isCreating = creatingSchool === preset.shortName;
               return (
@@ -394,7 +394,7 @@ export default function CreateCommunityPage() {
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="e.g. SOE – Year 1, CBU Football Club…"
+                placeholder="e.g. SOE – Year 1, Engineering Football Club…"
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
               />
             </div>

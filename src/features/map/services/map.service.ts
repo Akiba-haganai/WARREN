@@ -23,7 +23,9 @@ export interface CreateMapPinParams {
 }
 
 export async function createPin(params: CreateMapPinParams): Promise<MapPin> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const userId = user?.id;
   const { data, error } = await supabase
     .from("map_pins")
@@ -38,6 +40,37 @@ export async function createPin(params: CreateMapPinParams): Promise<MapPin> {
       hours: params.hours,
       contact: params.contact,
       created_by: userId,
+      review_status: "published",
+      is_verified: true,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as MapPin;
+}
+
+export async function suggestPin(params: CreateMapPinParams): Promise<MapPin> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const userId = user?.id;
+  if (!userId) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase
+    .from("map_pins")
+    .insert({
+      title: params.title,
+      description: params.description,
+      category: params.category,
+      x_percent: params.x_percent,
+      y_percent: params.y_percent,
+      photos: params.photos ?? [],
+      floor: params.floor,
+      hours: params.hours,
+      contact: params.contact,
+      created_by: userId,
+      review_status: "pending",
+      is_verified: false,
     })
     .select()
     .single();
@@ -51,12 +84,7 @@ export interface UpdateMapPinParams extends Partial<CreateMapPinParams> {
 
 export async function updatePin(params: UpdateMapPinParams): Promise<MapPin> {
   const { id, ...rest } = params;
-  const { data, error } = await supabase
-    .from("map_pins")
-    .update({ ...rest })
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await supabase.from("map_pins").update({ ...rest }).eq("id", id).select().single();
   if (error) throw error;
   return data as MapPin;
 }
@@ -64,4 +92,38 @@ export async function updatePin(params: UpdateMapPinParams): Promise<MapPin> {
 export async function deletePin(id: string): Promise<void> {
   const { error } = await supabase.from("map_pins").delete().eq("id", id);
   if (error) throw error;
+}
+
+// ─── Moderation ────────────────────────────────────────────────────────────
+export type PendingMapPin = MapPin & { suggester_username?: string | null };
+
+export async function fetchPendingPins(): Promise<PendingMapPin[]> {
+  const { data, error } = await supabase
+    .from("map_pins")
+    .select(`*, profiles:created_by (username)`)
+    .eq("review_status", "pending")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((p: any) => ({
+    ...p,
+    suggester_username: p.profiles?.username ?? null,
+  }));
+}
+
+export async function approvePin(pinId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("approve_pin", { p_pin_id: pinId });
+  if (error) {
+    console.warn("Failed to approve pin", error);
+    return false;
+  }
+  return Boolean(data);
+}
+
+export async function rejectPin(pinId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("reject_pin", { p_pin_id: pinId });
+  if (error) {
+    console.warn("Failed to reject pin", error);
+    return false;
+  }
+  return Boolean(data);
 }

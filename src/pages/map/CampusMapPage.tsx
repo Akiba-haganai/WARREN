@@ -1,8 +1,5 @@
-
-
 import { useEffect } from "react";
 import { Search, X, Plus } from "lucide-react";
-
 import { useSearchParams } from "react-router-dom";
 
 import AppShell from "../../components/layout/AppShell";
@@ -11,9 +8,10 @@ import { CampusMap } from "../../features/map/components/CampusMap";
 import { PinForm } from "../../features/map/components/PinForm";
 import { QuickActions } from "../../features/map/components/QuickActions";
 import { CategoryFilter } from "../../features/map/components/CategoryFilter";
+import { ModerationPanel } from "../../features/map/components/ModerationPanel";
+import { SuggestLocationForm } from "../../features/map/components/SuggestLocationForm";
 import type { PinFormData } from "../../features/map/components/PinForm";
 import type { MapPin } from "../../types/map";
-import { useGeolocation } from "../../features/map/hooks/useGeolocation";
 
 const FIRST_DAY_PIN_IDS = [
   "b1a2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -24,9 +22,6 @@ const FIRST_DAY_PIN_IDS = [
 ] as const;
 // Used by the first-day walkthrough (planned). Keep it referenced to satisfy TS/noUnusedLocals.
 void FIRST_DAY_PIN_IDS;
-
-
-
 
 export default function CampusMapPage() {
   const {
@@ -47,9 +42,7 @@ export default function CampusMapPage() {
     setActivePin,
   } = useCampusMap();
 
-
   const [searchParams] = useSearchParams();
-  const geo = useGeolocation();
 
   // Deep link: open pin from URL ?pin=<id>
   useEffect(() => {
@@ -58,10 +51,6 @@ export default function CampusMapPage() {
     const pin = pins.find((p) => p.id === pinId);
     if (pin) setActivePin(pin);
   }, [searchParams, pins, setActivePin]);
-
-  // When the user finishes placing a pin, the store will have pendingCoords and showForm = true
-
-  // (usePinPlacement calls openForm() which sets showForm true). So no extra useEffect needed.
 
   const handleSave = async (data: PinFormData) => {
     try {
@@ -79,9 +68,8 @@ export default function CampusMapPage() {
   };
 
   const handleRequestPlace = () => {
-    // Enter placing mode: close form, enable map click
-    closeForm(); // hide form
-    setPlacingMode(true); // map will now interpret clicks as placement
+    closeForm();
+    setPlacingMode(true);
   };
 
   const handleEdit = (pin: MapPin) => {
@@ -102,21 +90,30 @@ export default function CampusMapPage() {
     <AppShell>
       <div className="flex flex-col h-full relative" style={{ minHeight: "100dvh" }}>
         {/* Header */}
-        {/* Walkthrough / sharing / suggestions UI are shown on top of the map drawer */}
-
         <div className="px-4 pt-4 pb-2 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 z-20">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">Campus Map</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Find any office or service on campus</p>
             </div>
-            {canManage && (
+            {canManage ? (
+              <div className="flex items-center gap-2">
+                <ModerationPanel />
+                <button
+                  onClick={() => openForm()}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-sm transition-all"
+                >
+                  <Plus size={14} />
+                  Add Location
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={() => openForm()}
+                onClick={handleRequestPlace}
                 className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-sm transition-all"
               >
                 <Plus size={14} />
-                Add Location
+                Suggest Location
               </button>
             )}
           </div>
@@ -150,12 +147,10 @@ export default function CampusMapPage() {
           canManage={canManage}
           onEditPin={handleEdit}
           onDeletePin={handleDelete}
-          userPosition={geo.lat && geo.lng ? { lat: geo.lat, lng: geo.lng } : null}
         />
 
-
-        {/* PinForm drawer */}
-        {showForm && (
+        {/* PinForm drawer for admins / editing */}
+        {showForm && canManage && (
           <PinForm
             initial={
               editingPin
@@ -176,6 +171,19 @@ export default function CampusMapPage() {
             onSave={handleSave}
             onCancel={closeForm}
             onRequestPlace={handleRequestPlace}
+          />
+        )}
+
+        {/* SuggestLocationForm drawer for non-admin students */}
+        {showForm && !canManage && (
+          <SuggestLocationForm
+            x_percent={pendingCoords?.x ?? 50}
+            y_percent={pendingCoords?.y ?? 50}
+            onSaved={() => {
+              closeForm();
+              showToast("Suggestion submitted for review!", "ok");
+            }}
+            onCancel={closeForm}
           />
         )}
       </div>

@@ -37,6 +37,7 @@ import { useLeaderboard } from "../../features/study/hooks/useLeaderboard";
 import { RequestForm } from "../../features/study/components/RequestForm";
 import type { StudyMaterial } from "../../features/study/services/study.service";
 import { StudyGroupsSection } from "../../features/study/components/StudyGroupsSections";
+import { BountyBoard } from "../../features/study/components/BountyBoard";
 
 export default function StudyPage() {
   const navigate = useNavigate();
@@ -135,6 +136,12 @@ export default function StudyPage() {
           onChange={setSearch}
           onClear={() => setSearch("")}
         />
+
+        {/* Paper Bounties */}
+        <div className="mb-6">
+          <h2 className="text-lg font-bold mb-2">💰 Paper Bounties</h2>
+          <BountyBoard />
+        </div>
 
         {/* Exam Question Bank toggle */}
         <button

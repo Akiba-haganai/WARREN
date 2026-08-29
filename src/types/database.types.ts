@@ -1089,6 +1089,10 @@ export type Database = {
           title: string
           x_percent: number
           y_percent: number
+          review_status: "pending" | "published" | "rejected"
+          is_verified: boolean
+          operational_status: "open" | "closed_temporarily" | "quiet_zone" | "event_active"
+          operational_note: string | null
         }
         Insert: {
           category?: Database["public"]["Enums"]["pin_category"]
@@ -1104,6 +1108,10 @@ export type Database = {
           title: string
           x_percent: number
           y_percent: number
+          review_status?: "pending" | "published" | "rejected"
+          is_verified?: boolean
+          operational_status?: "open" | "closed_temporarily" | "quiet_zone" | "event_active"
+          operational_note?: string | null
         }
         Update: {
           category?: Database["public"]["Enums"]["pin_category"]
@@ -1119,6 +1127,10 @@ export type Database = {
           title?: string
           x_percent?: number
           y_percent?: number
+          review_status?: "pending" | "published" | "rejected"
+          is_verified?: boolean
+          operational_status?: "open" | "closed_temporarily" | "quiet_zone" | "event_active"
+          operational_note?: string | null
         }
         Relationships: [
           {
@@ -1128,6 +1140,45 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      pin_vibe_reports: {
+        Row: {
+          pin_id: string
+          user_id: string
+          noise_level: "quiet" | "chatty" | "loud"
+          crowd_level: "empty" | "moderate" | "packed"
+          reported_at: string
+        }
+        Insert: {
+          pin_id: string
+          user_id: string
+          noise_level: "quiet" | "chatty" | "loud"
+          crowd_level: "empty" | "moderate" | "packed"
+          reported_at?: string
+        }
+        Update: {
+          pin_id?: string
+          user_id?: string
+          noise_level?: "quiet" | "chatty" | "loud"
+          crowd_level?: "empty" | "moderate" | "packed"
+          reported_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pin_vibe_reports_pin_id_fkey"
+            columns: ["pin_id"]
+            isOneToOne: false
+            referencedRelation: "map_pins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pin_vibe_reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
       material_edits: {
@@ -2564,6 +2615,148 @@ export type Database = {
           },
         ]
       }
+      paper_bounties: {
+        Row: {
+          id: string
+          course_code: string
+          academic_year: string
+          paper_type: string
+          bounty_karma: number
+          status: "open" | "fulfilled" | "closed"
+          created_by: string
+          fulfilled_material_id: string | null
+          fulfilled_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          course_code: string
+          academic_year: string
+          paper_type: string
+          bounty_karma?: number
+          status?: "open" | "fulfilled" | "closed"
+          created_by: string
+          fulfilled_material_id?: string | null
+          fulfilled_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          course_code?: string
+          academic_year?: string
+          paper_type?: string
+          bounty_karma?: number
+          status?: "open" | "fulfilled" | "closed"
+          created_by?: string
+          fulfilled_material_id?: string | null
+          fulfilled_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_bounties_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_bounties_fulfilled_by_fkey"
+            columns: ["fulfilled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_bounties_fulfilled_material_id_fkey"
+            columns: ["fulfilled_material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      paper_solutions: {
+        Row: {
+          id: string
+          material_id: string
+          question_number: string
+          solution_text: string
+          author_id: string
+          upvotes_count: number
+          is_lecturer_verified: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          material_id: string
+          question_number: string
+          solution_text: string
+          author_id: string
+          upvotes_count?: number
+          is_lecturer_verified?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          material_id?: string
+          question_number?: string
+          solution_text?: string
+          author_id?: string
+          upvotes_count?: number
+          is_lecturer_verified?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_solutions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_solutions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      solution_upvotes: {
+        Row: {
+          solution_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          solution_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          solution_id?: string
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_upvotes_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "paper_solutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_upvotes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       tutor_ranking: {
@@ -2587,6 +2780,34 @@ export type Database = {
       }
     }
     Functions: {
+      approve_pin: {
+        Args: { p_pin_id: string }
+        Returns: boolean
+      }
+      reject_pin: {
+        Args: { p_pin_id: string }
+        Returns: boolean
+      }
+      is_staff: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
+      spend_credits: {
+        Args: { p_user_id: string; p_material_id: string }
+        Returns: boolean
+      }
+      award_credits: {
+        Args: { p_user_id: string; p_amount: number }
+        Returns: undefined
+      }
+      toggle_solution_upvote: {
+        Args: { p_solution_id: string }
+        Returns: boolean
+      }
+      fulfill_bounty: {
+        Args: { p_bounty_id: string; p_material_id: string }
+        Returns: boolean
+      }
       get_password_recovery_challenge: {
         Args: { p_email: string }
         Returns: Json

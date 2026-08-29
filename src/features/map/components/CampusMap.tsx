@@ -7,7 +7,6 @@ import { MarkerLayer } from "./MarkerLayer";
 import { ZoomControls } from "./ZoomControls";
 import { SearchResults } from "./SearchResults";
 import { PinDrawer } from "./PinDrawer";
-
 import { MapToast } from "./MapToast";
 import type { MapPin as MapPinType } from "../../../types/map";
 
@@ -15,16 +14,9 @@ interface Props {
   canManage: boolean;
   onEditPin: (pin: MapPinType) => void;
   onDeletePin: (id: string) => void;
-  userPosition?: { lat: number; lng: number } | null;
 }
 
-
-
-export function CampusMap({ canManage, onEditPin, onDeletePin, userPosition }: Props) {
-  void userPosition;
-
-
-  // Direct store reads (we keep these here because they are UI state only)
+export function CampusMap({ canManage, onEditPin, onDeletePin }: Props) {
   const pins = useMapStore((s) => s.pins);
   const activePin = useMapStore((s) => s.activePin);
   const setActivePin = useMapStore((s) => s.setActivePin);
@@ -96,8 +88,6 @@ export function CampusMap({ canManage, onEditPin, onDeletePin, userPosition }: P
             filteredIds={new Set(filteredPins.map((p) => p.id))}
             onPinClick={handlePinClick}
           />
-          {/* userPosition blue dot would require mapping lat/lng -> map pixel coords; pins currently use x_percent/y_percent */}
-
         </div>
       </div>
 

@@ -20,15 +20,11 @@ export function useStudyMaterials() {
 
   const materialsQuery = useInfiniteQuery({
     queryKey: ["studyMaterials", filters],
-    // Fix #9: pageParam is now an offset into the DB result set.
-    // Previously the queryFn fetched ALL records then sliced client-side,
-    // meaning every page request transferred the entire table over the wire.
     queryFn: async ({ pageParam = 0 }) => {
       const offset = (pageParam as number) * PAGE_SIZE;
       const data = await fetchStudyMaterials(filters, PAGE_SIZE, offset);
       return {
         data,
-        // If we got a full page, there may be more; otherwise we're at the end.
         nextCursor: data.length === PAGE_SIZE ? (pageParam as number) + 1 : undefined,
       };
     },
@@ -62,15 +58,20 @@ export function useStudyMaterials() {
   };
 }
 
+// Fixed: this used to call fetchTrendingMaterials(20) on every page and
+// slice a fixed 20-row pool client-side, so infinite scroll silently
+// dead-ended after 20 items no matter how many materials were actually
+// trending. It now asks the server for the next page directly, the same
+// way useStudyMaterials does, so pagination has no artificial ceiling.
 export function useTrendingMaterials() {
   return useInfiniteQuery({
     queryKey: ["trendingMaterials"],
     queryFn: async ({ pageParam = 0 }) => {
-      const all = await fetchTrendingMaterials(20);
-      const start = (pageParam as number) * PAGE_SIZE;
+      const offset = (pageParam as number) * PAGE_SIZE;
+      const data = await fetchTrendingMaterials(PAGE_SIZE, offset);
       return {
-        data: all.slice(start, start + PAGE_SIZE),
-        nextCursor: all.length > start + PAGE_SIZE ? (pageParam as number) + 1 : undefined,
+        data,
+        nextCursor: data.length === PAGE_SIZE ? (pageParam as number) + 1 : undefined,
       };
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor,

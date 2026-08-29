@@ -6,6 +6,7 @@ import { useAuthStore } from "../../../store/authStore";
 import { reportMaterial } from "../../../services/reportService";
 import { uploadNewVersion } from "../services/study.service";
 import { supabase } from "../../../lib/supabase";
+import { SolutionsList } from "./SolutionsList";
 
 interface Props {
   material: StudyMaterial;
@@ -186,6 +187,11 @@ export function MaterialDrawer({
               </button>
             </>
           )}
+
+          {/* Solutions List */}
+          <div className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <SolutionsList materialId={material.id} />
+          </div>
 
           {/* Related Materials */}
           {relatedMaterials && relatedMaterials.length > 0 && (

@@ -1,7 +1,7 @@
 /**
- * CBU Community Seeder
+ * Campus Community Seeder
  * ─────────────────────
- * Creates all CBU school parent communities and their year-group sub-communities.
+ * Creates all school parent communities and their year-group sub-communities.
  *
  * Run with:
  *   node scripts/seed-cbu-communities.mjs
@@ -38,13 +38,13 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ─── CBU School Definitions ─────────────────────────────────────────────────────
+// ─── School Definitions ─────────────────────────────────────────────────────
 
-const CBU_SCHOOLS = [
+const SCHOOLS = [
   {
     name: "School of Natural Resources",
     shortName: "SNR",
-    description: "Agriculture, environmental science, forestry, and natural resource management at CBU.",
+    description: "Agriculture, environmental science, forestry, and natural resource management.",
     icon: "🌿",
     cover_color: "from-emerald-600 via-teal-600 to-cyan-700",
     departments: ["Agriculture", "Forestry", "Environmental Science", "Wildlife Management"],
@@ -52,7 +52,7 @@ const CBU_SCHOOLS = [
   {
     name: "School of Engineering",
     shortName: "SOE",
-    description: "Civil, mechanical, electrical, and chemical engineering programs at CBU.",
+    description: "Civil, mechanical, electrical, and chemical engineering programs.",
     icon: "⚙️",
     cover_color: "from-slate-600 via-blue-700 to-indigo-800",
     departments: ["Civil Engineering", "Mechanical Engineering", "Electrical Engineering", "Chemical Engineering"],
@@ -60,7 +60,7 @@ const CBU_SCHOOLS = [
   {
     name: "School of Business",
     shortName: "SOB",
-    description: "Accounting, finance, marketing, management, and entrepreneurship at CBU.",
+    description: "Accounting, finance, marketing, management, and entrepreneurship.",
     icon: "💼",
     cover_color: "from-amber-500 via-orange-600 to-red-600",
     departments: ["Accounting", "Finance", "Marketing", "Management Studies", "Entrepreneurship"],
@@ -68,7 +68,7 @@ const CBU_SCHOOLS = [
   {
     name: "School of Humanities and Social Sciences",
     shortName: "SHSS",
-    description: "Languages, literature, philosophy, sociology, and social sciences at CBU.",
+    description: "Languages, literature, philosophy, sociology, and social sciences.",
     icon: "📖",
     cover_color: "from-violet-600 via-purple-600 to-pink-600",
     departments: ["English Literature", "Philosophy", "Sociology", "History", "Media Studies"],
@@ -76,7 +76,7 @@ const CBU_SCHOOLS = [
   {
     name: "School of Law",
     shortName: "SOL",
-    description: "Legal studies, criminal law, commercial law, and jurisprudence at CBU.",
+    description: "Legal studies, criminal law, commercial law, and jurisprudence.",
     icon: "⚖️",
     cover_color: "from-blue-800 via-indigo-700 to-violet-700",
     departments: ["Criminal Law", "Commercial Law", "Constitutional Law", "International Law"],
@@ -84,7 +84,7 @@ const CBU_SCHOOLS = [
   {
     name: "School of Mines and Natural Sciences",
     shortName: "SMNS",
-    description: "Mining engineering, geology, chemistry, mathematics, and physics at CBU.",
+    description: "Mining engineering, geology, chemistry, mathematics, and physics.",
     icon: "⛏️",
     cover_color: "from-stone-600 via-amber-700 to-yellow-700",
     departments: ["Mining Engineering", "Geology", "Chemistry", "Mathematics", "Physics"],
@@ -92,7 +92,7 @@ const CBU_SCHOOLS = [
   {
     name: "School of Medicine",
     shortName: "SOM",
-    description: "Medicine, nursing, public health, and biomedical sciences at CBU.",
+    description: "Medicine, nursing, public health, and biomedical sciences.",
     icon: "🏥",
     cover_color: "from-red-600 via-rose-600 to-pink-600",
     departments: ["Medicine & Surgery", "Nursing", "Public Health", "Biomedical Sciences", "Pharmacy"],
@@ -100,7 +100,7 @@ const CBU_SCHOOLS = [
   {
     name: "School of ICT",
     shortName: "SICT",
-    description: "Computer science, information systems, software engineering, and cybersecurity at CBU.",
+    description: "Computer science, information systems, software engineering, and cybersecurity.",
     icon: "💻",
     cover_color: "from-blue-600 via-cyan-600 to-teal-500",
     departments: ["Computer Science", "Information Systems", "Software Engineering", "Cybersecurity", "Data Science"],
@@ -153,7 +153,7 @@ async function autoJoin(communityId, userId) {
 // ─── Main Seeder ────────────────────────────────────────────────────────────────
 
 async function seed() {
-  console.log("🎓 CBU Community Seeder Starting...\n");
+  console.log("🎓 Campus Community Seeder Starting...\n");
 
   // Auth
   let userId;
@@ -178,7 +178,7 @@ async function seed() {
   let schoolsCreated = 0;
   let subCommunitiesCreated = 0;
 
-  for (const school of CBU_SCHOOLS) {
+  for (const school of SCHOOLS) {
     console.log(`\n🏫 Creating: ${school.name} (${school.shortName})`);
 
     // 1. Create the parent school community (type: educational, no parent_id)
@@ -205,7 +205,7 @@ async function seed() {
       const sub = await createCommunity(
         {
           name: `${school.shortName} – ${year}`,
-          description: `${year} students of the ${school.name} at CBU. Share notes, ask questions, and collaborate.`,
+          description: `${year} students of the ${school.name}. Share notes, ask questions, and collaborate.`,
           icon: school.icon,
           cover_color: YEAR_COLORS[year],
           type: "educational",
@@ -226,7 +226,7 @@ async function seed() {
       const sub = await createCommunity(
         {
           name: `${dept} – ${school.shortName}`,
-          description: `${dept} students and staff of the ${school.name} at CBU.`,
+          description: `${dept} students and staff of the ${school.name}.`,
           icon: school.icon,
           cover_color: school.cover_color,
           type: "educational",
@@ -243,12 +243,12 @@ async function seed() {
     }
   }
 
-  // 4. General social community for CBU
-  console.log("\n🏠 Creating CBU General Community...");
+  // 4. General social community
+  console.log("\n🏠 Creating General Communities...");
   const general = await createCommunity(
     {
-      name: "CBU General",
-      description: "The main campus-wide community for all Copperbelt University students. Campus news, events, and general chat.",
+      name: "Campus General",
+      description: "The main campus-wide community for all university students. Campus news, events, and general chat.",
       icon: "🎓",
       cover_color: "from-indigo-700 via-blue-700 to-cyan-600",
       type: "social",
@@ -263,8 +263,8 @@ async function seed() {
 
   const offTopic = await createCommunity(
     {
-      name: "CBU Off-Topic & Fun",
-      description: "Memes, fun, campus life, hostel talk, and everything non-academic for CBU students.",
+      name: "Campus Off-Topic & Fun",
+      description: "Memes, fun, campus life, hostel talk, and everything non-academic for students.",
       icon: "🎉",
       cover_color: "from-rose-500 via-purple-600 to-indigo-700",
       type: "social",

@@ -25,6 +25,23 @@ function normalizeMaterial(item: any): StudyMaterial {
   };
 }
 
+// PostgREST treats , . ( ) as syntax characters inside a filter value.
+// Wrapping the value in double quotes tells PostgREST to treat it as a
+// literal string; embedded backslashes/quotes must be escaped first.
+// This is safe to use around ilike patterns — the % wildcards inside the
+// quoted string are still interpreted normally by ILIKE at the SQL level.
+function escapeFilterValue(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+// tags.cs.{...} uses Postgres array-literal syntax, where { } and , are
+// reserved. A search "word" typed by a user could still contain these
+// (e.g. no space between tokens), so strip anything unsafe for a single
+// array element rather than trying to escape it.
+function escapeTagValue(value: string): string {
+  return value.replace(/[{},]/g, "");
+}
+
 // ─── Core fetch ──────────────────────────────────────────────────────────
 export async function fetchStudyMaterials(
   filters: StudyFilters = {},
@@ -36,15 +53,16 @@ export async function fetchStudyMaterials(
     .select(`*, profiles:uploaded_by (username, avatar_url)`)
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false })
-    // Fix #9: server-side pagination — previously this function fetched ALL
-    // rows and sliced them client-side, defeating the purpose of useInfiniteQuery.
     .range(offset, offset + limit - 1);
 
   if (filters.search) {
-    const keywords = filters.search.trim().split(/\s+/);
+    const keywords = filters.search.trim().split(/\s+/).filter(Boolean);
     keywords.forEach((word) => {
+      const pattern = escapeFilterValue(`%${word}%`);
+      const tagWord = escapeTagValue(word);
+      const tagClause = tagWord ? `,tags.cs.{${tagWord}}` : "";
       query = query.or(
-        `title.ilike.%${word}%,description.ilike.%${word}%,subject.ilike.%${word}%,tags.cs.{${word}}`
+        `title.ilike.${pattern},description.ilike.${pattern},subject.ilike.${pattern}${tagClause}`
       );
     });
   }
@@ -81,13 +99,15 @@ export async function fetchRelatedMaterials(material: StudyMaterial, limit = 5):
 }
 
 // ─── Trending ─────────────────────────────────────────────────────────────
-export async function fetchTrendingMaterials(limit = 10): Promise<StudyMaterial[]> {
+// Now paginated server-side via range() instead of always fetching the same
+// fixed pool of 20 rows and slicing client-side. See useTrendingMaterials.
+export async function fetchTrendingMaterials(limit = 10, offset = 0): Promise<StudyMaterial[]> {
   const { data, error } = await supabase
     .from("study_materials")
     .select(`*, profiles:uploaded_by (username, avatar_url)`)
     .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
     .order("trending_score", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
   if (error) throw error;
   return (data ?? []).map(normalizeMaterial);
 }
@@ -173,7 +193,6 @@ export async function recordMaterialView(userId: string, materialId: string) {
   }
 }
 
-
 export async function fetchRecentlyViewed(userId: string, limit = 6): Promise<StudyMaterial[]> {
   const { data, error } = await supabase
     .from("material_views")
@@ -207,39 +226,27 @@ export async function fetchStarterPackMaterials(pack: StarterPack): Promise<Stud
 }
 
 // ─── Credits / Premium ───────────────────────────────────────────────────
-/**
- * Award credits to a user in a single DB call.
- * Requires the `increment_credits` RPC in Supabase:
- *   CREATE OR REPLACE FUNCTION increment_credits(p_user_id uuid, p_amount int)
- *   RETURNS void AS $$
- *   BEGIN UPDATE profiles SET credits = credits + p_amount WHERE id = p_user_id; END;
- *   $$ LANGUAGE plpgsql;
- *
- * Falls back to a direct UPDATE so nothing breaks if the RPC hasn't been
- * deployed yet.
- */
+// Both awardCredits and spendCredits now go through single atomic RPCs
+// instead of a client-side read-then-write, which was subject to a race
+// condition (two concurrent calls could both read the same starting
+// balance) and, in spendCredits' case, was calling the wrong RPC entirely
+// and never actually deducting anything — see supabase_fixes.sql.
 export async function awardCredits(userId: string, amount: number) {
   if (amount <= 0) return;
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("credits")
-    .eq("id", userId)
-    .single();
-  if (!profile) return;
-  await supabase
-    .from("profiles")
-    .update({ credits: (profile.credits ?? 0) + amount })
-    .eq("id", userId);
+  const { error } = await supabase.rpc("award_credits", { p_user_id: userId, p_amount: amount });
+  if (error) console.warn("Failed to award credits", error);
 }
 
 export async function spendCredits(userId: string, materialId: string): Promise<boolean> {
-  const { data: profile } = await supabase.from("profiles").select("credits").eq("id", userId).single();
-  const { data: material } = await supabase.from("study_materials").select("premium_cost").eq("id", materialId).single();
-  if (!profile || !material || (profile.credits ?? 0) < (material.premium_cost ?? 0)) return false;
-
-  await supabase.rpc("decrement_vote", { p_post_id: materialId, p_column: "credits" });
-  await supabase.from("unlocked_materials").insert({ user_id: userId, material_id: materialId });
-  return true;
+  const { data, error } = await supabase.rpc("spend_credits", {
+    p_user_id: userId,
+    p_material_id: materialId,
+  });
+  if (error) {
+    console.warn("Failed to spend credits", error);
+    return false;
+  }
+  return Boolean(data);
 }
 
 export async function fetchUnlockedMaterialIds(userId: string): Promise<string[]> {
@@ -267,6 +274,7 @@ export async function uploadNewVersion(materialId: string, fileUrl: string) {
     uploaded_by: user.id,
   });
 }
+
 // ─── Leaderboard ─────────────────────────────────────────────────────────
 export async function fetchLeaderboard(limit = 20) {
   const { data, error } = await supabase
@@ -310,31 +318,20 @@ export async function fetchMaterialRating(materialId: string) {
   return data ?? [];
 }
 
-// ─── Upload Study Material (admin) ────────────────────────────────────────
-/**
- * Award karma to a user in a single DB call.
- * Requires the `increment_karma` RPC in Supabase:
- *   CREATE OR REPLACE FUNCTION increment_karma(p_user_id uuid, p_amount int)
- *   RETURNS void AS $$
- *   BEGIN UPDATE profiles SET karma = karma + p_amount WHERE id = p_user_id; END;
- *   $$ LANGUAGE plpgsql;
- *
- * Falls back to a direct UPDATE so nothing breaks if the RPC hasn't been
- * deployed yet.
- */
+// ─── Upload & Karma ──────────────────────────────────────────────────────
+// Fixed: this used to loop `amount` times, firing one HTTP RPC call per
+// karma point (awarding 50 karma = 50 sequential network requests). The
+// underlying increment() RPC now accepts an `amount` parameter directly
+// (see supabase_fixes.sql), so this is a single atomic call.
 export async function awardKarma(userId: string, amount: number, _reason?: string) {
   if (amount <= 0) return;
-  try {
-    for (let i = 0; i < amount; i++) {
-      await supabase.rpc("increment", {
-        table_name: "profiles",
-        column_name: "karma",
-        row_id: userId,
-      });
-    }
-  } catch {
-    // no-op
-  }
+  const { error } = await supabase.rpc("increment", {
+    table_name: "profiles",
+    column_name: "karma",
+    row_id: userId,
+    amount,
+  });
+  if (error) console.warn("Failed to award karma", error);
 }
 
 export async function uploadStudyMaterial(

@@ -4,6 +4,8 @@ import { X, Pencil, Trash2, Camera, Navigation, ExternalLink, Info } from "lucid
 import type { MapPin as MapPinType } from "../../../types/map";
 import { getCat } from "../utils/categories";
 import { useState } from "react";
+import { VibeReportWidget } from "./VibeReportWidget";
+import { MeetMeHereButton } from "./MeetMeHereButton";
 
 interface Props {
   pin: MapPinType;
@@ -76,14 +78,21 @@ export function PinDrawer({ pin, canManage, onClose, onEdit, onDelete }: Props) 
         </div>
       )}
       {pin.contact && (
-        <div className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400 mb-3">
           <ExternalLink size={13} className="mt-0.5 shrink-0" />
           <a href={`mailto:${pin.contact}`} className="text-blue-600 dark:text-blue-400 underline">{pin.contact}</a>
         </div>
       )}
 
-      {/* Share button + walkthrough CTA hooks are intentionally left to CampusMapPage for now to avoid stale assumptions. */}
+      {/* Share / Meet Me Here */}
+      <div className="mb-3">
+        <MeetMeHereButton pinId={pin.id} pinTitle={pin.title} />
+      </div>
 
+      {/* Vibe & Occupancy Reporting */}
+      <div className="mt-2">
+        <VibeReportWidget pinId={pin.id} />
+      </div>
     </div>
   );
 }

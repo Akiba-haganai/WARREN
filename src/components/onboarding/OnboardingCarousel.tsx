@@ -7,7 +7,7 @@ const SLIDES = [
     icon: GraduationCap,
     title: "Welcome to Wave",
     subtitle: "Connect. Learn. Interact.",
-    description: "The digital home of CBU. Connect, study, and thrive.",
+    description: "Your digital campus hub. Connect, study, and thrive.",
     color: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-50 dark:bg-blue-950/50",
   },
