@@ -22,7 +22,8 @@ export default function App() {
     if (booted.current) return;
     booted.current = true;
     try { localStorage.removeItem("warren-needs-recovery"); } catch (_) {}
-    Promise.allSettled([initAuth(), initTheme(), initA11y()]).finally(() =>
+    initAuth();
+    Promise.allSettled([initTheme(), initA11y()]).finally(() =>
       setReady(true)
     );
   }, [initAuth, initTheme, initA11y]);
