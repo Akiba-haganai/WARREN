@@ -175,7 +175,7 @@ export default function HomePage() {
                     {activePost.image_url && (
                       <img
                         src={activePost.image_url}
-                        alt="Post"
+                        alt={`Post by ${activePost.profiles?.username || 'user'}`}
                         className="w-full max-h-40 object-cover rounded-xl mt-2"
                       />
                     )}

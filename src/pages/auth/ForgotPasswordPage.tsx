@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
@@ -10,6 +11,14 @@ type Question = {
 };
 
 export default function ForgotPasswordPage() {
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, follow';
+    document.head.appendChild(meta);
+    return () => { document.head.removeChild(meta); };
+  }, []);
+
   const [step, setStep] = useState<"email" | "quiz" | "result">("email");
   const [email, setEmail] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);

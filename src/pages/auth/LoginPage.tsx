@@ -1,9 +1,18 @@
+import { useEffect } from 'react';
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useLogin } from "../../features/auth/hooks/useAuth";
 
 export default function LoginPage() {
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, follow';
+    document.head.appendChild(meta);
+    return () => { document.head.removeChild(meta); };
+  }, []);
+
   const navigate = useNavigate();
   const loginMutation = useLogin();
 

@@ -1,9 +1,18 @@
+import { useEffect } from 'react';
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import { useRegister } from "../../features/auth/hooks/useAuth";
 
 export default function RegisterPage() {
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, follow';
+    document.head.appendChild(meta);
+    return () => { document.head.removeChild(meta); };
+  }, []);
+
   const navigate = useNavigate();
   const registerMutation = useRegister();
 

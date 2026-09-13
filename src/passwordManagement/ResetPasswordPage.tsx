@@ -1,7 +1,16 @@
+import { useEffect } from 'react';
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function ResetPasswordPage() {
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, follow';
+    document.head.appendChild(meta);
+    return () => { document.head.removeChild(meta); };
+  }, []);
+
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -67,7 +67,51 @@
     <meta name="keywords" content="Wave, student social network, campus community Zambia, UNZA social network, CBU students, university chat Zambia" />
     <link rel="canonical" href="https://warren-wave.vercel.app" />
     <meta name="robots" content="index, follow" />
-  </head>
+    <link rel="manifest" href="/manifest.webmanifest" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://warren-wave.vercel.app/#website",
+      "url": "https://warren-wave.vercel.app",
+      "name": "Wave",
+      "description": "The premier social network for students. Connect, learn, and interact with peers seamlessly.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://warren-wave.vercel.app/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://warren-wave.vercel.app/#app",
+      "name": "Wave",
+      "url": "https://warren-wave.vercel.app",
+      "applicationCategory": "SocialNetworkingApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "description": "Campus social network for Zambian university students. Connect, collaborate, and interact with peers across UNZA, CBU, and other universities.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "ZMW"
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://warren-wave.vercel.app/#organization",
+      "name": "Wave",
+      "url": "https://warren-wave.vercel.app",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://warren-wave.vercel.app/icons/icon-512.png"
+      }
+    }
+  ]
+}
+</script>
+</head>
   <body>
     <div id="root">
       <header class="sr-only">

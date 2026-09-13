@@ -307,7 +307,7 @@ export default function PostCard({
         >
           <img
             src={post.image_url}
-            alt="Post attachment"
+            alt={`Post by ${displayName || 'user'}`}
             loading="lazy"
             className="w-full h-full object-cover bg-slate-100 dark:bg-slate-800"
           />
