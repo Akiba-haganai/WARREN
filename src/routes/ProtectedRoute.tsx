@@ -12,8 +12,8 @@ export default function ProtectedRoute({
   // IMPORTANT: block rendering until auth is known
   if (loading || loading === undefined) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        Loading...
+      <div className="min-h-screen bg-blue-50 dark:bg-slate-950 text-slate-900 dark:text-white flex items-center justify-center">
+        <div className="h-8 w-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
       </div>
     );
   }

@@ -11,11 +11,28 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
+function getInitialUser(): User | null {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.user) return parsed.user;
+        }
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
 let authSubscription: { data: { subscription: { unsubscribe: () => void } } } | null = null;
+const initialUser = getInitialUser();
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  loading: true,
+  user: initialUser,
+  loading: !initialUser,
 
   initialize: async () => {
     try {

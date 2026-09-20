@@ -5,23 +5,25 @@ import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
 import { useAuthStore } from "../store/authStore";
 
-// Static/legal pages (eager loaded because they're tiny)
-import AboutPage from "../pages/legal/AboutPage";
-import ContactPage from "../pages/legal/ContactPage";
-import PrivacyPage from "../pages/legal/PrivacyPage";
-import TermsPage from "../pages/legal/TermsPage";
+// Eagerly loaded landing page (critical path - avoids route waterfall)
+import HomePage from "../pages/home/HomePage";
 
-// Auth pages (eager loaded)
-import LoginPage from "../pages/auth/LoginPage";
-import RegisterPage from "../pages/auth/RegisterPage";
-import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
-import ResetPasswordPage from "../passwordManagement/ResetPasswordPage";
-import UpdatePasswordPage from "../passwordManagement/UpdatePasswordPage";
+// Lazy loaded legal pages
+const AboutPage = lazy(() => import("../pages/legal/AboutPage"));
+const ContactPage = lazy(() => import("../pages/legal/ContactPage"));
+const PrivacyPage = lazy(() => import("../pages/legal/PrivacyPage"));
+const TermsPage = lazy(() => import("../pages/legal/TermsPage"));
+
+// Lazy loaded auth pages
+const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
+const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("../passwordManagement/ResetPasswordPage"));
+const UpdatePasswordPage = lazy(() => import("../passwordManagement/UpdatePasswordPage"));
 
 // Lazy loaded main pages
 const ManageMaterialRequests = lazy(() => import("../pages/admin/ManageMaterialRequests"));
 const SubjectPage = lazy(() => import("../pages/study/SubjectPage"));
-const HomePage = lazy(() => import("../pages/home/HomePage"));
 const SearchPage = lazy(() => import("../pages/search/SearchPage"));
 const AnnouncementsPage = lazy(() => import("../pages/announcements/AnnouncementsPage"));
 const CommunityPage = lazy(() => import("../pages/community/CommunityPage"));
@@ -104,21 +106,21 @@ export default function AppRouter() {
   return (
     <Routes>
       {/* Legal */}
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/about" element={<Suspense fallback={<PageLoader />}><AboutPage /></Suspense>} />
+      <Route path="/contact" element={<Suspense fallback={<PageLoader />}><ContactPage /></Suspense>} />
+      <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><PrivacyPage /></Suspense>} />
+      <Route path="/terms" element={<Suspense fallback={<PageLoader />}><TermsPage /></Suspense>} />
 
       {/* Auth */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/update-password" element={<UpdatePasswordPage />} />
+      <Route path="/login" element={<Suspense fallback={<PageLoader />}><LoginPage /></Suspense>} />
+      <Route path="/register" element={<Suspense fallback={<PageLoader />}><RegisterPage /></Suspense>} />
+      <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPasswordPage /></Suspense>} />
+      <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPasswordPage /></Suspense>} />
+      <Route path="/update-password" element={<Suspense fallback={<PageLoader />}><UpdatePasswordPage /></Suspense>} />
 
       {/* Main */}
       <Route path="/study/subject/:subject" element={<Protected><Suspense fallback={<PageLoader />}><SubjectPage /></Suspense></Protected>} />
-      <Route path="/" element={<Protected><Suspense fallback={<PageLoader />}><HomePage /></Suspense></Protected>} />
+      <Route path="/" element={<Protected><HomePage /></Protected>} />
       <Route path="/search" element={<Protected><Suspense fallback={<PageLoader />}><SearchPage /></Suspense></Protected>} />
       <Route path="/announcements" element={<Protected><Suspense fallback={<PageLoader />}><AnnouncementsPage /></Suspense></Protected>} />
       <Route path="/community" element={<Protected><Suspense fallback={<PageLoader />}><CommunityPage /></Suspense></Protected>} />
