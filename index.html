@@ -62,10 +62,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://wxcyxdiavjrbqdjxqsrl.supabase.co" />
     <link rel="dns-prefetch" href="https://wxcyxdiavjrbqdjxqsrl.supabase.co" />
+    <!-- Preload the two display font weights used above the fold (h1 + nav) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Outfit:wght@500;700&display=swap" />
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Outfit:wght@500;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <meta property="og:url" content="https://warren-wave.vercel.app" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />

@@ -42,7 +42,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
-        console.warn("[AuthStore] No valid session.");
         set({ user: null, loading: false });
         return;
       }
