@@ -20,7 +20,6 @@ export default function App() {
   useEffect(() => {
     if (booted.current) return;
     booted.current = true;
-    try { localStorage.removeItem("warren-needs-recovery"); } catch (_) {}
     initTheme();
     initA11y();
     initAuth();

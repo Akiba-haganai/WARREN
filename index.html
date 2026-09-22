@@ -21,13 +21,16 @@
       } catch (_) {}
     </script>
 
-    <!-- Safe SW crash recovery – runs only once, no loops -->
+    <!-- Safe SW crash recovery: only fires after a real chunk-load failure was recorded -->
     <script>
       try {
         if ("serviceWorker" in navigator) {
-          var recoveryFlag = localStorage.getItem("warren-needs-recovery");
-          if (recoveryFlag === "1") {
-            localStorage.removeItem("warren-needs-recovery");
+          // If main.tsx recorded strikes >= 2, we did a nuclear reset already.
+          // This block handles the edge case where the page crashes before
+          // main.tsx even loads (SW served a bad index.html from cache).
+          var needsReset = sessionStorage.getItem("wave-sw-hard-reset") === "1";
+          if (needsReset) {
+            sessionStorage.removeItem("wave-sw-hard-reset");
             navigator.serviceWorker.getRegistrations()
               .then(function(regs) {
                 return Promise.all(regs.map(function(r) { return r.unregister(); }));
@@ -37,8 +40,6 @@
                 return Promise.all(keys.map(function(k) { return caches.delete(k); }));
               })
               .then(function() { window.location.reload(); });
-          } else {
-            localStorage.setItem("warren-needs-recovery", "1");
           }
         }
       } catch (_) {}
