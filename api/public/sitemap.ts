@@ -6,7 +6,7 @@ export const config = { runtime: "edge" };
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://wxcyxdiavjrbqdjxqsrl.supabase.co";
 const ANON_KEY     = process.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4Y3l4ZGlhdmpyYnFkanhxc3JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDMxNjQsImV4cCI6MjA5NjkxOTE2NH0.gWOOk4cT6bEjS46vZYMUoAWcbPi_emZBuRzpXICmssw";
-const BASE_URL     = "https://wave-515.vercel.app";
+const BASE_URL     = "https://warren-515.vercel.app";
 
 export default async function handler(req: Request) {
   const supabase = createClient(SUPABASE_URL, ANON_KEY);

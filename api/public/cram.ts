@@ -46,11 +46,11 @@ function page({ plan, grouped, title, description }: any) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
-<link rel="canonical" href="https://515.vercel.app/cram/${plan.id}">
+<link rel="canonical" href="https://warren-515.vercel.app/cram/${plan.id}">
 <meta property="og:type" content="website">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
-<meta property="og:url" content="https://515.vercel.app/cram/${plan.id}">
+<meta property="og:url" content="https://warren-515.vercel.app/cram/${plan.id}">
 <meta name="twitter:card" content="summary">
 <style>
   body{font-family:system-ui;max-width:640px;margin:0 auto;padding:24px;background:#f8fafc;color:#0f172a}

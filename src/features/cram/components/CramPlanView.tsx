@@ -60,7 +60,7 @@ export function CramPlanView({
         .eq("id", planId);
     }
 
-    const url = `https://515.vercel.app/cram/${slug}`;
+    const url = `https://warren-515.vercel.app/cram/${slug}`;
     const text = `${planTitle} — ${items.length}-item cram plan on 515`;
     if (navigator.share) {
       try { await navigator.share({ title: planTitle, text, url }); } catch {}

@@ -37,13 +37,13 @@ function page({ code, materials, exams, notes, allTopics, title, description }: 
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
-<link rel="canonical" href="https://wave-515.vercel.app/subjects/${code}">
+<link rel="canonical" href="https://warren-515.vercel.app/subjects/${code}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <meta property="og:type" content="website">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
-<meta property="og:url" content="https://wave-515.vercel.app/subjects/${code}">
+<meta property="og:url" content="https://warren-515.vercel.app/subjects/${code}">
 <meta name="twitter:card" content="summary">
 <style>
   *{box-sizing:border-box}
