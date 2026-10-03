@@ -36,7 +36,8 @@ export async function sendTextMessage(
   parentId?: string,
   isAnnouncement?: boolean,
   messageType: "text" | "poll" = "text",
-  messageId?: string
+  messageId?: string,
+  pollId?: string
 ): Promise<CommunityMessageWithProfile> {
   const payload: any = {
     community_id: communityId,
@@ -45,7 +46,7 @@ export async function sendTextMessage(
     type: messageType,
     parent_id: parentId ?? null,
     is_announcement: isAnnouncement ?? false,
-    poll_id: messageType === "poll" ? content : null,
+    poll_id: pollId ?? null,
   };
   
   if (messageId) {
@@ -210,16 +211,23 @@ export async function markMessagesAsRead(communityId: string, userId: string) {
 export async function notifyMentions(senderId: string, content: string) {
   const matches = content.match(/<@([a-f0-9-]+)>/g);
   if (!matches) return;
-  const userIds = matches.map((m) => m.slice(2, -1));
-  const { data: users } = await supabase.from("profiles").select("id, username").in("id", userIds);
-  for (const id of userIds) {
-    if (id === senderId) continue;
-    await supabase.from("notifications").insert({
+  const userIds = [...new Set(matches.map((m) => m.slice(2, -1)))];
+  
+  // Fetch sender's username
+  const { data: sender } = await supabase.from("profiles").select("username").eq("id", senderId).single();
+  const senderName = sender?.username || "Someone";
+
+  const notifications = userIds
+    .filter((id) => id !== senderId)
+    .map((id) => ({
       user_id: id,
       title: "You were mentioned",
-      body: `${users?.find((u) => u.id === id)?.username || "Someone"} mentioned you in a chat`,
+      body: `${senderName} mentioned you in a chat`,
       type: "mention",
-    });
+    }));
+
+  if (notifications.length > 0) {
+    await supabase.from("notifications").insert(notifications);
   }
 }
 

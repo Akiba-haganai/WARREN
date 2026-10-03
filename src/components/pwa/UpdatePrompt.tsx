@@ -24,7 +24,7 @@ export function UpdatePrompt() {
       });
     },
     onRegisterError(error) {
-      console.error("[Wave PWA] Service worker registration error:", error);
+      console.error("[515 PWA] Service worker registration error:", error);
     },
   });
 

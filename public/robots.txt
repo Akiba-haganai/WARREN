@@ -1,5 +1,10 @@
 User-agent: *
-Allow: /
+Allow: /subjects/
+Allow: /papers/
+Allow: /cram/
+Disallow: /admin/
 Disallow: /api/
+Disallow: /messages/
+Disallow: /profile/
 
-Sitemap: https://warren-wave.vercel.app/sitemap.xml
+Sitemap: https://515.vercel.app/sitemap.xml

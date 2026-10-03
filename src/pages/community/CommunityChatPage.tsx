@@ -142,7 +142,6 @@ export default function CommunityChatPage() {
     setIsAnnouncement(false);
 
     try {
-      await notifyMentions(user.id, content);
       await sendTextMessage(
         communityId, 
         user.id, 
@@ -152,6 +151,9 @@ export default function CommunityChatPage() {
         "text", 
         tempId
       );
+      
+      // Notify mentioned users AFTER the message is successfully saved
+      await notifyMentions(user.id, content);
       
       setMessages(prev => {
         const next = [...prev];
@@ -236,9 +238,8 @@ export default function CommunityChatPage() {
   const handleCreatePoll = async (question: string, options: string[]) => {
     const poll = await createPoll(communityId!, question, options);
     if (poll) {
-      // sendTextMessage supports optional arguments; pass poll.id only if defined by the service signature.
-      // Send as poll message: message.type should be "poll" and poll id in content
-      await sendTextMessage(communityId!, user!.id, poll.id as any, undefined, false, "poll");
+      // Send as poll message: message.type should be "poll" and poll id passed as 8th argument
+      await sendTextMessage(communityId!, user!.id, "", undefined, false, "poll", undefined, poll.id);
 
       
 
@@ -271,8 +272,8 @@ export default function CommunityChatPage() {
   };
 
   const insertMention = (userId: string) => {
-    const before = newMsg.slice(0, newMsg.lastIndexOf("@"));
-    setNewMsg(before + `<@${userId}> `);
+    setNewMsg((prev) => prev.replace(/@[a-zA-Z0-9_]*$/, `<@${userId}> `));
+    setMentionQuery(null);
   };
 
   if (!communityId) return null;

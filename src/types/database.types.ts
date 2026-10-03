@@ -667,18 +667,24 @@ export type Database = {
       cram_plan_items: {
         Row: {
           day_offset: number
+          id: string
           material_id: string | null
           plan_id: string | null
+          position: number | null
         }
         Insert: {
           day_offset: number
+          id?: string
           material_id?: string | null
           plan_id?: string | null
+          position?: number | null
         }
         Update: {
           day_offset?: number
+          id?: string
           material_id?: string | null
           plan_id?: string | null
+          position?: number | null
         }
         Relationships: [
           {
@@ -697,25 +703,73 @@ export type Database = {
           },
         ]
       }
+      cram_plan_progress: {
+        Row: {
+          completed_at: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cram_plan_progress_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "cram_plan_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cram_plan_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cram_plans: {
         Row: {
+          course_key: string | null
+          days_total: number | null
           exam_date: string
           generated_at: string | null
           id: string
+          share_enabled: boolean | null
+          share_slug: string | null
+          status: string | null
           subject: string
           user_id: string | null
         }
         Insert: {
+          course_key?: string | null
+          days_total?: number | null
           exam_date: string
           generated_at?: string | null
           id?: string
+          share_enabled?: boolean | null
+          share_slug?: string | null
+          status?: string | null
           subject: string
           user_id?: string | null
         }
         Update: {
+          course_key?: string | null
+          days_total?: number | null
           exam_date?: string
           generated_at?: string | null
           id?: string
+          share_enabled?: boolean | null
+          share_slug?: string | null
+          status?: string | null
           subject?: string
           user_id?: string | null
         }
@@ -1028,157 +1082,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      map_pin_suggestions: {
-        Row: {
-          category: string | null
-          contact: string | null
-          created_at: string | null
-          description: string | null
-          hours: string | null
-          id: string
-          location_description: string | null
-          suggested_by: string | null
-          title: string
-        }
-        Insert: {
-          category?: string | null
-          contact?: string | null
-          created_at?: string | null
-          description?: string | null
-          hours?: string | null
-          id?: string
-          location_description?: string | null
-          suggested_by?: string | null
-          title: string
-        }
-        Update: {
-          category?: string | null
-          contact?: string | null
-          created_at?: string | null
-          description?: string | null
-          hours?: string | null
-          id?: string
-          location_description?: string | null
-          suggested_by?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "map_pin_suggestions_suggested_by_fkey"
-            columns: ["suggested_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      map_pins: {
-        Row: {
-          category: Database["public"]["Enums"]["pin_category"]
-          contact: string | null
-          created_at: string | null
-          created_by: string | null
-          current_occupancy: string | null
-          description: string
-          floor: string | null
-          hours: string | null
-          id: string
-          photos: string[] | null
-          title: string
-          x_percent: number
-          y_percent: number
-          review_status: "pending" | "published" | "rejected"
-          is_verified: boolean
-          operational_status: "open" | "closed_temporarily" | "quiet_zone" | "event_active"
-          operational_note: string | null
-        }
-        Insert: {
-          category?: Database["public"]["Enums"]["pin_category"]
-          contact?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          current_occupancy?: string | null
-          description: string
-          floor?: string | null
-          hours?: string | null
-          id?: string
-          photos?: string[] | null
-          title: string
-          x_percent: number
-          y_percent: number
-          review_status?: "pending" | "published" | "rejected"
-          is_verified?: boolean
-          operational_status?: "open" | "closed_temporarily" | "quiet_zone" | "event_active"
-          operational_note?: string | null
-        }
-        Update: {
-          category?: Database["public"]["Enums"]["pin_category"]
-          contact?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          current_occupancy?: string | null
-          description?: string
-          floor?: string | null
-          hours?: string | null
-          id?: string
-          photos?: string[] | null
-          title?: string
-          x_percent?: number
-          y_percent?: number
-          review_status?: "pending" | "published" | "rejected"
-          is_verified?: boolean
-          operational_status?: "open" | "closed_temporarily" | "quiet_zone" | "event_active"
-          operational_note?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "map_pins_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pin_vibe_reports: {
-        Row: {
-          pin_id: string
-          user_id: string
-          noise_level: "quiet" | "chatty" | "loud"
-          crowd_level: "empty" | "moderate" | "packed"
-          reported_at: string
-        }
-        Insert: {
-          pin_id: string
-          user_id: string
-          noise_level: "quiet" | "chatty" | "loud"
-          crowd_level: "empty" | "moderate" | "packed"
-          reported_at?: string
-        }
-        Update: {
-          pin_id?: string
-          user_id?: string
-          noise_level?: "quiet" | "chatty" | "loud"
-          crowd_level?: "empty" | "moderate" | "packed"
-          reported_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pin_vibe_reports_pin_id_fkey"
-            columns: ["pin_id"]
-            isOneToOne: false
-            referencedRelation: "map_pins"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pin_vibe_reports_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
         ]
       }
       material_edits: {
@@ -2093,45 +1996,6 @@ export type Database = {
           },
         ]
       }
-      spot_checkins: {
-        Row: {
-          created_at: string | null
-          id: string
-          occupancy_report: string
-          pin_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          occupancy_report: string
-          pin_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          occupancy_report?: string
-          pin_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "spot_checkins_pin_id_fkey"
-            columns: ["pin_id"]
-            isOneToOne: false
-            referencedRelation: "map_pins"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "spot_checkins_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sprint_dropoffs: {
         Row: {
           created_at: string | null
@@ -2240,6 +2104,15 @@ export type Database = {
           uploaded_by: string
           verified_by_staff: boolean | null
           year_group: string
+          original_file_path: string | null
+          processing_status: "pending" | "processing" | "done" | "failed" | null
+          processing_error: string | null
+          pages: Json | null
+          course_code: string | null
+          academic_year: string | null
+          paper_type: string | null
+          topics: string[] | null
+          summary: string | null
         }
         Insert: {
           created_at?: string
@@ -2264,6 +2137,15 @@ export type Database = {
           uploaded_by: string
           verified_by_staff?: boolean | null
           year_group?: string
+          original_file_path?: string | null
+          processing_status?: "pending" | "processing" | "done" | "failed" | null
+          processing_error?: string | null
+          pages?: Json | null
+          course_code?: string | null
+          academic_year?: string | null
+          paper_type?: string | null
+          topics?: string[] | null
+          summary?: string | null
         }
         Update: {
           created_at?: string
@@ -2288,6 +2170,15 @@ export type Database = {
           uploaded_by?: string
           verified_by_staff?: boolean | null
           year_group?: string
+          original_file_path?: string | null
+          processing_status?: "pending" | "processing" | "done" | "failed" | null
+          processing_error?: string | null
+          pages?: Json | null
+          course_code?: string | null
+          academic_year?: string | null
+          paper_type?: string | null
+          topics?: string[] | null
+          summary?: string | null
         }
         Relationships: [
           {
@@ -2887,16 +2778,6 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "student"
-      pin_category:
-        | "registration"
-        | "academics"
-        | "finance"
-        | "student_union"
-        | "health"
-        | "library"
-        | "dining"
-        | "transport"
-        | "general"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3025,17 +2906,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "student"],
-      pin_category: [
-        "registration",
-        "academics",
-        "finance",
-        "student_union",
-        "health",
-        "library",
-        "dining",
-        "transport",
-        "general",
-      ],
     },
   },
 } as const

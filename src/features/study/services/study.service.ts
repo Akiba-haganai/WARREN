@@ -350,3 +350,58 @@ export async function uploadStudyMaterial(
 export async function incrementDownloadCount(id: string) {
   await supabase.rpc("increment", { table_name: "study_materials", column_name: "download_count", row_id: id });
 }
+
+// ─── Course Aggregates (W4) ───────────────────────────────────────────────
+export type CourseAggregate = {
+  course_key: string;
+  display_name: string;
+  materials: number;
+  exams: number;
+  notes: number;
+  latest_year: string | null;
+  all_topics: string[] | null;
+};
+
+export async function fetchCourses(): Promise<CourseAggregate[]> {
+  const { data, error } = await (supabase.rpc as any)("list_courses");
+  if (error) {
+    console.warn("fetchCourses RPC error, fallback to client aggregate:", error);
+    // Fallback: query study_materials directly if RPC is not yet migrated
+    const { data: materials, error: matErr } = await supabase
+      .from("study_materials")
+      .select("subject, course_code, paper_type, academic_year, topics")
+      .eq("processing_status", "done");
+
+    if (matErr || !materials) return [];
+
+    const map = new Map<string, CourseAggregate>();
+    for (const m of materials) {
+      const key = m.course_code || m.subject || "General";
+      const existing = map.get(key) || {
+        course_key: key,
+        display_name: key,
+        materials: 0,
+        exams: 0,
+        notes: 0,
+        latest_year: null,
+        all_topics: [],
+      };
+      existing.materials += 1;
+      if (m.paper_type === "exam") existing.exams += 1;
+      if (m.paper_type === "notes") existing.notes += 1;
+      if (m.academic_year && (!existing.latest_year || m.academic_year > existing.latest_year)) {
+        existing.latest_year = m.academic_year;
+      }
+      if (Array.isArray(m.topics)) {
+        for (const t of m.topics) {
+          if (t && !existing.all_topics?.includes(t)) {
+            existing.all_topics?.push(t);
+          }
+        }
+      }
+      map.set(key, existing);
+    }
+    return Array.from(map.values()).sort((a, b) => b.materials - a.materials);
+  }
+  return data ?? [];
+}

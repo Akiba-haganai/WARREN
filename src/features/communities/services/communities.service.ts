@@ -39,7 +39,8 @@ export async function joinCommunity(communityId: string): Promise<void> {
   const user = (await supabase.auth.getUser()).data.user;
   if (!user) throw new Error("Not authenticated");
   const { error } = await supabase.from("community_members").insert({ community_id: communityId, user_id: user.id });
-  if (error) throw error;
+  // If error is unique constraint violation (they are already a member), ignore it.
+  if (error && error.code !== "23505") throw error;
 }
 
 export async function leaveCommunity(communityId: string): Promise<void> {

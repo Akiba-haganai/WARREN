@@ -7,6 +7,7 @@ interface AuthState {
   loading: boolean;
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ error?: string }>;
+  signInWithGoogle: (nextPath?: string) => Promise<{ error?: string }>;
   register: (email: string, password: string, username: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
 }
@@ -19,7 +20,14 @@ function getInitialUser(): User | null {
         const raw = localStorage.getItem(key);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed?.user) return parsed.user;
+          if (parsed?.user) {
+            // Check if the session is expired
+            if (parsed.expires_at) {
+              const expiresAt = parsed.expires_at * 1000;
+              if (Date.now() > expiresAt) return null;
+            }
+            return parsed.user;
+          }
         }
       }
     }
@@ -69,6 +77,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     // Immediately set the user so ProtectedRoute doesn't bounce the user back
     set({ user: data.user ?? null });
+    return {};
+  },
+
+  signInWithGoogle: async (nextPath) => {
+    const redirect = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath ?? "/")}`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: redirect },
+    });
+    if (error) return { error: error.message };
     return {};
   },
 

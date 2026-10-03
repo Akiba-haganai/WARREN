@@ -5,7 +5,7 @@ const SLIDES = [
   {
     id: "intro",
     icon: GraduationCap,
-    title: "Welcome to Wave",
+    title: "Welcome to 515",
     subtitle: "Connect. Learn. Interact.",
     description: "Your digital campus hub. Connect, study, and thrive.",
     color: "text-blue-600 dark:text-blue-400",

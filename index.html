@@ -28,9 +28,9 @@
           // If main.tsx recorded strikes >= 2, we did a nuclear reset already.
           // This block handles the edge case where the page crashes before
           // main.tsx even loads (SW served a bad index.html from cache).
-          var needsReset = sessionStorage.getItem("wave-sw-hard-reset") === "1";
+          var needsReset = sessionStorage.getItem("515-sw-hard-reset") === "1";
           if (needsReset) {
-            sessionStorage.removeItem("wave-sw-hard-reset");
+            sessionStorage.removeItem("515-sw-hard-reset");
             navigator.serviceWorker.getRegistrations()
               .then(function(regs) {
                 return Promise.all(regs.map(function(r) { return r.unregister(); }));
@@ -50,11 +50,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#1E88E5" />
 
-    <title>Wave — Connect, Learn, Interact</title>
-    <meta name="description" content="The premier social network for students. Connect, learn, and interact with peers seamlessly." />
-    <meta property="og:title" content="Wave — Connect, Learn, Interact" />
-    <meta property="og:description" content="The premier social network for students. Connect, learn, and interact with peers seamlessly." />
-    <meta property="og:image" content="https://warren-wave.vercel.app/og-image-1200x630.png" />
+    <title>515 — Find the paper. Understand it. Plan the cram.</title>
+    <meta name="description" content="Find the paper. Understand it. Plan the cram. Free for Zambian university students." />
+    <meta property="og:title" content="515 — Find the paper. Understand it. Plan the cram." />
+    <meta property="og:description" content="Find the paper. Understand it. Plan the cram. Free for Zambian university students." />
+    <meta property="og:image" content="https://515.vercel.app/og-image-1200x630.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
@@ -76,14 +76,14 @@
         rel="stylesheet"
       />
     </noscript>
-    <meta property="og:url" content="https://warren-wave.vercel.app" />
+    <meta property="og:url" content="https://515.vercel.app" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Wave — Connect, Learn, Interact" />
-    <meta name="twitter:description" content="The premier social network for students. Connect, learn, and interact with peers seamlessly." />
-    <meta name="twitter:image" content="https://warren-wave.vercel.app/og-image-1200x630.png" />
-    <meta name="keywords" content="Wave, student social network, campus community Zambia, UNZA social network, CBU students, university chat Zambia" />
-    <link rel="canonical" href="https://warren-wave.vercel.app" />
+    <meta name="twitter:title" content="515 — Find the paper. Understand it. Plan the cram." />
+    <meta name="twitter:description" content="Find the paper. Understand it. Plan the cram. Free for Zambian university students." />
+    <meta name="twitter:image" content="https://515.vercel.app/og-image-1200x630.png" />
+    <meta name="keywords" content="515, past papers Zambia, study vault, UNZA past papers, CBU past papers, exam cram Zambia" />
+    <link rel="canonical" href="https://515.vercel.app" />
     <meta name="robots" content="index, follow" />
     <link rel="manifest" href="/manifest.webmanifest" />
   <script type="application/ld+json">
@@ -92,24 +92,24 @@
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": "https://warren-wave.vercel.app/#website",
-      "url": "https://warren-wave.vercel.app",
-      "name": "Wave",
-      "description": "The premier social network for students. Connect, learn, and interact with peers seamlessly.",
+      "@id": "https://515.vercel.app/#website",
+      "url": "https://515.vercel.app",
+      "name": "515",
+      "description": "Find the paper. Understand it. Plan the cram. Free for Zambian university students.",
       "potentialAction": {
         "@type": "SearchAction",
-        "target": "https://warren-wave.vercel.app/search?q={search_term_string}",
+        "target": "https://515.vercel.app/search?q={search_term_string}",
         "query-input": "required name=search_term_string"
       }
     },
     {
       "@type": "SoftwareApplication",
-      "@id": "https://warren-wave.vercel.app/#app",
-      "name": "Wave",
-      "url": "https://warren-wave.vercel.app",
-      "applicationCategory": "SocialNetworkingApplication",
+      "@id": "https://515.vercel.app/#app",
+      "name": "515",
+      "url": "https://515.vercel.app",
+      "applicationCategory": "EducationalApplication",
       "operatingSystem": "Web, Android, iOS",
-      "description": "Campus social network for Zambian university students. Connect, collaborate, and interact with peers across UNZA, CBU, and other universities.",
+      "description": "Past papers, revision notes, and cram planner for Zambian university students across UNZA, CBU, and other universities.",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -118,12 +118,12 @@
     },
     {
       "@type": "Organization",
-      "@id": "https://warren-wave.vercel.app/#organization",
-      "name": "Wave",
-      "url": "https://warren-wave.vercel.app",
+      "@id": "https://515.vercel.app/#organization",
+      "name": "515",
+      "url": "https://515.vercel.app",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://warren-wave.vercel.app/icons/icon-512.png"
+        "url": "https://515.vercel.app/icons/icon-512.png"
       }
     }
   ]
@@ -137,8 +137,8 @@
         <!-- Shell Top Navigation -->
         <header class="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 h-16 flex items-center justify-between px-4">
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm">W</div>
-            <span class="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-400">Wave</span>
+            <div class="px-2 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm">515</div>
+            <span class="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-400">515</span>
           </div>
         </header>
         <!-- Shell Main Content -->

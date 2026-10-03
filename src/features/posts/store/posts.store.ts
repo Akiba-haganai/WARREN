@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type SortMode = "hot" | "new" | "takes";
+type SortMode = "hot" | "new";
 
 interface PostsUIState {
   sortMode: SortMode;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Moon, Sun, User, LogOut, Shield, ChevronDown, MapPinned, Calendar,
+  Moon, Sun, User, LogOut, Shield, ChevronDown, Calendar,
   MessageCircleQuestion, Radio, Search, MessageSquare,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -62,7 +62,7 @@ export default function MobileNavbar() {
               W
             </div>
             <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-black leading-none truncate">Wave</h1>
+              <h1 className="text-base sm:text-lg font-black leading-none truncate">515</h1>
             </div>
           </Link>
 
@@ -123,7 +123,7 @@ export default function MobileNavbar() {
                   <div className="py-0.5">
                     <DropdownLink to="/profile" icon={<User size={14} />} label="Profile" />
                     <DropdownLink to="/messages" icon={<MessageSquare size={14} />} label="Messages" />
-                    <DropdownLink to="/campus-map" icon={<MapPinned size={14} />} label="Campus Map" />
+
                     <DropdownLink to="/events" icon={<Calendar size={14} />} label="Events" />
                     <DropdownLink to="/search" icon={<Search size={14} />} label="Search" />
                     <DropdownLink to="/ask-senior" icon={<MessageCircleQuestion size={14} />} label="Ask a Senior" />

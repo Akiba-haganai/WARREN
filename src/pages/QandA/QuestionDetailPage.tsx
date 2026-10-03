@@ -1,52 +1,82 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
-import { fetchAnswers, submitAnswer, voteAnswer, acceptAnswer } from "../../services/questionService";
+import { fetchAnswers, fetchQuestion, submitAnswer, voteAnswer, acceptAnswer } from "../../services/questionService";
 import { useAuthStore } from "../../store/authStore";
-import type { Answer } from "../../services/questionService";
+import type { Answer, Question } from "../../services/questionService";
 import { ArrowBigUp, ArrowBigDown, Check, Send } from "lucide-react";
+import { useToastStore } from "../../store/toastStore";
 
 export default function QuestionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const user = useAuthStore((s) => s.user);
+  const showToast = useToastStore((s) => s.showToast);
+  const [question, setQuestion] = useState<Question | null>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
-    fetchAnswers(id, user?.id).then((a) => { setAnswers(a); setLoading(false); });
+    Promise.all([
+      fetchQuestion(id).catch((_e) => { showToast("Failed to load question", "err"); return null; }),
+      fetchAnswers(id, user?.id).catch((_e) => { showToast("Failed to load answers", "err"); return []; })
+    ]).then(([q, a]) => {
+      if (q) setQuestion(q);
+      setAnswers(a || []);
+      setLoading(false);
+    });
   }, [id, user?.id]);
 
   const handleSubmit = async () => {
     if (!content.trim() || !id) return;
-    await submitAnswer(id, content);
-    setContent("");
-    const updated = await fetchAnswers(id, user?.id);
-    setAnswers(updated);
+    try {
+      await submitAnswer(id, content);
+      setContent("");
+      const updated = await fetchAnswers(id, user?.id);
+      setAnswers(updated);
+    } catch (err: any) {
+      showToast(err.message || "Failed to submit answer", "err");
+    }
   };
 
   const handleVote = async (answerId: string, type: "up" | "down") => {
-    await voteAnswer(answerId, type);
-    const updated = await fetchAnswers(id!, user?.id);
-    setAnswers(updated);
+    try {
+      await voteAnswer(answerId, type);
+      const updated = await fetchAnswers(id!, user?.id);
+      setAnswers(updated);
+    } catch (err: any) {
+      showToast(err.message || "Failed to vote", "err");
+    }
   };
 
   const handleAccept = async (answerId: string) => {
     if (!id) return;
-    await acceptAnswer(answerId, id);
-    const updated = await fetchAnswers(id, user?.id);
-    setAnswers(updated);
+    try {
+      await acceptAnswer(answerId, id);
+      const updated = await fetchAnswers(id, user?.id);
+      setAnswers(updated);
+    } catch (err: any) {
+      showToast(err.message || "Failed to accept answer", "err");
+    }
   };
+
+  const isQuestionAuthor = question?.author_id === user?.id;
 
   return (
     <AppShell>
       <div className="px-4 pb-8">
-        <h1 className="text-2xl font-bold mb-6">Answers</h1>
-
         {loading ? (
           <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-20 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />)}</div>
-        ) : answers.length === 0 ? (
+        ) : question ? (
+          <div className="mb-8 p-6 bg-card rounded-3xl border border-border">
+            <h1 className="text-2xl font-bold mb-2">{question.title}</h1>
+            {question.body && <p className="text-muted-foreground">{question.body}</p>}
+          </div>
+        ) : null}
+
+        <h2 className="text-xl font-bold mb-6">Answers ({answers.length})</h2>
+        {answers.length === 0 ? (
           <div className="text-center py-12 opacity-60">No answers yet. Be the first to answer!</div>
         ) : (
           <div className="space-y-4">
@@ -65,7 +95,7 @@ export default function QuestionDetailPage() {
                   <button onClick={() => handleVote(answer.id, "down")} className={`flex items-center gap-1 text-xs ${answer.userVote === "down" ? "text-red-500" : ""}`}>
                     <ArrowBigDown size={16} /> {answer.downvotes}
                   </button>
-                  {!answer.is_accepted && (
+                  {isQuestionAuthor && !answer.is_accepted && (
                     <button onClick={() => handleAccept(answer.id)} className="text-xs text-green-500 flex items-center gap-1">
                       <Check size={14} /> Accept
                     </button>

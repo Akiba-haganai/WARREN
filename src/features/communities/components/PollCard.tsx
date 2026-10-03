@@ -16,7 +16,8 @@ export function PollCard({ poll }: { poll: PollData }) {
 
   const handleVote = async (optionId: string) => {
     if (!user || selected) return;
-    const { error } = await supabase.from("chat_poll_votes").insert({
+    const { error } = await (supabase.from("chat_poll_votes" as any) as any).insert({
+      poll_id: poll.id,
       user_id: user.id,
       option_id: optionId,
     });

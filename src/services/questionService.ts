@@ -66,6 +66,16 @@ export async function askQuestion(title: string, body: string, communityId?: str
   return { ...data, author: (data as any).author ?? null, answers_count: 0 };
 }
 
+export async function fetchQuestion(questionId: string): Promise<Question> {
+  const { data, error } = await supabase
+    .from("questions")
+    .select("*, author:profiles!questions_author_id_fkey (username, avatar_url)")
+    .eq("id", questionId)
+    .single();
+  if (error) throw error;
+  return { ...data, author: (data as any).author ?? null, answers_count: 0 };
+}
+
 export async function fetchAnswers(questionId: string, userId?: string): Promise<Answer[]> {
   const { data: answers, error } = await supabase
     .from("answers")
@@ -137,6 +147,13 @@ export async function voteAnswer(answerId: string, type: "up" | "down"): Promise
 }
 
 export async function acceptAnswer(answerId: string, questionId: string): Promise<void> {
-  await supabase.from("answers").update({ is_accepted: false }).eq("question_id", questionId);
-  await supabase.from("answers").update({ is_accepted: true }).eq("id", answerId);
+  const user = (await supabase.auth.getUser()).data.user;
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase.rpc("accept_answer" as any, { 
+    p_answer_id: answerId, 
+    p_question_id: questionId 
+  } as any);
+  
+  if (error) throw error;
 }

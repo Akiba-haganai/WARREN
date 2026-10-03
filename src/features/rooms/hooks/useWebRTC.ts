@@ -222,6 +222,13 @@ export function useWebRTC(roomId: string) {
     };
   }, [roomId, handleSignal]);
 
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      leaveRoom();
+    };
+  }, [leaveRoom]);
+
   return {
     isJoined,
     participants,

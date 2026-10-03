@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { PageLoader } from "../components/common/PageLoader";
 import ProtectedRoute from "./ProtectedRoute";
@@ -17,6 +17,7 @@ const TermsPage = lazy(() => import("../pages/legal/TermsPage"));
 // Lazy loaded auth pages
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
+const AuthCallbackPage = lazy(() => import("../pages/auth/AuthCallbackPage"));
 const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("../passwordManagement/ResetPasswordPage"));
 const UpdatePasswordPage = lazy(() => import("../passwordManagement/UpdatePasswordPage"));
@@ -30,7 +31,6 @@ const CommunityPage = lazy(() => import("../pages/community/CommunityPage"));
 const CommunityChatPage = lazy(() => import("../pages/community/CommunityChatPage"));
 const JoinCommunity = lazy(() => import("../features/communities/components/JoinCommunity"));
 
-const CampusMapPage = lazy(() => import("../pages/map/CampusMapPage"));
 const StudyPage = lazy(() => import("../pages/study/StudyPage"));
 const NotificationsPage = lazy(() => import("../pages/notifications/NotificationsPage"));
 const EventsPage = lazy(() => import("../pages/events/EventsPage"));
@@ -93,15 +93,18 @@ export default function AppRouter() {
     localStorage.setItem("lastPath", location.pathname);
   }, [location]);
 
+  const hasRestored = useRef(false);
+
   // On first authenticated mount, restore the last visited page
   useEffect(() => {
-    if (user) {
+    if (user && !hasRestored.current) {
+      hasRestored.current = true;
       const lastPath = localStorage.getItem("lastPath");
-      if (lastPath && lastPath !== "/login" && lastPath !== "/register") {
+      if (lastPath && lastPath !== "/login" && lastPath !== "/register" && lastPath !== "/") {
         navigate(lastPath, { replace: true });
       }
     }
-  }, [user]); // run only when user changes from null to object
+  }, [user, navigate]);
 
   return (
     <Routes>
@@ -114,6 +117,7 @@ export default function AppRouter() {
       {/* Auth */}
       <Route path="/login" element={<Suspense fallback={<PageLoader />}><LoginPage /></Suspense>} />
       <Route path="/register" element={<Suspense fallback={<PageLoader />}><RegisterPage /></Suspense>} />
+      <Route path="/auth/callback" element={<Suspense fallback={<PageLoader />}><AuthCallbackPage /></Suspense>} />
       <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPasswordPage /></Suspense>} />
       <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPasswordPage /></Suspense>} />
       <Route path="/update-password" element={<Suspense fallback={<PageLoader />}><UpdatePasswordPage /></Suspense>} />
@@ -129,10 +133,10 @@ export default function AppRouter() {
       <Route path="/community/:id/ama" element={<Protected><Suspense fallback={<PageLoader />}><AMAsPage /></Suspense></Protected>} />
       <Route path="/community/:communityId/ama/:sessionId" element={<Protected><Suspense fallback={<PageLoader />}><AMASessionPage /></Suspense></Protected>} />
 
-      <Route path="/community/:id/join" element={<Suspense fallback={<PageLoader />}><JoinCommunity /></Suspense>} />
+      <Route path="/community/:id/join" element={<Protected><Suspense fallback={<PageLoader />}><JoinCommunity /></Suspense></Protected>} />
 
 
-      <Route path="/campus-map" element={<Protected><Suspense fallback={<PageLoader />}><CampusMapPage /></Suspense></Protected>} />
+
       <Route path="/study" element={<Protected><Suspense fallback={<PageLoader />}><StudyPage /></Suspense></Protected>} />
       <Route path="/notifications" element={<Protected><Suspense fallback={<PageLoader />}><NotificationsPage /></Suspense></Protected>} />
       <Route path="/events" element={<Protected><Suspense fallback={<PageLoader />}><EventsPage /></Suspense></Protected>} />
@@ -155,7 +159,6 @@ export default function AppRouter() {
 
       {/* Profile */}
       <Route path="/profile" element={<Protected><Suspense fallback={<PageLoader />}><ProfilePage /></Suspense></Protected>} />
-      <Route path="/profile/:userId" element={<Protected><Suspense fallback={<PageLoader />}><ProfilePage /></Suspense></Protected>} />
       <Route path="/profile/edit" element={<Protected><Suspense fallback={<PageLoader />}><EditProfile /></Suspense></Protected>} />
       <Route path="/profile/saved" element={<Protected><Suspense fallback={<PageLoader />}><SavedPostsPage /></Suspense></Protected>} />
 
@@ -164,6 +167,9 @@ export default function AppRouter() {
       <Route path="/profile/privacy" element={<Protected><Suspense fallback={<PageLoader />}><PrivacySecurityPage /></Suspense></Protected>} />
       <Route path="/profile/discussions" element={<Protected><Suspense fallback={<PageLoader />}><MyDiscussionsPage /></Suspense></Protected>} />
       <Route path="/profile/groups" element={<Protected><Suspense fallback={<PageLoader />}><CampusGroupsPage /></Suspense></Protected>} />
+
+      {/* Wildcard profile routes must come last */}
+      <Route path="/profile/:userId" element={<Protected><Suspense fallback={<PageLoader />}><ProfilePage /></Suspense></Protected>} />
       <Route path="/profile/:userId/achievements" element={<Protected><Suspense fallback={<PageLoader />}><AchievementsPage /></Suspense></Protected>} />
       <Route path="/profile/:userId/privacy" element={<Protected><Suspense fallback={<PageLoader />}><PrivacySecurityPage /></Suspense></Protected>} />
       <Route path="/profile/:userId/discussions" element={<Protected><Suspense fallback={<PageLoader />}><MyDiscussionsPage /></Suspense></Protected>} />

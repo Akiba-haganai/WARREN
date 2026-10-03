@@ -1,0 +1,12 @@
+src\components\layout\MobileNavbar.tsx
+src\features\profile\components\ProfileActions.tsx
+src\features\profile\components\ProfileStats.tsx
+src\features\profile\hooks\useProfileData.ts
+src\features\profile\services\profile.service.ts
+src\pages\legal\AboutPage.tsx
+src\pages\legal\PrivacyPage.tsx
+src\pages\legal\TermsPage.tsx
+src\pages\profile\PrivacySecurityPage.tsx
+src\pages\profile\ProfilePage.tsx
+src\pages\profile\SettingsPage.tsx
+src\routes\AppRouter.tsx

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { joinCommunity } from "../services/communities.service";
 import { useAuthStore } from "../../../store/authStore";
@@ -9,9 +9,11 @@ export default function JoinCommunity() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [error, setError] = useState("");
+  const hasAttempted = useRef(false);
 
   useEffect(() => {
-    if (!id || !user) return;
+    if (!id || !user || hasAttempted.current) return;
+    hasAttempted.current = true;
     joinCommunity(id)
       .then(() => navigate(`/community/${id}/chat`, { replace: true }))
       .catch(() => setError("Failed to join group. It may be private."));

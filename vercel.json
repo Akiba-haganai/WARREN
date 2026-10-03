@@ -1,9 +1,10 @@
 {
   "rewrites": [
-    {
-      "source": "/((?!.well-known).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/subjects/:code", "destination": "/api/public/subject?code=:code" },
+    { "source": "/papers/:id",     "destination": "/api/public/paper?id=:id" },
+    { "source": "/sitemap.xml",    "destination": "/api/public/sitemap" },
+    { "source": "/cram/:slug",     "destination": "/api/public/cram?slug=:slug" },
+    { "source": "/((?!.well-known|api).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

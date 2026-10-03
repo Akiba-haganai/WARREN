@@ -1,0 +1,15 @@
+C:\projects\wave\.git\fsmonitor--daemon\cookies
+C:\projects\wave\dist\assets\PrivacyPage-DSbv321s.js
+C:\projects\wave\dist\assets\PrivacySecurityPage-CCdNNZea.js
+C:\projects\wave\dist\assets\TermsPage-DEbde22B.js
+C:\projects\wave\node_modules\eslint\lib\shared\stats.js
+C:\projects\wave\node_modules\lucide-react\dist\esm\icons\podcast.mjs
+C:\projects\wave\node_modules\lucide-react\dist\esm\icons\podcast.mjs.map
+C:\projects\wave\node_modules\react-router\docs\explanation\sessions-and-cookies.md
+C:\projects\wave\node_modules\undici-types\client-stats.d.ts
+C:\projects\wave\node_modules\undici-types\cookies.d.ts
+C:\projects\wave\node_modules\undici-types\pool-stats.d.ts
+C:\projects\wave\src\features\profile\components\ProfileStats.tsx
+C:\projects\wave\src\pages\legal\PrivacyPage.tsx
+C:\projects\wave\src\pages\legal\TermsPage.tsx
+C:\projects\wave\src\pages\profile\PrivacySecurityPage.tsx

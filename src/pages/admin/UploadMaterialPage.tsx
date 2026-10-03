@@ -2,11 +2,9 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
-import { uploadStudyMaterial, awardKarma } from "../../features/study/services/study.service";
+import { awardKarma } from "../../features/study/services/study.service";
 import { useAuthStore } from "../../store/authStore";
 import { supabase } from "../../lib/supabase";
-import { compressImage } from "../../services/commentImageService";
-import { createNotification } from "../../features/notifications/services/notifications.service";
 
 const YEAR_GROUPS = [
   "All Years",
@@ -73,7 +71,7 @@ export default function UploadMaterialPage() {
     setError("");
 
     try {
-      // Duplicate check using Dice coefficient
+      // Duplicate check
       const existingTitles = await supabase.from("study_materials").select("title");
       if (existingTitles.error) throw existingTitles.error;
       const { diceCoefficient } = await import("../../utils/stringSimilarity");
@@ -83,73 +81,61 @@ export default function UploadMaterialPage() {
         return;
       }
 
-      let file_url: string | null = null;
+      // 1. Create the row first so we have an ID for the storage path.
+      const { data: created, error: insertErr } = await supabase
+        .from("study_materials")
+        .insert({
+          title: form.title.trim(),
+          description: form.description.trim() || null,
+          subject: form.subject.trim(),
+          programme: form.programme.trim() || null,
+          year_group: form.year_group,
+          material_type: form.material_type,
+          external_url: form.external_url.trim() || null,
+          uploaded_by: user.id,
+          submitted_by: user.id,
+          status: "approved",
+          tags: form.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean),
+          is_pinned: form.is_pinned,
+          is_premium: form.is_premium,
+          premium_cost: form.premium_cost,
+          trending_score: form.trending_score,
+          processing_status: files.length > 0 ? "pending" : "done",
+        })
+        .select("id")
+        .single();
 
+      if (insertErr || !created) throw insertErr ?? new Error("insert failed");
+
+      const materialId = created.id;
+
+      // 2. Upload the file to study-materials/{material_id}/original.{ext}
       if (files.length > 0) {
         const file = files[0];
-        const compressed = await compressImage(file);
-        const filePath = `posts/${user.id}/${Date.now()}_${compressed.name}`;
+        const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
+        const storagePath = `${materialId}/original.${ext}`;
+
         const { error: uploadErr } = await supabase.storage
-          .from("post-images")
-          .upload(filePath, compressed);
+          .from("study-materials")
+          .upload(storagePath, file, { upsert: false, contentType: file.type });
+
         if (uploadErr) throw uploadErr;
-        const { data } = supabase.storage.from("post-images").getPublicUrl(filePath);
-        file_url = data.publicUrl;
+
+        // 3. Record the path on the row.
+        await supabase
+          .from("study_materials")
+          .update({ original_file_path: storagePath })
+          .eq("id", materialId);
+
+        // 4. Kick off processing. Fire-and-forget is fine; the function
+        //    writes its own status back to the row.
+        supabase.functions
+          .invoke("process-material", { body: { material_id: materialId } })
+          .catch((err) => console.warn("process-material invocation failed:", err));
       }
 
-      // The uploadStudyMaterial function expects all non‑null fields of StudyMaterial Insert
-      await uploadStudyMaterial({
-        title: form.title.trim(),
-        description: form.description.trim() || null,
-        subject: form.subject.trim(),
-        programme: form.programme.trim() || null,
-        year_group: form.year_group,
-        material_type: form.material_type,
-        file_url,
-        external_url: form.external_url.trim() || null,
-        thumbnail_url: null,
-        uploaded_by: user.id,
-        tags: form.tags
-          .split(",")
-          .map((t) => t.trim().toLowerCase())
-          .filter(Boolean),
-        is_pinned: form.is_pinned,
-        is_premium: form.is_premium,
-        premium_cost: form.premium_cost,
-        trending_score: form.trending_score,
-
-        // required fields for admin uploads
-        submitted_by: user.id,
-        status: "approved",
-        is_hidden: false,
-        verified_by_staff: false,
-      });
-
-      // Award karma independently of notification success.
+      // Award karma independently of processing.
       awardKarma(user.id, 5, "Uploaded a study material").catch(() => {});
-
-
-      // Notify users who requested this subject
-      try {
-        const { data: matchingRequests } = await supabase
-          .from("material_requests")
-          .select("user_id, title")
-          .eq("subject", form.subject.trim());
-
-        if (matchingRequests) {
-          for (const req of matchingRequests) {
-            await createNotification(
-              req.user_id,
-              "Material uploaded for your request",
-              `"${form.title}" was uploaded for subject "${form.subject}".`,
-              "study"
-            ).catch(() => {});
-          }
-        }
-      } catch (err) {
-        // Never block upload/karma on notification failures.
-        console.warn("Failed to notify matching requesters", err);
-      }
 
       navigate("/study");
     } catch (e) {

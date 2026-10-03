@@ -1,381 +1,149 @@
-import { useState, useRef, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { BookOpen, Calendar, TrendingUp, Clock, Package } from "lucide-react";
+import { useState, useEffect } from "react";
 import AppShell from "../../components/layout/AppShell";
-import { useStudyStore } from "../../features/study/store/study.store";
-import {
-  useStudyMaterials,
-  useTrendingMaterials,
-} from "../../features/study/hooks/useStudyMaterials";
-import { useStudyActions } from "../../features/study/hooks/useStudyActions";
-import { useContinueLearning } from "../../features/study/hooks/useContinueLearning";
-import { useStarterPacks } from "../../features/study/hooks/useStarterPacks";
-import { useRelatedMaterials } from "../../features/study/hooks/useRelatedMaterials";
-import { usePersonalizedFeed } from "../../features/study/hooks/usePersonalizedFeed";
-import { StudyGrid } from "../../features/study/components/StudyGrid";
-import { MaterialDrawer } from "../../features/study/components/MaterialDrawer";
-import { GradeEstimator } from "../../features/study/components/GradeEstimator";
-import PostCardSkeleton from "../../features/posts/components/PostCardSkeleton";
-import { EmptyState } from "../../components/common/EmptyState";
-
-import {
-  SearchBar,
-  ChipScroll,
-  Chip,
-  SectionLabel,
-} from "../../features/study/components/FilterChips";
-import {
-  TYPE_META,
-  SUBJECT_COLORS,
-  MATERIAL_TYPES,
-  YEAR_GROUPS,
-} from "../../features/study/constants";
-import { recordMaterialView } from "../../features/study/services/study.service";
+import { VaultTab } from "./tabs/VaultTab";
+import { CoursesTab } from "./tabs/CoursesTab";
+import { CramTab } from "./tabs/CramTab";
+import { HelpTab } from "./tabs/HelpTab";
+import { BookOpen, FolderGit2, Sparkles, HelpCircle, Calendar } from "lucide-react";
+import { CramPlannerSheet } from "../../features/cram/components/CramPlannerSheet";
+import { CramPlanView } from "../../features/cram/components/CramPlanView";
+import { fetchUserPlans, type CramPlan } from "../../features/cram/services/cram.service";
 import { useAuthStore } from "../../store/authStore";
-import { useMaterialRequests } from "../../features/study/hooks/useMaterialRequests";
-import { useLeaderboard } from "../../features/study/hooks/useLeaderboard";
-import { RequestForm } from "../../features/study/components/RequestForm";
+import { supabase } from "../../lib/supabase";
+import { MaterialDrawer } from "../../features/study/components/MaterialDrawer";
 import type { StudyMaterial } from "../../features/study/services/study.service";
-import { StudyGroupsSection } from "../../features/study/components/StudyGroupsSections";
-import { BountyBoard } from "../../features/study/components/BountyBoard";
+import { useStudyActions } from "../../features/study/hooks/useStudyActions";
 
 export default function StudyPage() {
-  const navigate = useNavigate();
+  const [tab, setTab] = useState<"vault" | "courses" | "cram" | "help">("vault");
   const user = useAuthStore((s) => s.user);
 
-  // Study store (all values at once)
-  const {
-    search,
-    setSearch,
-    yearFilter,
-    setYearFilter,
-    typeFilter,
-    setTypeFilter,
-    programmeFilter,
-    setProgrammeFilter,
-  } = useStudyStore();
-
-  // Data hooks
-  const { materials, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useStudyMaterials();
-  const { data: trendingPages } = useTrendingMaterials();
-  const trending = trendingPages?.pages.flatMap((p) => p.data) ?? [];
-  const { data: continueLearning } = useContinueLearning();
-  const { packs, packMaterials } = useStarterPacks();
-  const { toggleSave } = useStudyActions();
-  const { personalizedMaterials } = usePersonalizedFeed();
-  const { requests, createRequest } = useMaterialRequests();
-  const { data: leaderboard } = useLeaderboard();
-
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [plans, setPlans] = useState<CramPlan[]>([]);
   const [selected, setSelected] = useState<StudyMaterial | null>(null);
-  const { data: related = [] } = useRelatedMaterials(selected);
-  const [showExamBank, setShowExamBank] = useState(false);
+  const { toggleSave } = useStudyActions();
 
-  const subjectColorMap = Object.fromEntries(
-    trending.concat(materials).map((m) => [m.subject, SUBJECT_COLORS[0]])
-  );
+  useEffect(() => {
+    if (!user) return;
+    fetchUserPlans(user.id).then(setPlans).catch(() => {});
+  }, [user]);
 
-  const programmeOptions = useMemo(() => {
-    const programmes = new Set<string>();
-    materials.forEach((m) => {
-      const programme = (m as any).programme as string | null | undefined;
-      if (programme) programmes.add(programme);
-    });
-    return ["All", ...Array.from(programmes).sort()];
-  }, [materials]);
-
-  const handleToggleSave = (materialId: string, saved: boolean) =>
-    toggleSave({ materialId, saved });
-
-  const handleOpen = (material: StudyMaterial) => {
-    setSelected(material);
-    if (user) recordMaterialView(user.id, material.id);
-  };
-
-  // Infinite scroll observer
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (observerRef.current) observerRef.current.disconnect();
-      if (!node || !hasNextPage || isFetchingNextPage) return;
-      observerRef.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) fetchNextPage();
-      });
-      observerRef.current.observe(node);
-    },
-    [hasNextPage, isFetchingNextPage, fetchNextPage]
-  );
+  const TABS = [
+    { key: "vault", label: "Vault", icon: BookOpen },
+    { key: "courses", label: "Courses", icon: FolderGit2 },
+    { key: "cram", label: "Cram", icon: Sparkles },
+    { key: "help", label: "Help", icon: HelpCircle },
+  ] as const;
 
   return (
     <AppShell>
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
+      <div className="px-4 pb-28 max-w-lg mx-auto">
+        <div className="flex items-center justify-between mb-4 mt-1">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shrink-0">
-                <BookOpen size={15} className="text-white" />
-              </div>
-              <h1 className="text-2xl font-black tracking-tight">Study</h1>
-            </div>
-            <p className="text-xs text-slate-400 mt-1 ml-10">
-              Lecturer materials & resources
-            </p>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Study</h1>
+            <p className="text-xs text-slate-400 dark:text-slate-500">Past papers, notes & course index</p>
           </div>
-          <button
-            onClick={() => navigate("/events")}
-            className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
-          >
-            <Calendar size={12} /> Events
-          </button>
         </div>
 
-        {/* Search */}
-        <SearchBar
-          value={search}
-          onChange={setSearch}
-          onClear={() => setSearch("")}
+        {/* Cram planner entry */}
+        {!activePlanId && (
+          <div className="mb-4 flex flex-col gap-2">
+            <button
+              onClick={() => setPlannerOpen(true)}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-bold flex items-center justify-center gap-2"
+            >
+              <Calendar size={16} />
+              Plan a cram
+            </button>
+            {plans
+              .filter((p) => p.status === "active")
+              .slice(0, 2)
+              .map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setActivePlanId(p.id)}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left"
+                >
+                  <Calendar size={16} className="text-blue-600 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{p.subject} cram</p>
+                    <p className="text-[11px] text-slate-500">
+                      Exam {new Date(p.exam_date).toLocaleDateString()} · {p.days_total} days
+                    </p>
+                  </div>
+                </button>
+              ))}
+          </div>
+        )}
+
+        {!activePlanId && (
+          <>
+            {/* Tab Switcher */}
+            <div className="flex gap-1 mb-5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
+              {TABS.map((t) => {
+                const Icon = t.icon;
+                const active = tab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={`flex-1 py-2 px-1 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                      active
+                        ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-cyan-400"
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    <Icon size={14} />
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab Views */}
+            {tab === "vault" && <VaultTab />}
+            {tab === "courses" && <CoursesTab onSelectCourse={() => setTab("vault")} />}
+            {tab === "cram" && <CramTab />}
+            {tab === "help" && <HelpTab />}
+          </>
+        )}
+
+        {activePlanId && (
+          <CramPlanView
+            planId={activePlanId}
+            planTitle={plans.find((p) => p.id === activePlanId)?.subject ?? "Cram"}
+            examDate={plans.find((p) => p.id === activePlanId)?.exam_date ?? ""}
+            onBack={() => setActivePlanId(null)}
+            onOpenMaterial={async (id) => {
+              const { data } = await supabase.from("study_materials").select("*").eq("id", id).single();
+              if (data) setSelected(data as StudyMaterial);
+            }}
+          />
+        )}
+
+        <CramPlannerSheet
+          open={plannerOpen}
+          onClose={() => setPlannerOpen(false)}
+          onGenerated={async (planId) => {
+            if (!user) return;
+            const refreshed = await fetchUserPlans(user.id);
+            setPlans(refreshed);
+            setActivePlanId(planId);
+          }}
         />
 
-        {/* Paper Bounties */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">💰 Paper Bounties</h2>
-          <BountyBoard />
-        </div>
-
-        {/* Exam Question Bank toggle */}
-        <button
-          onClick={() => setShowExamBank(!showExamBank)}
-          className="flex items-center gap-2 text-sm font-semibold bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 px-4 py-2 rounded-full mb-4"
-        >
-          📝 Exam Question Bank
-        </button>
-        {showExamBank && (
-          <StudyGrid
-            materials={materials.filter((m) => m.material_type === "past_paper")}
-            savedIds={new Set()}
-            subjectColorMap={{}}
-            onToggleSave={handleToggleSave}
-            onOpen={handleOpen}
-          />
-        )}
-
-        {/* Personalized feed */}
-        {personalizedMaterials.length > 0 && (
-          <>
-            <h2 className="text-lg font-bold mt-4 mb-2">✨ For You</h2>
-            <StudyGrid
-              materials={personalizedMaterials}
-              savedIds={new Set()}
-              subjectColorMap={subjectColorMap}
-              onToggleSave={handleToggleSave}
-              onOpen={handleOpen}
-            />
-          </>
-        )}
-
-        {/* Grade Estimator */}
-        <GradeEstimator />
-
-        {/* Material Requests */}
-        <div className="mb-6">
-          <RequestForm onSubmit={createRequest} />
-          {requests.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {requests.map((req) => (
-                <div
-                  key={req.id}
-                  className="p-2 bg-white dark:bg-slate-900 rounded-xl border text-sm"
-                >
-                  <span className="font-medium">{req.title}</span> –{" "}
-                  <span className="text-slate-500">
-                    {req.profiles?.username}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Leaderboard */}
-        {leaderboard && leaderboard.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold mb-2">🏆 Top Contributors</h2>
-            <div className="flex gap-2 overflow-x-auto">
-              {leaderboard.slice(0, 10).map((u) => (
-                <div key={u.id} className="text-center shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold mx-auto">
-                    {u.avatar_url ? (
-                      <img
-                        src={u.avatar_url}
-                        alt={u.username ?? ""}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      u.username?.[0]?.toUpperCase()
-                    )}
-                  </div>
-                  <p className="text-xs mt-1">{u.username}</p>
-                  <p className="text-[10px] text-slate-500">{u.karma} pts</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Filters */}
-        <ChipScroll>
-          {MATERIAL_TYPES.map(({ value, label, icon }) => {
-            const active = value === typeFilter;
-            const meta = TYPE_META[value];
-            return (
-              <Chip
-                key={value}
-                active={active}
-                accent={active && meta ? meta.color : undefined}
-                onClick={() => setTypeFilter(value)}
-              >
-                <span>{icon}</span>
-                <span>{label}</span>
-              </Chip>
-            );
-          })}
-        </ChipScroll>
-
-        <SectionLabel>Year Group</SectionLabel>
-        <ChipScroll>
-          {YEAR_GROUPS.map((y) => (
-            <Chip
-              key={y}
-              active={y === yearFilter}
-              onClick={() => setYearFilter(y)}
-            >
-              {y}
-            </Chip>
-          ))}
-        </ChipScroll>
-
-        {/* Programme filter */}
-        {programmeOptions.length > 1 && (
-          <>
-            <SectionLabel>Programme</SectionLabel>
-            <ChipScroll>
-              {programmeOptions.map((p) => (
-                <Chip
-                  key={p}
-                  active={p === programmeFilter}
-                  onClick={() => setProgrammeFilter(p)}
-                >
-                  {p}
-                </Chip>
-              ))}
-            </ChipScroll>
-          </>
-        )}
-
-        {/* Continue Learning */}
-        {continueLearning && continueLearning.length > 0 && (
-          <>
-            <h2 className="text-lg font-bold mt-6 mb-2 flex items-center gap-1">
-              <Clock size={18} /> Continue Learning
-            </h2>
-            <StudyGrid
-              materials={continueLearning.slice(0, 5)}
-              savedIds={new Set()}
-              subjectColorMap={subjectColorMap}
-              onToggleSave={handleToggleSave}
-              onOpen={handleOpen}
-            />
-          </>
-        )}
-
-        {/* Starter Packs */}
-        {packs.length > 0 && (
-          <>
-            <h2 className="text-lg font-bold mt-6 mb-2 flex items-center gap-1">
-              <Package size={18} /> Starter Packs
-            </h2>
-            {packs.map((pack, index) => (
-              <div key={pack.id} className="mb-4">
-                <h3 className="font-semibold text-sm mb-2">{pack.name}</h3>
-                <StudyGrid
-                  materials={packMaterials[index] ?? []}
-                  savedIds={new Set()}
-                  subjectColorMap={subjectColorMap}
-                  onToggleSave={handleToggleSave}
-                  onOpen={handleOpen}
-                />
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* Trending */}
-        {trending.length > 0 && (
-          <>
-            <h2 className="text-lg font-bold mt-6 mb-2 flex items-center gap-1">
-              <TrendingUp size={18} /> Trending This Week
-            </h2>
-            <StudyGrid
-              materials={trending.slice(0, 5)}
-              savedIds={new Set()}
-              subjectColorMap={subjectColorMap}
-              onToggleSave={handleToggleSave}
-              onOpen={handleOpen}
-            />
-          </>
-        )}
-
-        <StudyGroupsSection />
-
-        {/* All Materials */}
-        <h2 className="text-lg font-bold mt-6 mb-2">All Materials</h2>
-        {isLoading ? (
-          <div className="flex flex-col gap-2.5">
-            {[...Array(4)].map((_, i) => <PostCardSkeleton key={i} />)}
-          </div>
-        ) : (
-          <StudyGrid
-            materials={materials}
-            savedIds={new Set()}
-            subjectColorMap={subjectColorMap}
-            onToggleSave={handleToggleSave}
-            onOpen={handleOpen}
-          />
-        )}
-        {materials.length === 0 && !isLoading && (
-          <EmptyState icon="📚" title="No materials found" description="Try adjusting your filters." />
-        )}
-
-        {hasNextPage && <div ref={loadMoreRef} className="h-10" />}
-        {isFetchingNextPage && (
-          <p className="text-center text-sm">Loading more...</p>
-        )}
-
-        {/* Drawer */}
         {selected && (
           <MaterialDrawer
             material={selected}
             saved={false}
-            subjectColor={subjectColorMap[selected.subject] ?? "#6366F1"}
-            meta={TYPE_META[selected.material_type] ?? TYPE_META.resource}
-            onToggleSave={handleToggleSave}
-            onOpen={handleOpen}
+            subjectColor="#6366F1"
+            meta={{ color: "#6366F1", bg: "rgba(99,102,241,0.15)", border: "#6366F1", icon: "📄", label: selected.paper_type ?? "Material" }}
+            onToggleSave={(id, saved) => toggleSave({ materialId: id, saved })}
             onClose={() => setSelected(null)}
-            relatedMaterials={related}
-
           />
         )}
       </div>
-      
-      <a
-  href="mailto:chilengawarren307@gmail.com?subject=Support%20for%20Warren"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="flex items-center gap-1 text-xs text-pink-600 dark:text-pink-400 hover:underline px-4 pb-4"
->
-  ☕ Send support
-</a>
     </AppShell>
   );
 }

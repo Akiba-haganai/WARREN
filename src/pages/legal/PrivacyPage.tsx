@@ -8,13 +8,13 @@ export default function PrivacyPage() {
         <div className="prose prose-sm dark:prose-invert space-y-4">
           <p><strong>Last updated:</strong> {new Date().getFullYear()}-01-01</p>
           <p>
-            Wave ("we", "our", "us") is committed to protecting your privacy.
+            515 ("we", "our", "us") is committed to protecting your privacy.
             This Privacy Policy explains how your personal information is collected,
-            used, and disclosed by Wave.
+            used, and disclosed by 515.
           </p>
           <h3>1. Information We Collect</h3>
           <p>
-            We collect information you provide directly to us when using Wave, such as when you create an account, complete your profile, post questions, upload study resources, participate in communities, or send messages. This may include your email address, chosen username, and profile details.
+            We collect information you provide directly to us when using 515, such as when you create an account, complete your profile, post questions, upload study resources, participate in communities, or send messages. This may include your email address, chosen username, and profile details.
           </p>
           <h3>2. How We Use Your Information</h3>
           <p>
@@ -22,7 +22,7 @@ export default function PrivacyPage() {
           </p>
           <h3>3. Advertising & Cookies</h3>
           <p>
-            Wave may use third-party advertising partners such as Google AdSense to serve non-intrusive advertisements to help support our zero-budget server hosting costs. Google and third-party vendors use cookies to serve ads based on user visits to this or other websites. Users may opt out of personalized advertising by visiting Google's Ads Settings or <a href="https://aboutads.info" target="_blank" rel="noopener noreferrer" className="underline">aboutads.info</a>.
+            515 may use third-party advertising partners such as Google AdSense to serve non-intrusive advertisements to help support our zero-budget server hosting costs. Google and third-party vendors use cookies to serve ads based on user visits to this or other websites. Users may opt out of personalized advertising by visiting Google's Ads Settings or <a href="https://aboutads.info" target="_blank" rel="noopener noreferrer" className="underline">aboutads.info</a>.
           </p>
           <h3>4. Data Storage & Security</h3>
           <p>
@@ -34,7 +34,7 @@ export default function PrivacyPage() {
           </p>
           <h3>6. Contact</h3>
           <p>
-            If you have any questions or privacy concerns, please contact our team at <strong>support@warren.app</strong>.
+            If you have any questions or privacy concerns, please contact our team at <strong>support@515.app</strong>.
           </p>
         </div>
       </div>

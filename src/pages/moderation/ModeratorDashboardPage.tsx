@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
-import { Shield, MapPin, Users, Upload, Flag, Calendar } from "lucide-react";
+import { Shield, Users, Upload, Flag, Calendar } from "lucide-react";
 
 const tiles = [
   {
@@ -27,14 +27,7 @@ const tiles = [
     color: "text-indigo-600 dark:text-indigo-400",
     bg: "bg-indigo-50 dark:bg-indigo-900/20",
   },
-  {
-    to: "/campus-map",
-    icon: MapPin,
-    label: "Update Map Pins",
-    desc: "Add or edit campus locations",
-    color: "text-blue-600 dark:text-cyan-400",
-    bg: "bg-blue-50 dark:bg-blue-900/20",
-  },
+
   {
     to: "/admin/upload-material",
     icon: Upload,

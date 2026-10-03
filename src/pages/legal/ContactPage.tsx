@@ -12,11 +12,11 @@ export default function ContactPage() {
             through the app's messaging system.
           </p>
           <a
-            href="mailto:support@warren.app"
+            href="mailto:support@515.app"
             className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border"
           >
             <Mail size={20} />
-            <span className="text-sm font-medium">support@warren.app</span>
+            <span className="text-sm font-medium">support@515.app</span>
           </a>
           <div className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border">
             <MessageCircle size={20} />

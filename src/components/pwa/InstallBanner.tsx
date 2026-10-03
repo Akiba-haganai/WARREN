@@ -109,7 +109,7 @@ export default function InstallBanner() {
                   App Available
                 </p>
                 <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                  Install Wave
+                  Install 515
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Add to home screen for native experience
@@ -148,7 +148,7 @@ export default function InstallBanner() {
                   Install on iPhone / iPad
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Add Wave to your home screen in 3 steps
+                  Add 515 to your home screen in 3 steps
                 </p>
               </div>
               <button

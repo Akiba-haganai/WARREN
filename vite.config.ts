@@ -64,9 +64,9 @@ export default defineConfig(({ mode }) => {
           ],
         },
         manifest: {
-          name: "Wave",
-          short_name: "Wave",
-          description: "Connect. Learn. Interact. — Student Hub & Resources",
+          name: "515",
+          short_name: "515",
+          description: "Find the paper. Understand it. Plan the cram.",
           theme_color: "#1E88E5",
           background_color: "#1E88E5",
           display: "standalone",

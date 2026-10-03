@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Flag, Upload } from "lucide-react";
+import { Flag, Upload, Sparkles } from "lucide-react";
 import type { StudyMaterial } from "../services/study.service";
 import { MaterialCard } from "./MaterialCard";
 import { useAuthStore } from "../../../store/authStore";
@@ -7,6 +7,7 @@ import { reportMaterial } from "../../../services/reportService";
 import { uploadNewVersion } from "../services/study.service";
 import { supabase } from "../../../lib/supabase";
 import { SolutionsList } from "./SolutionsList";
+import { AskSheet } from "./AskSheet";
 
 interface Props {
   material: StudyMaterial;
@@ -41,6 +42,7 @@ export function MaterialDrawer({
   const user = useAuthStore((s) => s.user);
   const versionInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
 
   const handleReport = async () => {
     if (!user) return;
@@ -166,6 +168,14 @@ export function MaterialDrawer({
             {saved ? "🔖  Saved" : "🏷️  Save for later"}
           </button>
 
+          <button
+            onClick={() => setAskOpen(true)}
+            className="w-full py-3.5 mt-2 rounded-2xl text-sm font-bold border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 flex items-center justify-center gap-2"
+          >
+            <Sparkles size={14} />
+            Ask about this paper
+          </button>
+
           {/* Upload New Version – visible only to original uploader */}
           {user?.id === material.uploaded_by && (
             <>
@@ -214,6 +224,16 @@ export function MaterialDrawer({
           )}
         </div>
       </div>
+
+      {askOpen && (
+        <AskSheet
+          material={material}
+          onClose={() => setAskOpen(false)}
+          onOpenMaterial={(m) => {
+            onOpen?.(m as any);
+          }}
+        />
+      )}
     </>
   );
 }
