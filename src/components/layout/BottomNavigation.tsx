@@ -1,4 +1,4 @@
-import { House, BookOpen, MessagesSquare, Megaphone } from "lucide-react";
+import { House, BookOpen, MessagesSquare, User } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 export default function BottomNavigation() {
@@ -10,14 +10,14 @@ export default function BottomNavigation() {
     }`;
 
   const ActiveDot = () => (
-    <span className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-600 dark:bg-cyan-400" />
+    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-600 dark:bg-cyan-400" />
   );
 
   const links = [
-    { to: "/", icon: <House size={22} />, label: "Home" },
-    { to: "/announcements", icon: <Megaphone size={22} />, label: "Bulletin" },
-    { to: "/study", icon: <BookOpen size={22} />, label: "Study" },
+    { to: "/study",     icon: <BookOpen size={22} />,       label: "Study"     },
     { to: "/community", icon: <MessagesSquare size={22} />, label: "Community" },
+    { to: "/",          icon: <House size={22} />,          label: "Home"      },
+    { to: "/profile",   icon: <User size={22} />,           label: "Profile"   },
   ];
 
   return (
@@ -28,7 +28,6 @@ export default function BottomNavigation() {
             {({ isActive }) => (
               <>
                 {icon}
-                {/* Visible labels – not sr-only */}
                 <span className={`text-[10px] font-medium leading-none ${isActive ? "font-semibold" : ""}`}>
                   {label}
                 </span>
