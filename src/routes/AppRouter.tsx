@@ -39,6 +39,7 @@ const ConversationPage = lazy(() => import("../pages/messages/ConversationPage")
 const AskSeniorPage = lazy(() => import("../pages/QandA/AskSeniorPage"));
 const QuestionDetailPage = lazy(() => import("../pages/QandA/QuestionDetailPage"));
 const LiveRoomsList = lazy(() => import("../pages/rooms/LiveRoomsPage").then(m => ({ default: m.LiveRoomsList })));
+const PostRedirectPage = lazy(() => import("../pages/posts/PostRedirectPage"));
 const LiveRoomChat = lazy(() => import("../pages/rooms/LiveRoomsPage").then(m => ({ default: m.LiveRoomChat })));
 const StudyRoom = lazy(() => import("../features/rooms/components/StudyRoom"));
 const AMAsPage = lazy(() => import("../pages/community/AMAsPage"));
@@ -124,6 +125,7 @@ export default function AppRouter() {
 
       {/* Main */}
       <Route path="/study/subject/:subject" element={<Protected><Suspense fallback={<PageLoader />}><SubjectPage /></Suspense></Protected>} />
+      <Route path="/post/:id" element={<Protected><Suspense fallback={<PageLoader />}><PostRedirectPage /></Suspense></Protected>} />
       <Route path="/" element={<Protected><HomePage /></Protected>} />
       <Route path="/search" element={<Protected><Suspense fallback={<PageLoader />}><SearchPage /></Suspense></Protected>} />
       <Route path="/announcements" element={<Protected><Suspense fallback={<PageLoader />}><AnnouncementsPage /></Suspense></Protected>} />

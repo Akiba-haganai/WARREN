@@ -1,12 +1,8 @@
-import { useEffect, useState } from "react";
 import { Check, Loader2, Calendar, ChevronLeft, Share2 } from "lucide-react";
 import { useAuthStore } from "../../../store/authStore";
 import { supabase } from "../../../lib/supabase";
-import {
-  fetchPlanItems,
-  toggleItemCompleted,
-  type CramItem,
-} from "../services/cram.service";
+import type { CramItem } from "../services/cram.service";
+import { useCramPlanItems, useCramActions } from "../hooks/useCramPlans";
 
 interface Props {
   planId: string;
@@ -24,23 +20,16 @@ export function CramPlanView({
   onOpenMaterial,
 }: Props) {
   const user = useAuthStore((s) => s.user);
-  const [items, setItems] = useState<CramItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: items = [], isLoading: loading } = useCramPlanItems(planId);
+  const { toggleItem } = useCramActions();
 
-  useEffect(() => {
+  const toggle = (item: CramItem) => {
     if (!user) return;
-    fetchPlanItems(planId, user.id)
-      .then(setItems)
-      .finally(() => setLoading(false));
-  }, [planId, user]);
-
-  const toggle = async (item: CramItem) => {
-    if (!user) return;
-    const next = !item.completed;
-    setItems((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, completed: next } : i)),
-    );
-    await toggleItemCompleted(item.id, user.id, next);
+    toggleItem({
+      itemId: item.id,
+      completed: !item.completed,
+      planId,
+    });
   };
 
   const share = async () => {

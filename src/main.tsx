@@ -21,6 +21,7 @@ const CHUNK_ERR_KEY = "515-chunk-error-strikes";
   if (strikes >= 2) {
     // Nuclear reset: unregister SW + wipe all caches, then reload once
     sessionStorage.removeItem(CHUNK_ERR_KEY);
+    sessionStorage.setItem("515-sw-hard-reset", "1");
     try {
       if ("serviceWorker" in navigator) {
         const regs = await navigator.serviceWorker.getRegistrations();

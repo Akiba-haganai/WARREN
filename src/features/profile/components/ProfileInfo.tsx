@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import {
-  Send, UserX, UserPlus, Moon, Bell, BellOff,
+  Send, UserX, UserPlus, Moon, Bell, BellOff, GraduationCap
 } from "lucide-react";
 import { usePushNotifications } from "../../../hooks/usePushNotifications";
 import { useThemeStore } from "../../../store/themeStore";
@@ -17,6 +17,11 @@ interface Props {
     id: string;
     karma?: number;
     is_lecturer?: boolean | null;
+    academic?: {
+      university: string | null;
+      course: string | null;
+      year_of_study: number | null;
+    } | null;
   };
   isOwn: boolean;
   blocked: boolean;
@@ -51,7 +56,29 @@ export function ProfileInfo({ profile, isOwn, blocked, onMessage, onToggleBlock 
         </span>
         <span className="text-sm opacity-70">Member since {new Date(profile.created_at!).getFullYear()}</span>
       </div>
-      {profile.bio && <p className="mt-4 text-slate-600 dark:text-slate-300">{profile.bio}</p>}
+
+      {profile.academic?.university && (
+        <div className="mt-3.5 mb-2 flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
+          <div className="flex items-center gap-1.5 font-semibold">
+            <GraduationCap size={16} className="text-slate-400 dark:text-slate-500" />
+            {profile.academic.university}
+          </div>
+          {(profile.academic.course || profile.academic.year_of_study) && (
+            <div className="flex items-center gap-1.5 pl-5 opacity-90 text-xs font-medium text-slate-500 dark:text-slate-400">
+              {profile.academic.course} 
+              {profile.academic.year_of_study ? ` • ${
+                profile.academic.year_of_study <= 6 ? `Year ${profile.academic.year_of_study}` 
+                : profile.academic.year_of_study === 7 ? "Master's"
+                : profile.academic.year_of_study === 8 ? "PhD"
+                : profile.academic.year_of_study === 9 ? "Alumni"
+                : "Faculty"
+              }` : ""}
+            </div>
+          )}
+        </div>
+      )}
+
+      {profile.bio && <p className="mt-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{profile.bio}</p>}
 
       {isOwn ? (
         <div className="mt-4 space-y-2">

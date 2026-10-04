@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Loader2, Calendar, GraduationCap } from "lucide-react";
 import { supabase } from "../../../lib/supabase";
 import { useAuthStore } from "../../../store/authStore";
-import { generatePlan } from "../services/cram.service";
+import { useCramActions } from "../hooks/useCramPlans";
 
 interface Props {
   open: boolean;
@@ -12,10 +12,10 @@ interface Props {
 
 export function CramPlannerSheet({ open, onClose, onGenerated }: Props) {
   const user = useAuthStore((s) => s.user);
+  const { generatePlan, isGenerating } = useCramActions();
   const [courses, setCourses] = useState<{ key: string; count: number }[]>([]);
   const [course, setCourse] = useState("");
   const [examDate, setExamDate] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -34,16 +34,13 @@ export function CramPlannerSheet({ open, onClose, onGenerated }: Props) {
 
   const submit = async () => {
     if (!user || !course || !examDate) return;
-    setLoading(true);
     setError("");
     try {
-      const planId = await generatePlan(user.id, course, examDate);
+      const planId = await generatePlan({ courseKey: course, examDate });
       onGenerated(planId);
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to build plan");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -109,11 +106,11 @@ export function CramPlannerSheet({ open, onClose, onGenerated }: Props) {
 
           <button
             onClick={submit}
-            disabled={loading || !course || !examDate}
+            disabled={isGenerating || !course || !examDate}
             className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <GraduationCap size={16} />}
-            {loading ? "Building plan…" : "Build my plan"}
+            {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <GraduationCap size={16} />}
+            {isGenerating ? "Building plan…" : "Build my plan"}
           </button>
         </div>
       </div>

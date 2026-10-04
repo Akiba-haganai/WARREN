@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowBigUp,
@@ -60,7 +60,7 @@ interface Props {
   onPostClick?: () => void;
 }
 
-export default function PostCard({
+const PostCard = memo(function PostCard({
   post,
   userVote,
   onVote,
@@ -438,4 +438,9 @@ export default function PostCard({
       )}
     </article>
   );
-}
+
+}, (prev, next) => {
+  return prev.post.id === next.post.id && prev.post.upvotes === next.post.upvotes && prev.post.downvotes === next.post.downvotes && prev.post.comments_count === next.post.comments_count && prev.userVote === next.userVote;
+});
+
+export default PostCard;

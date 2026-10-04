@@ -35,3 +35,17 @@ export async function searchUsers(query: string) {
 
   return data ?? [];
 }
+
+export async function searchMaterials(query: string) {
+  if (!query.trim()) return [];
+
+  const { data, error } = await supabase
+    .from("study_materials")
+    .select("id, title, course_code, subject, paper_type, academic_year, summary")
+    .or(`title.ilike.%${query}%,course_code.ilike.%${query}%,subject.ilike.%${query}%`)
+    .limit(20);
+
+  if (error) throw error;
+
+  return data ?? [];
+}

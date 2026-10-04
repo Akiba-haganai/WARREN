@@ -9,7 +9,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://wxcyxdiavjrbqdjxqsrl.supabase.co";
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4Y3l4ZGlhdmpyYnFkanhxc3JsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTM0MzE2NCwiZXhwIjoyMDk2OTE5MTY0fQ.IbFe4nx7N_Nflgh1_UI5GXzYnqiuHebsGFsSAT6md_Q";
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const DELAY_MS     = 4200; // 4.2s delay ensures ~14 requests per minute, cleanly avoiding the 15 RPM free tier quota
 
 if (!SUPABASE_URL || !SERVICE_KEY) {

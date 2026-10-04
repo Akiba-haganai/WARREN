@@ -7,35 +7,21 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
-import { fetchProfile } from "../../features/profile/services/profile.service";
+import { useCurrentProfile } from "../../hooks/useCurrentProfile";
 import { useUserRole } from "../../hooks/useUserRole";
 
 import { NotificationBell } from "../notifications/NotificationBell";
 
 export default function MobileNavbar() {
   const [open, setOpen] = useState(false);
-  const [username, setUsername] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const { data: currentProfile } = useCurrentProfile();
   const menuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { role } = useUserRole();
   const darkMode = useThemeStore((s) => s.theme === "dark");
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
-  const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-
-  useEffect(() => {
-    async function loadProfile() {
-      if (!user?.id) return;
-      try {
-        const profile = await fetchProfile(user.id);
-        if (profile?.username) setUsername(profile.username);
-        if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
-      } catch (error) { console.error(error); }
-    }
-    loadProfile();
-  }, [user?.id]);
 
   useEffect(() => { setOpen(false); }, [location.pathname]);
 
@@ -49,12 +35,13 @@ export default function MobileNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const displayName = username || "User";
+  const displayName = currentProfile?.username || "User";
+  const avatarUrl = currentProfile?.avatar_url || "";
   const showAdminBadge = role === "admin" || role === "moderator";
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/85 dark:bg-slate-950/85 border-b border-slate-200 dark:border-slate-800 supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-white/70 dark:bg-slate-950/70 border-b border-white/40 dark:border-slate-800/80 pt-[env(safe-area-inset-top,0px)] pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]">
         <div className="h-14 sm:h-16 px-4 flex items-center justify-between max-w-lg mx-auto">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 min-w-0">

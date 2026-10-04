@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 export const config = { runtime: "edge" };
 
 const URL_ = process.env.VITE_SUPABASE_URL || "https://wxcyxdiavjrbqdjxqsrl.supabase.co";
-const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4Y3l4ZGlhdmpyYnFkanhxc3JsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTM0MzE2NCwiZXhwIjoyMDk2OTE5MTY0fQ.IbFe4nx7N_Nflgh1_UI5GXzYnqiuHebsGFsSAT6md_Q";
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export default async function handler(req: Request) {
   const slug = new URL(req.url).searchParams.get("slug");

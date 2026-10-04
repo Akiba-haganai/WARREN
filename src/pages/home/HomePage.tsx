@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import AppShell from "../../components/layout/AppShell";
 import { usePosts } from "../../features/posts/hooks/usePosts";
@@ -8,28 +8,41 @@ import { usePostVote } from "../../features/posts/hooks/usePostVote";
 import { deletePost } from "../../features/posts/services/posts.service";
 import { usePostsStore } from "../../features/posts/store/posts.store";
 import { Feed } from "../../features/posts/components/Feed";
-import CreatePostSheet from "../../features/posts/components/CreatePostSheet";
+
 import CommentSection from "../../components/comments/CommentSection";
 import FeedToggle from "../../components/feed/FeedToggle";
-import { Plus, ChevronRight, Calendar, BookOpen, Megaphone, TrendingUp, MessageSquare } from "lucide-react";
+import { ChevronRight, Calendar, BookOpen, Megaphone, TrendingUp, MessageSquare } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
+import { useCurrentProfile } from "../../hooks/useCurrentProfile";
 import { useContinueLearning } from "../../features/study/hooks/useContinueLearning";
-import { fetchUserPlans } from "../../features/cram/services/cram.service";
+import { useCramPlans } from "../../features/cram/hooks/useCramPlans";
 import { fetchAnnouncements } from "../../services/announcementService";
 
 export default function HomePage() {
   const currentUser = useAuthStore((s) => s.user);
   const currentUserId = currentUser?.id;
+  const { data: currentProfile } = useCurrentProfile();
+
   const sortMode = usePostsStore((s) => s.sortMode);
   const setSortMode = usePostsStore((s) => s.setSortMode);
   const { posts, isLoading, isError, error, refetch } = usePosts();
   const voteMutation = usePostVote();
 
-  const [openSheet, setOpenSheet] = useState(false);
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [activeCommentPostOwner, setActiveCommentPostOwner] = useState<string | null>(null);
-  const [showFab, setShowFab] = useState(true);
-  const lastScrollY = useRef(0);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const postId = searchParams.get("post");
+    if (!postId) return;
+    const found = posts.find((p) => p.id === postId);
+    if (found) {
+      setActiveCommentPostId(found.id);
+      setActiveCommentPostOwner(found.user_id);
+      searchParams.delete("post");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, posts, setSearchParams]);
 
   const activePost = activeCommentPostId
     ? posts.find((p) => p.id === activeCommentPostId) ?? null
@@ -44,42 +57,59 @@ export default function HomePage() {
     refetch();
   };
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const y = (e.target as HTMLDivElement).scrollTop;
-    setShowFab(y < lastScrollY.current || y < 20);
-    lastScrollY.current = y;
-  };
+
 
   // ── Data for the study-first home ─────────────────────────────────────
-  const { data: currentProfile } = useQuery({
-    queryKey: ["profile", currentUserId],
-    queryFn: async () => {
-      if (!currentUserId) return null;
-      const { data } = await supabase
-        .from("profiles")
-        .select("username, avatar_url")
-        .eq("id", currentUserId)
-        .single();
-      return data;
-    },
-    enabled: !!currentUserId,
-  });
-
   const { data: continueLearning } = useContinueLearning();
-
-  const { data: activePlan } = useQuery({
-    queryKey: ["homeActivePlan", currentUserId],
-    queryFn: async () => {
-      if (!currentUserId) return null;
-      const plans = await fetchUserPlans(currentUserId);
-      return plans.find((p) => p.status === "active") ?? null;
-    },
-    enabled: !!currentUserId,
-  });
+  const { data: cramPlans } = useCramPlans();
+  const activePlan = cramPlans?.find((p) => p.status === "active") ?? null;
 
   const { data: recommended } = useQuery({
-    queryKey: ["homeRecommended"],
+    queryKey: ["homeRecommended", currentUserId],
     queryFn: async () => {
+      if (!currentUserId) return null;
+
+      const [{ data: views }, { data: plans }, { data: academic }] = await Promise.all([
+        supabase
+          .from("material_views")
+          .select("material:material_id(course_code, subject)")
+          .eq("user_id", currentUserId)
+          .order("viewed_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("cram_plans")
+          .select("course_key")
+          .eq("user_id", currentUserId)
+          .not("course_key", "is", null)
+          .limit(3),
+        (supabase.from as any)("student_academic_profile")
+          .select("course, university")
+          .eq("user_id", currentUserId)
+          .maybeSingle(),
+      ]);
+
+      const courseKeys = new Set<string>();
+      if (academic?.course) courseKeys.add(academic.course);
+      (views ?? []).forEach((v: any) => {
+        const m = Array.isArray(v.material) ? v.material[0] : v.material;
+        const key = m?.course_code ?? m?.subject;
+        if (key) courseKeys.add(key);
+      });
+      (plans ?? []).forEach((p: any) => p.course_key && courseKeys.add(p.course_key));
+
+      if (courseKeys.size > 0) {
+        const { data } = await supabase
+          .from("study_materials")
+          .select("id, title, course_code, paper_type, summary")
+          .eq("processing_status", "done")
+          .or(Array.from(courseKeys).map((k) => `course_code.eq.${k},subject.eq.${k}`).join(","))
+          .order("trending_score", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (data) return { ...data, isPersonalized: true };
+      }
+
       const { data } = await supabase
         .from("study_materials")
         .select("id, title, course_code, paper_type, summary")
@@ -88,8 +118,9 @@ export default function HomePage() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data;
+      return data ? { ...data, isPersonalized: false } : null;
     },
+    enabled: !!currentUserId,
   });
 
   const { data: topPost } = useQuery({
@@ -141,8 +172,7 @@ export default function HomePage() {
     ? Math.max(0, Math.ceil((new Date(activePlan.exam_date).getTime() - Date.now()) / 86400000))
     : null;
 
-  const hasAnyStudyContent =
-    continueList.length > 0 || activePlan || recommended || topPost || latestAnnouncement;
+  const hasStudyContent = continueList.length > 0 || !!activePlan;
 
   const currentUserName = currentProfile?.username ?? currentUser?.user_metadata?.username ?? "";
   const currentUserAvatar = currentProfile?.avatar_url ?? currentUser?.user_metadata?.avatar_url ?? null;
@@ -151,7 +181,7 @@ export default function HomePage() {
   return (
     <>
       <AppShell>
-        <div className="px-4 pb-28 overflow-y-auto" onScroll={handleScroll}>
+        <div className="px-4 pb-28 overflow-y-auto">
           {/* Greeting */}
           <div className="pt-4 pb-3">
             <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
@@ -177,7 +207,7 @@ export default function HomePage() {
                   <Link
                     key={m.id}
                     to={`/study?material=${m.id}`}
-                    className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800 transition"
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/40 dark:border-slate-700/50 hover:border-blue-300 dark:hover:border-blue-800 transition"
                   >
                     <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0 text-lg">
                       {emojiFor(m.paper_type ?? m.material_type)}
@@ -218,16 +248,20 @@ export default function HomePage() {
           {/* 3. For you */}
           {(recommended || topPost) && (
             <section className="mb-5">
-              <SectionHeader icon={<TrendingUp size={14} />} title="For you" />
+              <SectionHeader
+                icon={<TrendingUp size={14} />}
+                title={recommended?.isPersonalized ? "For your course" : "Recommended"}
+                href="/study"
+              />
               <div className="space-y-2">
                 {recommended && (
                   <Link
                     to={`/papers/${recommended.id}`}
-                    className="block p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800 transition"
+                    className="block p-4 rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/40 dark:border-slate-700/50 hover:border-blue-300 dark:hover:border-blue-800 transition"
                   >
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full">
-                        Paper
+                        {recommended.isPersonalized ? "Your course" : "Trending paper"}
                       </span>
                       {recommended.course_code && (
                         <span className="text-[11px] text-slate-500">{recommended.course_code}</span>
@@ -242,7 +276,7 @@ export default function HomePage() {
                 {topPost && (
                   <Link
                     to="/community"
-                    className="block p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800 transition"
+                    className="block p-4 rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/40 dark:border-slate-700/50 hover:border-blue-300 dark:hover:border-blue-800 transition"
                   >
                     <div className="flex items-center gap-2 mb-1.5">
                       <MessageSquare size={12} className="text-slate-400" />
@@ -284,14 +318,14 @@ export default function HomePage() {
           )}
 
           {/* Empty-state fallback for brand-new users */}
-          {!hasAnyStudyContent && (
+          {!hasStudyContent && (
             <section className="mb-6 p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white">
               <p className="text-[11px] font-bold uppercase tracking-wider opacity-80">
                 Get started
               </p>
               <h2 className="text-lg font-black mt-1">Find your course papers</h2>
               <p className="text-sm opacity-90 mt-1">
-                Browse the vault, or plan a cram for your next exam.
+                Browse materials, or plan a cram for your next exam.
               </p>
               <div className="flex gap-2 mt-4">
                 <Link
@@ -347,32 +381,6 @@ export default function HomePage() {
         </div>
       </AppShell>
 
-      {/* FAB */}
-      <div
-        className={`fixed bottom-24 right-5 z-50 transition-all duration-300 ${
-          showFab
-            ? "translate-y-0 opacity-100"
-            : "translate-y-24 opacity-0 pointer-events-none"
-        }`}
-      >
-        <button
-          onClick={() => setOpenSheet(true)}
-          className="min-h-[56px] min-w-[56px] px-5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 hover:shadow-xl active:scale-95"
-          aria-label="New post"
-        >
-          <Plus size={24} />
-          <span className="font-semibold text-base hidden sm:inline">Post</span>
-        </button>
-      </div>
-
-      <CreatePostSheet
-        open={openSheet}
-        onClose={() => setOpenSheet(false)}
-        onCreated={() => {
-          setOpenSheet(false);
-          refetch();
-        }}
-      />
 
       {activeCommentPostId && (
         <div

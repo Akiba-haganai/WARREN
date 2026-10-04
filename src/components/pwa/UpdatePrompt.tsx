@@ -1,13 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
-import { useToastStore } from "../../store/toastStore";
+import { RefreshCw, Sparkles, X } from "lucide-react";
 
 export function UpdatePrompt() {
-  const { showToast } = useToastStore();
-  const toastShown = useRef(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   const {
-    needRefresh: [needRefresh],
+    needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
@@ -28,16 +28,61 @@ export function UpdatePrompt() {
     },
   });
 
-  useEffect(() => {
-    if (!needRefresh || toastShown.current) return;
-    toastShown.current = true;
-    // Show a non-intrusive toast — do NOT auto-reload; let the user decide
-    showToast("Update available — tap to refresh", "ok");
-    // Expose the updater for the toast action (best-effort, no forced reload)
-    (window as any).__waveApplyUpdate = () => updateServiceWorker(true);
-  }, [needRefresh, showToast, updateServiceWorker]);
+  const handleUpdate = async () => {
+    setUpdating(true);
+    try {
+      await updateServiceWorker(true);
+    } catch {
+      window.location.reload();
+    }
+  };
 
-  return null;
+  const handleDismiss = () => {
+    setDismissed(true);
+    setNeedRefresh(false);
+  };
+
+  if (!needRefresh || dismissed) return null;
+
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      className="fixed bottom-20 left-4 right-4 z-[90] max-w-sm mx-auto p-3.5 rounded-2xl bg-slate-900/95 dark:bg-white/95 text-white dark:text-slate-900 backdrop-blur-2xl border border-white/20 dark:border-slate-800/20 shadow-2xl flex items-center justify-between gap-3 animate-in slide-in-from-bottom-4 duration-300"
+      style={{
+        marginBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="w-8 h-8 rounded-xl bg-blue-500/20 dark:bg-blue-600/20 flex items-center justify-center shrink-0">
+          <Sparkles size={16} className="text-cyan-400 dark:text-blue-600" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold leading-tight truncate">New version available</p>
+          <p className="text-[11px] opacity-80 leading-tight truncate">Tap update for latest fixes</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <button
+          onClick={handleUpdate}
+          disabled={updating}
+          className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50"
+        >
+          {updating ? (
+            <RefreshCw size={12} className="animate-spin" />
+          ) : null}
+          <span>{updating ? "Updating…" : "Update"}</span>
+        </button>
+        <button
+          onClick={handleDismiss}
+          className="p-1 rounded-full opacity-60 hover:opacity-100 transition"
+          aria-label="Dismiss update"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default UpdatePrompt;

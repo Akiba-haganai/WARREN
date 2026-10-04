@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
         },
       },
       VitePWA({
-        registerType: "autoUpdate",
+        registerType: "prompt",
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           cleanupOutdatedCaches: true,

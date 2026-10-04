@@ -1,16 +1,33 @@
 import { supabase } from "../../../lib/supabase";
 import type { Database } from "../../../types/database.types";
 
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
+  academic?: {
+    university: string | null;
+    course: string | null;
+    year_of_study: number | null;
+  } | null;
+};
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase
+  // Use 'any' cast on supabase early to prevent TS deep instantiation bugs with nested selects
+  const query = (supabase as any)
     .from("profiles")
-    .select("*")
+    .select("*, academic:student_academic_profile(*)");
+
+  const { data, error } = await query
     .eq("id", userId)
     .single();
+    
   if (error) throw error;
-  return data;
+  
+  // Format the academic array (if joined) to a single object
+  const formattedData = {
+    ...data,
+    academic: Array.isArray(data.academic) ? data.academic[0] : data.academic
+  } as Profile;
+
+  return formattedData;
 }
 
 export async function fetchUserStats(userId: string) {

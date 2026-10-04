@@ -11,7 +11,8 @@ import { useUserRole } from "../../hooks/useUserRole";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToastStore } from "../../store/toastStore";
 import type { Community } from "../../types/community";
-import { Grid3X3, List } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Grid3X3, List, MessageCircleQuestion } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 // Optional UI enhancement: Exam countdown widget (events table + event_type=exam)
@@ -95,6 +96,21 @@ export default function CommunityPage() {
             {viewMode === "grid" ? <List size={20} /> : <Grid3X3 size={20} />}
           </button>
         </div>
+
+        {/* Ask a Senior Shortcut Banner */}
+        <Link
+          to="/ask-senior"
+          className="mb-4 flex items-center gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm active:scale-[0.99] transition motion-safe:hover:shadow-md"
+        >
+          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <MessageCircleQuestion size={22} className="text-white" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold leading-tight">Ask a Senior</p>
+            <p className="text-xs text-white/80 truncate">Get guidance and answers from students who took your course</p>
+          </div>
+          <span className="text-lg opacity-75 font-semibold">›</span>
+        </Link>
 
         {/* Exam countdown widget (only when a community is selected/opened) */}
         {selectedCommunity && (

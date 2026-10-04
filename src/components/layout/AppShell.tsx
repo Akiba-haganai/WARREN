@@ -30,28 +30,22 @@ const AppShell = memo(function AppShell({
       "
     >
       {/* Fixed top navigation */}
-      {!hideTopNav && (
-        <header className="fixed top-0 left-0 right-0 z-50">
-          <MobileNavbar />
-        </header>
-      )}
-
+      {!hideTopNav && <MobileNavbar />}
 
       {/* Main content */}
       <main
         className={
           "mx-auto w-full max-w-lg px-3 animate-in fade-in slide-in-from-bottom-4 duration-300 flex-1 " +
-          (hideTopNav ? "" : "pt-[var(--appshell-header-h)] ") +
+          (hideTopNav ? "pt-[calc(1rem+env(safe-area-inset-top,0px))] " : "pt-[var(--appshell-header-h)] ") +
           (hideBottomNav
-            ? "pb-[env(safe-area-inset-bottom)]"
+            ? "pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
             : "pb-[var(--appshell-bottomnav-h)]")
         }
         style={
           {
-            // Named constants so chat pages and the generic chrome stay aligned if heights change.
-            // Tailwind can't read these dynamically at build-time, so we set them via CSS variables.
-            ['--appshell-header-h' as any]: '5rem',
-            ['--appshell-bottomnav-h' as any]: '8rem',
+            // Named constants dynamically including safe-area insets so native mobile chrome stays aligned.
+            ['--appshell-header-h' as any]: 'calc(4.25rem + env(safe-area-inset-top, 0px))',
+            ['--appshell-bottomnav-h' as any]: 'calc(4.75rem + env(safe-area-inset-bottom, 0px))',
           } as React.CSSProperties
         }
       >
