@@ -64,7 +64,11 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "prompt",
         workbox: {
-          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webmanifest}"],
+          globPatterns: [
+            "assets/index-*.{js,css}",
+            "assets/vendor-*.js",
+            "*.{html,ico,png,svg,woff2,webmanifest}"
+          ],
           cleanupOutdatedCaches: true,
           skipWaiting: false,   // Don't force-activate on install — wait for user action
           clientsClaim: false,  // Don't hijack existing tabs — prevents reload cascade

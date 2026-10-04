@@ -15,9 +15,9 @@ const PrivacyPage = lazy(() => import("../pages/legal/PrivacyPage"));
 const TermsPage = lazy(() => import("../pages/legal/TermsPage"));
 
 // Lazy loaded auth pages
-const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
-const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
-const AuthCallbackPage = lazy(() => import("../pages/auth/AuthCallbackPage"));
+import LoginPage from "../pages/auth/LoginPage";
+import RegisterPage from "../pages/auth/RegisterPage";
+import AuthCallbackPage from "../pages/auth/AuthCallbackPage";
 const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("../passwordManagement/ResetPasswordPage"));
 const UpdatePasswordPage = lazy(() => import("../passwordManagement/UpdatePasswordPage"));
@@ -116,9 +116,9 @@ export default function AppRouter() {
       <Route path="/terms" element={<Suspense fallback={<PageLoader />}><TermsPage /></Suspense>} />
 
       {/* Auth */}
-      <Route path="/login" element={<Suspense fallback={<PageLoader />}><LoginPage /></Suspense>} />
-      <Route path="/register" element={<Suspense fallback={<PageLoader />}><RegisterPage /></Suspense>} />
-      <Route path="/auth/callback" element={<Suspense fallback={<PageLoader />}><AuthCallbackPage /></Suspense>} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPasswordPage /></Suspense>} />
       <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPasswordPage /></Suspense>} />
       <Route path="/update-password" element={<Suspense fallback={<PageLoader />}><UpdatePasswordPage /></Suspense>} />
