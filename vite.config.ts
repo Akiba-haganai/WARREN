@@ -16,11 +16,33 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (!id.includes("node_modules")) return;
-            // Keep Supabase alone — it's huge (200KB) and changes rarely
-            if (id.includes("node_modules/@supabase")) return "vendor-supabase";
-            // All other node_modules in a single vendor chunk
-            // This reduces 15 parallel chunk requests to 2, saving ~1.5s on slow 4G
-            return "vendor";
+            if (
+              id.includes("node_modules/react/") ||
+              id.includes("node_modules/react-dom/") ||
+              id.includes("node_modules/react-router") ||
+              id.includes("node_modules/@remix-run/router")
+            ) {
+              return "vendor-react";
+            }
+            if (id.includes("node_modules/@supabase")) {
+              return "vendor-supabase";
+            }
+            if (id.includes("node_modules/@tanstack/react-query")) {
+              return "vendor-query";
+            }
+            if (id.includes("node_modules/lucide-react")) {
+              return "vendor-icons";
+            }
+            if (
+              id.includes("node_modules/react-hook-form") ||
+              id.includes("node_modules/@hookform") ||
+              id.includes("node_modules/zod")
+            ) {
+              return "vendor-forms";
+            }
+            if (id.includes("node_modules/date-fns")) {
+              return "vendor-dates";
+            }
           },
         },
       },
@@ -42,7 +64,7 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "prompt",
         workbox: {
-          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webmanifest}"],
           cleanupOutdatedCaches: true,
           skipWaiting: false,   // Don't force-activate on install — wait for user action
           clientsClaim: false,  // Don't hijack existing tabs — prevents reload cascade
@@ -59,7 +81,35 @@ export default defineConfig(({ mode }) => {
             {
               urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
               handler: "CacheFirst",
-              options: { cacheName: "images", expiration: { maxEntries: 50 } },
+              options: {
+                cacheName: "images",
+                expiration: {
+                  maxEntries: 60,
+                  maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+                },
+              },
+            },
+            {
+              urlPattern: /\/assets\/.*\.js$/,
+              handler: "StaleWhileRevalidate",
+              options: {
+                cacheName: "js-chunks-cache",
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+                },
+              },
+            },
+            {
+              urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+              handler: "CacheFirst",
+              options: {
+                cacheName: "google-fonts",
+                expiration: {
+                  maxEntries: 20,
+                  maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+                },
+              },
             },
           ],
         },
